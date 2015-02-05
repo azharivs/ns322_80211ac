@@ -29,7 +29,6 @@ New user-visible features
   wifi module to jointly control transmission power and data rate.  Two use 
   case examples (PowerAdaptationDistance and PowerAdaptationInterference) 
   and a test case have also been added.
-- (wifi) PARF and APARF WiFi rate controls have been added to the wifi model.
 - (lte) In previous releases of the LTE module, the bearer release
   functionality was only partially supported. As an enhancement, a
   complete release bearer procedure is now implemented, which can be
@@ -52,9 +51,9 @@ New user-visible features
   framework to traced values emitting Time objects
 - (documentation) the callback function signatures for all TraceSources
   is documented in Doxygen
-- print-introspected-doxygen.sh has had several enhancements;
+- (utils) print-introspected-doxygen.cc has had several enhancements;
   use -h to read the usage message for details.
-- TracedValue and TracedCallback function signatures are now documented,
+- (core) TracedValue and TracedCallback function signatures are now documented,
   which required changing the TypeId::AddTraceSource API.
 
 Bugs fixed
