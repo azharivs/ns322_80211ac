@@ -19,6 +19,14 @@ http://www.nsnam.org/release/ns-allinone-3.22.tar.bz2
 
 Supported platforms
 -------------------
+This release has been tested on the following platforms:
+- Fedora Core 21 (64 bit) with g++-4.9.2
+- Ubuntu 14.10 (32 bit) with g++-4.9.1
+- Ubuntu 14.04 (64 bit) with g++-4.8.2
+- Ubuntu 12.04.4 (32/64 bit) with g++-4.6.3
+- CentOS/RHEL 6.6 (64-bit) with g++-4.4.7
+- OS X Yosemite 10.10 with Xcode 6.1.1 and clang-600.0.56
+- FreeBSD 10.1-RELEASE (64 bit) with clang-3.4.1
 
 New user-visible features
 -------------------------
