@@ -43,10 +43,12 @@
 //   |    |
 //   n1   n2
 //
+// sva:
+// Seyed Vahid Azhari
 // Packets in this simulation will be marked with a QosTag of AC_VI
 // This is the first step toward developing my base line scheduler
-// Seyed Vahid Azhari
-
+// The AP acts as the UDP client sending packets and STAs act as servers.
+// Currently there is one AP and one STA
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
@@ -69,7 +71,7 @@ int main (int argc, char *argv[])
     Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue ("999999"));
   else
     Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue ("0"));
-     
+  //sva: disable fragmentation
   Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue ("990000"));
 
   NodeContainer wifiStaNode;
@@ -117,13 +119,14 @@ int main (int argc, char *argv[])
   MobilityHelper mobility;
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
 
+  //sva: push positions on a stack
   positionAlloc->Add (Vector (0.0, 0.0, 0.0));
   positionAlloc->Add (Vector (1.0, 0.0, 0.0));
   mobility.SetPositionAllocator (positionAlloc);
 
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
-  mobility.Install (wifiApNode);
+  mobility.Install (wifiApNode);//sva: AP gets position at top of the stack
   mobility.Install (wifiStaNode);
 
   /* Internet stack*/
@@ -140,11 +143,13 @@ int main (int argc, char *argv[])
   ApInterface = address.Assign (apDevice);
  
   /* Setting applications */
+  //sva: STA is server receiving packets
   UdpServerHelper myServer (9);
   ApplicationContainer serverApp = myServer.Install (wifiStaNode.Get (0));
   serverApp.Start (Seconds (0.0));
   serverApp.Stop (Seconds (simulationTime+1));
       
+  //sva: AP is client sending packets
   UdpClientHelper myClient (StaInterface.GetAddress (0), 9);
   myClient.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
   myClient.SetAttribute ("Interval", TimeValue (Time ("0.00002"))); //packets/s
