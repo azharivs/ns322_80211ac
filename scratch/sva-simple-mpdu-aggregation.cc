@@ -43,8 +43,9 @@
 //   |    |
 //   n1   n2
 //
-// Packets in this simulation aren't marked with a QosTag so they are considered
-// belonging to BestEffort Access Class (AC_BE).
+// Packets in this simulation will be marked with a QosTag of AC_VI
+// This is the first step toward developing my base line scheduler
+// Seyed Vahid Azhari
 
 using namespace ns3;
 
