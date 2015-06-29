@@ -48,19 +48,31 @@
 // Packets in this simulation will be marked with a QosTag of AC_VI
 // This is the first step toward developing my base line scheduler
 // The AP acts as the UDP client sending packets and STAs act as servers.
-// Currently there is one AP and one STA
+// number of stations canbe set using nSta
+// Currently there is an unfairness issue if aggregation is set to low values
+// I'm not exactly sure why it happens but could be due to buffer overflow
+// at the client side.
+// Also I am making bad use of application container for the client apps on the AP
+// Everything else seems to be working fine
+// TODO: Extract delay and delay violation probability for each traffic flow
+// TODO: Assign traffic flows to AC_VI
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
 
 int main (int argc, char *argv[])
 {
+  //LogComponentEnable ("UdpClient", LOG_LEVEL_DEBUG);
+  //LogComponentEnable ("UdpServer", LOG_LEVEL_DEBUG);
+
   uint32_t payloadSize = 1472; //bytes
-  uint64_t simulationTime = 10; //seconds
+  uint64_t simulationTime = 1; //seconds
   uint32_t nMpdus = 1;
+  uint32_t nSta = 1;
   bool enableRts = 0;
     
   CommandLine cmd;
+  cmd.AddValue("nSta", "Number of stations", nSta); //sva: number of stations specified by the user
   cmd.AddValue("nMpdus", "Number of aggregated MPDUs", nMpdus); //number of aggregated MPDUs specified by the user
   cmd.AddValue("payloadSize", "Payload size in bytes", payloadSize);
   cmd.AddValue("enableRts", "Enable RTS/CTS", enableRts);
@@ -75,7 +87,7 @@ int main (int argc, char *argv[])
   Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue ("990000"));
 
   NodeContainer wifiStaNode;
-  wifiStaNode.Create (1);
+  wifiStaNode.Create (nSta);
   NodeContainer wifiApNode;
   wifiApNode.Create(1);
 
@@ -85,6 +97,7 @@ int main (int argc, char *argv[])
   phy.SetChannel (channel.Create());
 
   WifiHelper wifi = WifiHelper::Default ();
+  //wifi.EnableLogComponents();//sva: added
   wifi.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
   wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate65MbpsBW20MHz"), "ControlMode", StringValue("OfdmRate6_5MbpsBW20MHz"));
   HtWifiMacHelper mac = HtWifiMacHelper::Default ();
@@ -120,14 +133,17 @@ int main (int argc, char *argv[])
   Ptr<ListPositionAllocator> positionAlloc = CreateObject<ListPositionAllocator> ();
 
   //sva: push positions on a stack
-  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
   positionAlloc->Add (Vector (1.0, 0.0, 0.0));
+  positionAlloc->Add (Vector (-1.0, 0.0, 0.0));
+  positionAlloc->Add (Vector (0.0, 1.0, 0.0));
+  positionAlloc->Add (Vector (0.0, -1.0, 0.0));
+  positionAlloc->Add (Vector (0.0, 0.0, 0.0));
   mobility.SetPositionAllocator (positionAlloc);
 
   mobility.SetMobilityModel ("ns3::ConstantPositionMobilityModel");
 
   mobility.Install (wifiApNode);//sva: AP gets position at top of the stack
-  mobility.Install (wifiStaNode);
+  mobility.Install (wifiStaNode);//sva: other STAs iterate through the position stack with looping
 
   /* Internet stack*/
   InternetStackHelper stack;
@@ -137,36 +153,62 @@ int main (int argc, char *argv[])
   Ipv4AddressHelper address;
 
   address.SetBase ("192.168.1.0", "255.255.255.0");
-  Ipv4InterfaceContainer StaInterface;
-  StaInterface = address.Assign (staDevice);
   Ipv4InterfaceContainer ApInterface;
-  ApInterface = address.Assign (apDevice);
+  ApInterface = address.Assign (apDevice);//AP will get the first address 192.168.1.1
+  Ipv4InterfaceContainer StaInterface;
+  StaInterface = address.Assign (staDevice);//sva: allocates addresses in an increasing order
  
   /* Setting applications */
   //sva: STA is server receiving packets
+
   UdpServerHelper myServer (9);
-  ApplicationContainer serverApp = myServer.Install (wifiStaNode.Get (0));
+  ApplicationContainer serverApp = myServer.Install (wifiStaNode);
   serverApp.Start (Seconds (0.0));
   serverApp.Stop (Seconds (simulationTime+1));
       
   //sva: AP is client sending packets
+  //sva: pre-initialize all clients to pick the first station as their remote server
   UdpClientHelper myClient (StaInterface.GetAddress (0), 9);
   myClient.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
-  myClient.SetAttribute ("Interval", TimeValue (Time ("0.00002"))); //packets/s
+  myClient.SetAttribute ("Interval", TimeValue (Time ("0.0002"))); //packets/s
   myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
-              
-  ApplicationContainer clientApp = myClient.Install (wifiApNode.Get (0));
-  clientApp.Start (Seconds (1.0));
-  clientApp.Stop (Seconds (simulationTime+1));
+
+  ApplicationContainer clientApp;//sva: my empty application container for UDP clients
+  uint32_t j; //sva: figuring out how to do the iterations.
+  for ( j = 0 ; j < nSta ; j ++)
+    {
+	  //sva: initialize correct remote address for next client instantiation
+	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
+	  //sva: this is not the correct way of doing it.
+	  //sva: I am creating a single dangling application container for each client
+	  //sva: May have to change the upd client helper to fix this
+	  //sva: needs a new Install method
+	  clientApp = myClient.Install (wifiApNode.Get (0));
+	  //myClient.setStartTime(Seconds (1.0));
+	  //myClient.setStopTime(Seconds (simulatioTime+1));
+	  clientApp.Start (Seconds (1.0));
+	  clientApp.Stop (Seconds (simulationTime+1));
+    }
+
+
       
   Simulator::Stop (Seconds (simulationTime+1));
 
   Simulator::Run ();
   Simulator::Destroy ();
-      
-  uint32_t totalPacketsThrough = DynamicCast<UdpServer>(serverApp.Get (0))->GetReceived ();
-  double throughput = totalPacketsThrough*payloadSize*8/(simulationTime*1000000.0);
-  std::cout << "Throughput: " << throughput << " Mbit/s" << '\n';
+
+  uint32_t totalPacketsThrough=0;
+  uint32_t totalPacketsLost=0;
+  double throughput=0;
+  double pdr=0;
+  for (j = 0; j < nSta; j ++)
+    {
+	  totalPacketsThrough = DynamicCast<UdpServer>(serverApp.Get (j))->GetReceived ();
+	  totalPacketsLost = DynamicCast<UdpServer>(serverApp.Get (j))->GetLost ();
+	  throughput = totalPacketsThrough*payloadSize*8/(simulationTime*1000000.0);
+	  pdr = (double) totalPacketsThrough/(double)(totalPacketsThrough+totalPacketsLost);
+      std::cout << "STA(" << j << ") Throughput: " << throughput << " Mbit/s, App layer PDR: " << pdr << '\n';
+    }
     
   return 0;
 }
