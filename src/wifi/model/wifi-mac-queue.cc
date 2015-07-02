@@ -26,6 +26,7 @@
 
 #include "wifi-mac-queue.h"
 #include "qos-blocked-destinations.h"
+#include "per-sta-q-info-container.h"
 
 namespace ns3 {
 
@@ -38,6 +39,7 @@ WifiMacQueue::Item::Item (Ptr<const Packet> packet,
     hdr (hdr),
     tstamp (tstamp)
 {
+  WifiMacQueue::m_perStaQInfo = NULL; //set to appropriate value by explicit function call if support is required
 }
 
 TypeId
@@ -339,6 +341,14 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
         }
     }
   return 0;
+}
+
+bool
+WifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer c)
+{
+  if (!PerStaQInfoContainer) return FALSE;
+  m_perStaQInfo = c;
+  return TRUE;
 }
 
 } // namespace ns3

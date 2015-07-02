@@ -31,6 +31,12 @@
 
 namespace ns3 {
 class QosBlockedDestinations;
+//sva: added support for multiple q per station. Currently not using call backs
+//sva: how do I get a pointer to PerStaQInfoContainer initialized?
+//sva: May be I can add a new method to WifiMacQueue to do this and iff not called
+//sva: the pointer will remain NULL meaning that PerStaQInfo is not supported
+//sva: such as the case for stations.
+//class PerStaQInfoContainer;
 
 /**
  * \ingroup wifi
@@ -208,6 +214,14 @@ public:
    */
   uint32_t GetSize (void);
 
+  /**
+   * Initialize pointer to PerStaQInfoContainer is support is required
+   *
+   * \param c: Pointer to the container
+   * \returns TRUE if successful and FALSE if container was NULL
+   */
+  bool EnablePerStaQInfo (PerStaQInfoContainer c);
+
 protected:
   /**
    * Clean up the queue by removing packets that exceeded the maximum delay.
@@ -260,6 +274,8 @@ protected:
   uint32_t m_size; //!< Current queue size
   uint32_t m_maxSize; //!< Queue capacity
   Time m_maxDelay; //!< Time to live for packets in the queue
+
+  Ptr<PerStaQInfoContainer> m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
 };
 
 } // namespace ns3
