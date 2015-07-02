@@ -36,7 +36,8 @@
 //
 // Network topology:
 //
-//   Wifi 192.168.1.0
+//   Wifi 192.168.1.0/24
+//   AP will have the first address: 192.168.1.1
 //
 //        AP
 //   *    *
@@ -66,7 +67,7 @@ int main (int argc, char *argv[])
   //LogComponentEnable ("UdpServer", LOG_LEVEL_DEBUG);
 
   uint32_t payloadSize = 1472; //bytes
-  uint64_t simulationTime = 1; //seconds
+  uint64_t simulationTime = 2; //seconds
   uint32_t nMpdus = 1;
   uint32_t nSta = 1;
   bool enableRts = 0;
