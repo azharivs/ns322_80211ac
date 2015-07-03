@@ -20,15 +20,16 @@
 #ifndef PER_STA_Q_INFO_CONTAINER_H
 #define PER_STA_Q_INFO_CONTAINER_H
 
-#include <list>
-#include <deque>
+#include <vector>
+//#include <deque>
 #include <utility>
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
-#include "wifi-mac-header.h"
-#include "wifi-mac-queue.h"
-#include "per-sta-q-info.h"
+//#include "wifi-mac-header.h"
+//#include "wifi-mac-queue.h"
+#include "ns3/net-device-container.h"
+#include "ns3/per-sta-q-info.h"
 
 namespace ns3 {
 
@@ -172,6 +173,13 @@ public:
    * \returns the Container containing vector of pointers to PeStaQInfo objects
    */
   PerStaQInfoContainer Install (NetDeviceContainer sta, NetDeviceContainer ap);
+
+  /**
+   * Returns one if the container is empty
+   *
+   * \returns 1 or 0
+   */
+  bool IsEmpty (void) const;
 
 private:
   std::vector<Ptr<PerStaQInfo> > m_staQInfo; //!< PerStaQInfo smart pointers

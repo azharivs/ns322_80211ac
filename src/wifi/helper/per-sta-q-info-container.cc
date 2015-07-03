@@ -19,19 +19,68 @@
  */
 
 #include <list>
-#include <deque>
+//#include <deque>
 #include <utility>
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
-#include "wifi-mac-header.h"
-#include "wifi-mac-queue.h"
-#include "per-sta-q-info.h"
+//#include "wifi-mac-header.h"
+//#include "wifi-mac-queue.h"
+#include "per-sta-q-info-container.h"
 
 namespace ns3 {
 
-NS_OBJECT_ENSURE_REGISTERED (PerStaQInfoContainer);
+PerStaQInfoContainer::PerStaQInfoContainer()
+{
+}
 
+PerStaQInfoContainer::Iterator
+PerStaQInfoContainer::Begin() const
+{
+  return m_staQInfo.begin();
+}
+
+PerStaQInfoContainer::Iterator
+PerStaQInfoContainer::End() const
+{
+  return m_staQInfo.end();
+}
+
+uint32_t
+PerStaQInfoContainer::GetN (void) const
+{
+  return m_staQInfo.size();
+}
+/*
+Ptr<PerStaQInfo>
+PerStaQInfoContainer::Get (uint32_t i) const
+{
+
+}
+
+Ptr<PerStaQInfo>
+PerStaQInfoContainer::GetByMac (Mac48Address addr, uint8_t tid=UP_VI) const
+{
+
+}
+
+Ptr<PerStaQInfo>
+PerStaQInfoContainer::GetByIpv4 (Ipv4Address addr, uint8_t tid=UP_VI) const
+{
+
+}
+
+PerStaQInfoContainer
+PerStaQInfoContainer::Install (NetDeviceContainer sta, NetDeviceContainer ap)
+{
+
+}
+*/
+bool
+PerStaQInfoContainer::IsEmpty (void) const
+{
+  return (m_staQInfo.empty());
+}
 
 } // namespace ns3
 
