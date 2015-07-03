@@ -33,11 +33,12 @@
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
+#include "ns3/qos-tag.h"
 #include "wifi-mac-header.h"
-#include "wifi-mac-queue.h"
+//#include "wifi-mac-queue.h"
 
 namespace ns3 {
-class WiFiMacQueue;
+//class WiFiMacQueue;
 
 /**
  * \ingroup wifi
@@ -51,16 +52,16 @@ class PerStaQInfo : public Object
 public:
   static TypeId GetTypeId (void);
   PerStaQInfo ();
-  PerStaQInfo (Mac48Address addr);
+  //sva: not needed PerStaQInfo (Mac48Address addr);
   // for later implementations: PerStaQInfo (Mac48Address addr, uint8_t tid);
   ~PerStaQInfo ();
 
   /**
    * Set the maximum number of samples kept for calculating statistics.
-   *
+   * Currently not needed because I'm relying on Attribute base initialization
    * \param histSize the maximum sample history size
    */
-  void SetHistorySize (uint32_t histSize);
+  //void SetHistorySize (uint32_t histSize);
   /**
    * Get current number of queued packets belonging to this station MAC and TID
    *
@@ -103,7 +104,7 @@ public:
    *
    * \return the average arrival rate for the queue (in bits per second)
    */
-  double GetAvgArrivalRateBps (void);
+  double GetAvgArrivalRateBytes (void);
 
   /**
    * Enqueue the given packet and its corresponding WifiMacHeader at the <i>end</i> of the queue.
@@ -111,14 +112,14 @@ public:
    * \param packet the packet to be euqueued at the end
    * \param hdr the header of the given packet
    */
-  void Arrival (Ptr<const Packet> packet, const WifiMacHeader &hdr);
+  void Arrival (void);//Ptr<const Packet> packet, const WifiMacHeader &hdr);
   /**
    * Dequeue the packet in the front of the queue.
    *
    * \param hdr the WifiMacHeader of the packet
    * \return the packet
    */
-  void Departure (WifiMacHeader *hdr);
+  void Departure (void);//WifiMacHeader *hdr);
   /**
    * Return if the queue is empty.
    *
@@ -126,7 +127,7 @@ public:
    */
   bool IsEmpty (void);
 
-protected:
+private:
 
   /**
    * A struct that holds information about a packet for putting
@@ -134,7 +135,7 @@ protected:
    *
   struct Item
   {
-    /**
+    **
      * Create a struct with the given parameters.
      *
      * \param packet
@@ -150,13 +151,13 @@ protected:
   };*/
 
   /**
-   * typedef for packet (struct Item) queue.
+   * typedef for sample history.
    */
-  //typedef std::deque<struct Item> PacketQueue;
+  //typedef std::deque<double> History;
   /**
-   * typedef for packet (struct Item) queue reverse iterator.
+   * typedef for iterator of sample history
    */
-  //typedef std::list<struct Item>::reverse_iterator PacketQueueRI;
+  //typedef std::deque<double>::reverse_iterator PacketQueueRI;
   /**
    * typedef for packet (struct Item) queue iterator.
    */
@@ -172,19 +173,27 @@ protected:
 
   //PacketQueue m_queue; //!< Packet (struct Item) queue
 
-  std::deque<uint32_t> m_sizeHistory; //!< Array of samples of queue length in packets
-  std::deque<uint32_t> m_sizeBytesHistory; //!< Array of samples of queue length in bytes
-  std::deque<uint32_t> m_waitHistory; //!< Array of samples of queue waiting time
+  /**
+   * Computes all average values from sample history
+   * Called by Arrival and Departure methods
+   *
+   */
+  void Update (void);
+
+  std::deque<uint32_t> m_queueSizeHistory; //!< Array of samples of queue length in packets
+  std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
+  std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
-  uint32_t m_size; //!< Current queue size in packets
-  uint32_t m_sizeBytes; //!< Current queue size in bytes
+  uint32_t m_queueSize; //!< Current queue size in packets
+  uint32_t m_queueBytes; //!< Current queue size in bytes
   uint32_t m_histSize; //!< Sample history size
-  double m_avgSize; //!< Last updated average queue size in packets
-  double m_avgSizeBytes; //!< Last updated average queue size in bytes
-  double m_avgWait; //!< Last updated average queue waiting time in seconds
-
+  double m_avgQueueSize; //!< Last updated average queue size in packets
+  double m_avgQueueBytes; //!< Last updated average queue size in bytes
+  double m_avgQueueWait; //!< Last updated average queue waiting time in seconds
+  double m_avgArrivalRate; //!< Last updated average packet arrival rate in pps
+  double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
 };
 
 } // namespace ns3

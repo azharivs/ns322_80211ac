@@ -29,7 +29,7 @@
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
 //
-// The number of aggregated MPDUs can be chosen by the user through the nMpdus attibute.
+// The number of aggregated MPDUs can be chosen by the user through the nMpdus attribute.
 // A value of 1 means that no MPDU aggregation is performed.
 //
 // Example: ./waf --run "simple-mpdu-aggregation --nMpdus=64"
@@ -49,7 +49,7 @@
 // Packets in this simulation will be marked with a QosTag of AC_VI
 // This is the first step toward developing my base line scheduler
 // The AP acts as the UDP client sending packets and STAs act as servers.
-// number of stations canbe set using nSta
+// number of stations can be set using nSta
 // Currently there is an unfairness issue if aggregation is set to low values
 // I'm not exactly sure why it happens but could be due to buffer overflow
 // at the client side.

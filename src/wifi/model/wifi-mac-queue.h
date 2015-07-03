@@ -28,12 +28,13 @@
 #include "ns3/nstime.h"
 #include "ns3/object.h"
 #include "wifi-mac-header.h"
+#include "ns3/per-sta-q-info-container.h"
 
 namespace ns3 {
 class QosBlockedDestinations;
 //sva: added support for multiple q per station. Currently not using call backs
 //sva: how do I get a pointer to PerStaQInfoContainer initialized?
-//sva: May be I can add a new method to WifiMacQueue to do this and iff not called
+//sva: May be I can add a new method to WifiMacQueue to do this and if not called
 //sva: the pointer will remain NULL meaning that PerStaQInfo is not supported
 //sva: such as the case for stations.
 //class PerStaQInfoContainer;
@@ -215,12 +216,12 @@ public:
   uint32_t GetSize (void);
 
   /**
-   * Initialize pointer to PerStaQInfoContainer is support is required
+   * Initialize pointer to PerStaQInfoContainer if support is required
    *
    * \param c: Pointer to the container
    * \returns TRUE if successful and FALSE if container was NULL
    */
-  bool EnablePerStaQInfo (PerStaQInfoContainer c);
+  bool EnablePerStaQInfo (PerStaQInfoContainer &c);
 
 protected:
   /**
@@ -275,7 +276,13 @@ protected:
   uint32_t m_maxSize; //!< Queue capacity
   Time m_maxDelay; //!< Time to live for packets in the queue
 
-  Ptr<PerStaQInfoContainer> m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
+  /*
+   * sva: TODO maybe I need to remove the reference to PerStaQInfoContainer and use call backs
+   *      In this case I will have to define call backs from here to the container.
+   *      However, I'm first going to get this compiled the way it is!
+   */
+
+  PerStaQInfoContainer *m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
 };
 
 } // namespace ns3
