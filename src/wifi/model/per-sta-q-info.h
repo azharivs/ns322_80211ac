@@ -63,6 +63,13 @@ public:
    */
   //void SetHistorySize (uint32_t histSize);
   /**
+   * Get MAC address associated to this queue
+   *
+   * \return reference to MAC address
+   */
+  Mac48Address& GetMac (void);
+
+  /**
    * Get current number of queued packets belonging to this station MAC and TID
    *
    * \return queue length
@@ -109,7 +116,7 @@ public:
   /**
    * Enqueue the given packet and its corresponding WifiMacHeader at the <i>end</i> of the queue.
    *
-   * \param packet the packet to be euqueued at the end
+   * \param packet the packet to be enqueued at the end
    * \param hdr the header of the given packet
    */
   void Arrival (void);//Ptr<const Packet> packet, const WifiMacHeader &hdr);
@@ -183,7 +190,7 @@ private:
   std::deque<uint32_t> m_queueSizeHistory; //!< Array of samples of queue length in packets
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
-  Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
+  Mac48Address& m_addrs; //!< Reference to MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
   uint32_t m_queueSize; //!< Current queue size in packets

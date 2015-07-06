@@ -51,6 +51,7 @@ MpduStandardAggregator::~MpduStandardAggregator ()
 {
 }
 
+//sva: This is the function where our aggregation algorithm should be implemented
 bool
 MpduStandardAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggregatedPacket)
 {
