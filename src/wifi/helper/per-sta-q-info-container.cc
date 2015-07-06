@@ -51,17 +51,18 @@ PerStaQInfoContainer::GetN (void) const
 {
   return m_staQInfo.size();
 }
-/*
+
 Ptr<PerStaQInfo>
 PerStaQInfoContainer::Get (uint32_t i) const
 {
-
+  return m_staQInfo.at(i);
 }
 
+/*
 Ptr<PerStaQInfo>
 PerStaQInfoContainer::GetByMac (Mac48Address addr, uint8_t tid=UP_VI) const
 {
-
+  for
 }
 
 Ptr<PerStaQInfo>
@@ -76,7 +77,6 @@ PerStaQInfoContainer::Install (NetDeviceContainer sta, NetDeviceContainer ap)
 
 }
 */
-
 void
 PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
 {
@@ -94,6 +94,7 @@ PerStaQInfoContainer::Reset (void)
 {
   return;
 }
+
 bool
 PerStaQInfoContainer::IsEmpty (void) const
 {

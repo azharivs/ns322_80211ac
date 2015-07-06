@@ -98,6 +98,11 @@ WifiHelper::SetStandard (enum WifiPhyStandard standard)
   m_standard = standard;
 }
 
+/**
+ * sva: remote station manager is also instantiated here it belongs to the entire
+ * context of the BSS and is not related to the AP or the STA exclusively
+ *
+ */
 NetDeviceContainer
 WifiHelper::Install (const WifiPhyHelper &phyHelper,
                      const WifiMacHelper &macHelper, NodeContainer c) const
@@ -115,7 +120,10 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       phy->ConfigureStandard (m_standard);
       device->SetMac (mac);
       device->SetPhy (phy);
-      device->SetRemoteStationManager (manager);
+      device->SetRemoteStationManager (manager);//sva: one for each station
+      //sva: This is probably a good place for populating PerStaQInfoContainer as well.
+      //sva: This is of course assuming that we have only one queue per STA (for now)
+      //sva: So the container will not be part of (EdcaTxopN) mac::m_edca. I hope this works!
       node->AddDevice (device);
       devices.Add (device);
       NS_LOG_DEBUG ("node=" << node << ", mob=" << node->GetObject<MobilityModel> ());

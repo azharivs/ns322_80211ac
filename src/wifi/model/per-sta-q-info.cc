@@ -53,7 +53,8 @@ PerStaQInfo::GetTypeId (void)
 
 PerStaQInfo::PerStaQInfo()
   : m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
-    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0)
+    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
+    m_addrs (NULL)
 {
 }
 
@@ -63,6 +64,12 @@ PerStaQInfo::~PerStaQInfo()
   m_queueSizeHistory.clear();
   m_queueBytesHistory.clear();
   m_queueWaitHistory.clear();
+}
+
+Mac48Address&
+PerStaQInfo::GetMac (void)
+{
+  return m_addrs;
 }
 
 uint32_t
