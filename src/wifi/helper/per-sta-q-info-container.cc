@@ -76,6 +76,24 @@ PerStaQInfoContainer::Install (NetDeviceContainer sta, NetDeviceContainer ap)
 
 }
 */
+
+void
+PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
+{
+  return;
+}
+
+void
+PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
+{
+  return;
+}
+
+void
+PerStaQInfoContainer::Reset (void)
+{
+  return;
+}
 bool
 PerStaQInfoContainer::IsEmpty (void) const
 {

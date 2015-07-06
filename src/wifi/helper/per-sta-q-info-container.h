@@ -175,13 +175,46 @@ public:
   PerStaQInfoContainer Install (NetDeviceContainer sta, NetDeviceContainer ap);
 
   /**
+   * Takes care of updating queue statistics for appropriate station
+   * upon packet arrival
+   * called by WifiMacQueue methods
+   *
+   * \param packet: the arrived packet used to extract size
+   * \param hdr: the packet header used to extract MAC address and TID
+   * \param tstamp: packet time stamp used to log arrival time, etc.
+   *
+   */
+  void Arrival(Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp);
+
+  /**
+   * Takes care of updating queue statistics for appropriate station
+   * upon packet departure
+   * called by WifiMacQueue methods
+   *
+   * \param packet: the departed packet used to extract size
+   * \param hdr: the packet header used to extract MAC address and TID
+   * \param tstamp: packet time stamp used to log waiting time, etc.
+   *
+   */
+  void Departure(Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp);
+
+  /**
+   * Resets queue statistics for all stations and is called
+   * by WifiMacQueue::Flush()
+   */
+  void Reset(void);
+
+  /**
    * Returns one if the container is empty
    *
    * \returns 1 or 0
    */
   bool IsEmpty (void) const;
 
+
+
 private:
+
   std::vector<Ptr<PerStaQInfo> > m_staQInfo; //!< PerStaQInfo smart pointers
 };
 

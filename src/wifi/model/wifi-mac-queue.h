@@ -162,6 +162,8 @@ public:
   /**
    * Returns number of QoS packets having tid equals to <i>tid</i> and address
    * specified by <i>type</i> equals to <i>addr</i>.
+   * sva: can be optimized using PerStaQInfo methods since this information
+   * is already available there.
    *
    * \param tid the given TID
    * \param type the given address type
@@ -281,7 +283,7 @@ protected:
    *      In this case I will have to define call backs from here to the container.
    *      However, I'm first going to get this compiled the way it is!
    */
-
+  //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
   PerStaQInfoContainer *m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
 };
 

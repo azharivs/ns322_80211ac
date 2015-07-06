@@ -106,6 +106,7 @@ WifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
   Time now = Simulator::Now ();
   m_queue.push_back (Item (packet, hdr, now));
   m_size++;
+  m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
 }
 
 void
@@ -126,6 +127,7 @@ WifiMacQueue::Cleanup (void)
         }
       else
         {
+          m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);//sva: deal with PerStaQInfo issues
           i = m_queue.erase (i);
           n++;
         }
@@ -140,6 +142,7 @@ WifiMacQueue::Dequeue (WifiMacHeader *hdr)
   if (!m_queue.empty ())
     {
       Item i = m_queue.front ();
+      m_perStaQInfo->Departure(i.packet,i.hdr,i.tstamp);//sva: deal with PerStaQInfo issues
       m_queue.pop_front ();
       m_size--;
       *hdr = i.hdr;
@@ -179,6 +182,7 @@ WifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                 {
                   packet = it->packet;
                   *hdr = it->hdr;
+                  m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
                   m_queue.erase (it);
                   m_size--;
                   break;
@@ -230,6 +234,7 @@ WifiMacQueue::GetSize (void)
 void
 WifiMacQueue::Flush (void)
 {
+  m_perStaQInfo->Reset();//sva: deal with PerStaQInfo issues
   m_queue.erase (m_queue.begin (), m_queue.end ());
   m_size = 0;
 }
@@ -260,6 +265,7 @@ WifiMacQueue::Remove (Ptr<const Packet> packet)
     {
       if (it->packet == packet)
         {
+          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
           m_queue.erase (it);
           m_size--;
           return true;
@@ -279,8 +285,10 @@ WifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr)
   Time now = Simulator::Now ();
   m_queue.push_front (Item (packet, hdr, now));
   m_size++;
+  m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
 }
 
+//sva: could be optimized using PerStaQInfoContainer
 uint32_t
 WifiMacQueue::GetNPacketsByTidAndAddress (uint8_t tid, WifiMacHeader::AddressType type,
                                           Mac48Address addr)
@@ -318,6 +326,7 @@ WifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
           *hdr = it->hdr;
           timestamp = it->tstamp;
           packet = it->packet;
+          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
           m_queue.erase (it);
           m_size--;
           return packet;
