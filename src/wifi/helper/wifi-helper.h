@@ -165,6 +165,16 @@ public:
   virtual NetDeviceContainer Install (const WifiPhyHelper &phy,
                               const WifiMacHelper &mac, std::string nodeName) const;
   /**
+   * SVA: Installs PerStaQInfoContainer and populates its entries
+   *
+   * \param mac: the MAC helper put in AP mode to point to EdcaTxopN mac::m_edca
+   * \param sta: container of all instantiated station wifi net devices used to get MAC address
+   * \param ap: pointer to WifiNetDevice of the access point so that PerStaQInfoContainer can be binded to it
+   * \returns void
+   */
+  virtual void EnablePerStaQInfo (const WifiMacHelper &mac,
+                                  const NetDeviceContainer sta, Ptr<NetDevice> ap) const;
+  /**
    * \param standard the phy standard to configure during installation
    *
    * This method sets standards-compliant defaults for WifiMac

@@ -172,7 +172,7 @@ public:
    * Currently assumes only one NetDevice per STA and AP
    * \returns the Container containing vector of pointers to PeStaQInfo objects
    */
-  PerStaQInfoContainer Install (NetDeviceContainer sta, NetDeviceContainer ap);
+  PerStaQInfoContainer Add (Ptr<NetDevice> sta, Ptr<NetDevice> ap);
 
   /**
    * Takes care of updating queue statistics for appropriate station
