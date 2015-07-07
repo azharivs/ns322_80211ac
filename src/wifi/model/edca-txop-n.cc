@@ -234,7 +234,8 @@ EdcaTxopN::EdcaTxopN ()
   m_transmissionListener = new EdcaTxopN::TransmissionListener (this);
   m_blockAckListener = new EdcaTxopN::BlockAckEventListener (this);
   m_dcf = new EdcaTxopN::Dcf (this);
-  m_queue = CreateObject<WifiMacQueue> ();
+  //sva: PerStaWifiMacQueue instantiated here. The older WifiMacQueue is no longer used
+  m_queue = CreateObject<PerStaWifiMacQueue> ();
   m_rng = new RealRandomStream ();
   m_qosBlockedDestinations = new QosBlockedDestinations ();
   m_baManager = new BlockAckManager ();
@@ -445,7 +446,7 @@ void
 EdcaTxopN::NotifyAccessGranted (void)
 {
   NS_LOG_FUNCTION (this);
-  if (m_currentPacket == 0)//sva: Currently handling no packet ??
+  if (m_currentPacket == 0)//sva: Currently handling no packet ?? Then pick one
     {
       if (m_queue->IsEmpty () && !m_baManager->HasPackets ())
         {
@@ -459,10 +460,15 @@ EdcaTxopN::NotifyAccessGranted (void)
         }
       /* check if packets need retransmission are stored in BlockAckManager */
       //sva: m_currentPacket will point to first packet that needs retx
+      //initializes m_currentPacket and m_currentHdr if ReTx is required otherwise NULL
       m_currentPacket = m_baManager->GetNextPacket (m_currentHdr);
       if (m_currentPacket == 0)//No ReTx needed
         {
     	  //sva: Always need to modify PeekFirstAvailable according to DequeueFirstAvailable
+          //sva: Just checks if queue is empty no need to change
+          //also initializes m_currentHdr to the header of the first packet (HoL)
+          //This should be changed for EDF scheduler.
+          //PeekFirstAvailable should return the one that was picked by the scheduler and not FCFS
           if (m_queue->PeekFirstAvailable (&m_currentHdr, m_currentPacketTimestamp, m_qosBlockedDestinations) == 0)
             {
               NS_LOG_DEBUG ("no available packets in the queue");
@@ -494,9 +500,12 @@ EdcaTxopN::NotifyAccessGranted (void)
               VerifyBlockAck ();
             }
         }
-    }
+    } // (if (m_currentPacket == 0)) ... otherwise if currently have a packet for handling then ...
+  //When execution reaches this point, we should have a packet that is picked (dequeued) according to
+  //our scheduler policy
   MacLowTransmissionParameters params;
   params.DisableOverrideDurationId ();
+  //if broadcast packet
   if (m_currentHdr.GetAddr1 ().IsGroup ())//sva: This part is for broadcast packets
     {
       params.DisableRts ();
@@ -505,6 +514,7 @@ EdcaTxopN::NotifyAccessGranted (void)
       //sva: This function is called when current packet is not NULL
       //sva: This packet has already been selected by DequeueFirstAvailable
       //sva: unless current packet was NULL in the first place when this function was called
+      // I don't think we need to touch this
       m_low->StartTransmission (m_currentPacket,
                                 &m_currentHdr,
                                 params,
@@ -512,12 +522,14 @@ EdcaTxopN::NotifyAccessGranted (void)
 
       NS_LOG_DEBUG ("tx broadcast");
     }
+  //if block ack request packet
   else if (m_currentHdr.GetType () == WIFI_MAC_CTL_BACKREQ)
     {
       SendBlockAckRequest (m_currentBar);
     }
+  //sva: Or just ordinary data packets. Our case of interest
   else
-    {//sva: Other data packets. Our case of interest
+    {
         if (m_currentHdr.IsQosData () && m_currentHdr.IsQosBlockAck ())
         {
           params.DisableAck (); //sva: don't send an ACK for an ACK
@@ -526,6 +538,7 @@ EdcaTxopN::NotifyAccessGranted (void)
         {
           params.EnableAck (); //sva: otherwise packet needs to be ACKed
         }
+        //if fragmentation: I think this should never be executed when we have aggregation
       if (NeedFragmentation () && ((m_currentHdr.IsQosData ()
                                     && !m_currentHdr.IsQosAmsdu ())
                                    || 
@@ -551,11 +564,17 @@ EdcaTxopN::NotifyAccessGranted (void)
           m_low->StartTransmission (fragment, &hdr, params,
                                     m_transmissionListener);
         }
+      //sva: No Fragmentation: Hopefully our case of interest
       else
-        {//sva: No Fragmentation: Hopefully our case of interest
+        {
     	  //sva: I think this is where the action is taking place
           WifiMacHeader peekedHdr;
           Time tstamp;
+          //see if AMSDU aggregation is required. Not our business.
+          //we should not touch PeekByTid or DequeueByTid because they are sticking together
+          //packets for the same station. We only have to control the first packet
+          //that is selected which we (hopefully) have already done in
+          //PeakFirstAvailable() and DequeueFirstAvailable()
           if (m_currentHdr.IsQosData ()
               && m_queue->PeekByTidAndAddress (&peekedHdr, m_currentHdr.GetQosTid (),
                                                WifiMacHeader::ADDR1, m_currentHdr.GetAddr1 (), &tstamp)
@@ -601,7 +620,7 @@ EdcaTxopN::NotifyAccessGranted (void)
                   currentAggregatedPacket = 0;
                   NS_LOG_DEBUG ("tx unicast A-MSDU");
                 }
-            }
+            }//end of MSDU aggregation
           if (NeedRts ())
             {
               params.EnableRts ();
@@ -614,11 +633,15 @@ EdcaTxopN::NotifyAccessGranted (void)
             }
 
           //sva: These two are always run for data packets
+          //So eventually we get to this point where the packet is ready to leave
+          //unless AMPDU aggregation is required, in which case StartTransmission()
+          //will eventually lead to the call of Aggregate() through MacLow::IsAmpdu() function call
           params.DisableNextData ();
           m_low->StartTransmission (m_currentPacket, &m_currentHdr,
                                     params, m_transmissionListener);
           //sva: If no need for MPDU aggregation then announce the end of TX
-          //sva: what is we have MPDU agg? Then who will call CompleteTx()?
+          //sva: what if we have MPDU agg? Then who will call CompleteTx()?
+
           if(!GetAmpduExist())
             CompleteTx ();
         }

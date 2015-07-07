@@ -108,9 +108,9 @@ int main (int argc, char *argv[])
                "Ssid", SsidValue (ssid),
                "ActiveProbing", BooleanValue (false));
 
-  if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_BE, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
+  if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
 
-  mac.SetMpduAggregatorForAc (AC_BE,"ns3::MpduStandardAggregator",
+  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
                               "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_BE with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
   
   NetDeviceContainer staDevice;
@@ -121,9 +121,9 @@ int main (int argc, char *argv[])
                "BeaconInterval", TimeValue (MicroSeconds(102400)),
                "BeaconGeneration", BooleanValue (true));
 
-  if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_BE, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
+  if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
     
-  mac.SetMpduAggregatorForAc (AC_BE,"ns3::MpduStandardAggregator",
+  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
                               "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_BE with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
 
   NetDeviceContainer apDevice;
@@ -175,7 +175,8 @@ int main (int argc, char *argv[])
   myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
 
   ApplicationContainer clientApp;//sva: my empty application container for UDP clients
-  uint32_t j; //sva: figuring out how to do the iterations.
+  uint32_t j;
+  //sva: figuring out how to do the iterations.
   for ( j = 0 ; j < nSta ; j ++)
     {
 	  //sva: initialize correct remote address for next client instantiation

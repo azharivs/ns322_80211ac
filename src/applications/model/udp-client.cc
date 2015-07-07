@@ -28,6 +28,7 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "ns3/qos-tag.h"
 #include "udp-client.h"
 #include "seq-ts-header.h"
 #include <cstdlib>
@@ -157,6 +158,9 @@ UdpClient::Send (void)
   seqTs.SetSeq (m_sent);
   Ptr<Packet> p = Create<Packet> (m_size-(8+4)); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);
+  class QosTag tag(UP_VI);
+  p->AddPacketTag(tag);
+
 
   std::stringstream peerAddressStringStream;
   if (Ipv4Address::IsMatchingType (m_peerAddress))

@@ -64,6 +64,7 @@ RegularWifiMac::RegularWifiMac ()
   // Construct the EDCAFs. The ordering is important - highest
   // priority (Table 9-1 UP-to-AC mapping; IEEE 802.11-2012) must be created
   // first.
+  // sva: this is where EdcaTxopN constructor is called, in which (PerSta)WifiMacQueue should be instantiated
   SetupEdcaQueue (AC_VO);
   SetupEdcaQueue (AC_VI);
   SetupEdcaQueue (AC_BE);
