@@ -123,7 +123,7 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       device->SetRemoteStationManager (manager);//sva: one for each station
       //sva: This is probably a good place for populating PerStaQInfoContainer as well.
       //sva: This is of course assuming that we have only one queue per STA (for now)
-      //sva: So the container will not be part of (EdcaTxopN) mac::m_edca. I hope this works!
+      //sva: So the container will now be part of (EdcaTxopN) mac::m_edca. I hope this works!
       node->AddDevice (device);
       devices.Add (device);
       NS_LOG_DEBUG ("node=" << node << ", mob=" << node->GetObject<MobilityModel> ());
@@ -145,6 +145,22 @@ WifiHelper::Install (const WifiPhyHelper &phy,
   Ptr<Node> node = Names::Find<Node> (nodeName);
   return Install (phy, mac, NodeContainer (node));
 }
+
+void
+WifiHelper::EnablePerStaQInfo (const WifiMacHelper &mac,
+                                const NetDeviceContainer sta, Ptr<NetDevice> ap) const
+{
+  if (sta.GetN()==0 || !ap)
+    {
+      return;//sva: no stations or AP are initialized. Should not happen. TODO: Need to NS_ASSERT
+    }
+  PerStaQInfoContainer c;
+  for (NetDeviceContainer::Iterator i=sta.Begin(); i != sta.End(); ++i)
+    {
+
+    }
+}
+
 
 void
 WifiHelper::EnableLogComponents (void)
