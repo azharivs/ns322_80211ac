@@ -92,28 +92,28 @@ public:
    * \param packet the packet to be euqueued at the end
    * \param hdr the header of the given packet
    */
-  void Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr);
+  virtual void Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr);
   /**
    * Enqueue the given packet and its corresponding WifiMacHeader at the <i>front</i> of the queue.
    *
    * \param packet the packet to be euqueued at the end
    * \param hdr the header of the given packet
    */
-  void PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr);
+  virtual void PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr);
   /**
    * Dequeue the packet in the front of the queue.
    *
    * \param hdr the WifiMacHeader of the packet
    * \return the packet
    */
-  Ptr<const Packet> Dequeue (WifiMacHeader *hdr);
+  virtual Ptr<const Packet> Dequeue (WifiMacHeader *hdr);
   /**
    * Peek the packet in the front of the queue. The packet is not removed.
    *
    * \param hdr the WifiMacHeader of the packet
    * \return the packet
    */
-  Ptr<const Packet> Peek (WifiMacHeader *hdr);
+  virtual Ptr<const Packet> Peek (WifiMacHeader *hdr);
   /**
    * Searchs and returns, if is present in this queue, first packet having
    * address indicated by <i>type</i> equals to <i>addr</i>, and tid
@@ -185,7 +185,7 @@ public:
    * \param blockedPackets
    * \return packet
    */
-  Ptr<const Packet> DequeueFirstAvailable (WifiMacHeader *hdr,
+  virtual Ptr<const Packet> DequeueFirstAvailable (WifiMacHeader *hdr,
                                            Time &tStamp,
                                            const QosBlockedDestinations *blockedPackets);
   /**
@@ -196,13 +196,13 @@ public:
    * \param blockedPackets
    * \return packet
    */
-  Ptr<const Packet> PeekFirstAvailable (WifiMacHeader *hdr,
+  virtual Ptr<const Packet> PeekFirstAvailable (WifiMacHeader *hdr,
                                         Time &tStamp,
                                         const QosBlockedDestinations *blockedPackets);
   /**
    * Flush the queue.
    */
-  void Flush (void);
+  virtual void Flush (void);
 
   /**
    * Return if the queue is empty.
@@ -217,13 +217,6 @@ public:
    */
   uint32_t GetSize (void);
 
-  /**
-   * Initialize pointer to PerStaQInfoContainer if support is required
-   *
-   * \param c: Pointer to the container
-   * \returns TRUE if successful and FALSE if container was NULL
-   */
-  bool EnablePerStaQInfo (PerStaQInfoContainer &c);
 
 protected:
   /**
@@ -278,6 +271,106 @@ protected:
   uint32_t m_maxSize; //!< Queue capacity
   Time m_maxDelay; //!< Time to live for packets in the queue
 
+};
+
+
+/**
+ * \ingroup wifi
+ *
+ * This is a per station version of the WifiMacQueue and is
+ * only to be used for an Access Point
+ *
+ * When a packet is received by the MAC, to be sent to the PHY,
+ * it is queued in the internal queue after being tagged by the
+ * current time.
+ *
+ * When a packet is dequeued, the queue checks its timestamp
+ * to verify whether or not it should be dropped. If
+ * dot11EDCATableMSDULifetime has elapsed, it is dropped.
+ * Otherwise, it is returned to the caller.
+ */
+
+class PerStaWifiMacQueue : public WifiMacQueue
+{
+public:
+  static TypeId GetTypeId (void);
+  PerStaWifiMacQueue ();
+  ~PerStaWifiMacQueue ();
+
+  /**
+   * Enqueue the given packet and its corresponding WifiMacHeader at the <i>end</i> of the queue.
+   *
+   * \param packet the packet to be euqueued at the end
+   * \param hdr the header of the given packet
+   */
+  //void Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr);
+  /**
+   * Enqueue the given packet and its corresponding WifiMacHeader at the <i>front</i> of the queue.
+   *
+   * \param packet the packet to be euqueued at the end
+   * \param hdr the header of the given packet
+   */
+  //void PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr);
+  /**
+   * Dequeue the packet in the front of the queue.
+   *
+   * \param hdr the WifiMacHeader of the packet
+   * \return the packet
+   */
+  //Ptr<const Packet> Dequeue (WifiMacHeader *hdr);
+  /**
+   * Peek the packet in the front of the queue. The packet is not removed.
+   *
+   * \param hdr the WifiMacHeader of the packet
+   * \return the packet
+   */
+  //Ptr<const Packet> Peek (WifiMacHeader *hdr);
+
+  /**
+   * Returns first available packet for transmission. A packet could be no available
+   * if it's a QoS packet with a tid and an address1 fields equal to <i>tid</i> and <i>addr</i>
+   * respectively that index a pending agreement in the BlockAckManager object.
+   * So that packet must not be transmitted until reception of an ADDBA response frame from station
+   * addressed by <i>addr</i>. This method removes the packet from queue.
+   *
+   * \param hdr the header of the dequeued packet
+   * \param tStamp
+   * \param blockedPackets
+   * \return packet
+   */
+  Ptr<const Packet> DequeueFirstAvailable (WifiMacHeader *hdr,
+                                           Time &tStamp,
+                                           const QosBlockedDestinations *blockedPackets);
+  /**
+   * Returns first available packet for transmission. The packet isn't removed from queue.
+   *
+   * \param hdr the header of the dequeued packet
+   * \param tStamp
+   * \param blockedPackets
+   * \return packet
+   */
+  Ptr<const Packet> PeekFirstAvailable (WifiMacHeader *hdr,
+                                        Time &tStamp,
+                                       const QosBlockedDestinations *blockedPackets);
+  /**
+   * Flush the queue.
+   */
+  //void Flush (void);
+
+ /**
+   * Initialize pointer to PerStaQInfoContainer if support is required
+   *
+   * \param c: Pointer to the container
+   * \returns TRUE if successful and FALSE if container was NULL
+   */
+  bool EnablePerStaQInfo (PerStaQInfoContainer &c);
+
+protected:
+  /**
+   * Clean up the queue by removing packets that exceeded the maximum delay.
+   */
+  //virtual void Cleanup (void);
+
   /*
    * sva: TODO maybe I need to remove the reference to PerStaQInfoContainer and use call backs
    *      In this case I will have to define call backs from here to the container.
@@ -286,6 +379,7 @@ protected:
   //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
   PerStaQInfoContainer *m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
 };
+
 
 } // namespace ns3
 
