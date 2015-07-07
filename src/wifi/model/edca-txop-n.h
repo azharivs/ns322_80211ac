@@ -33,6 +33,7 @@
 #include "dcf.h"
 #include "ctrl-headers.h"
 #include "block-ack-manager.h"
+#include "ns3/per-sta-q-info-container.h"
 
 #include <map>
 #include <list>

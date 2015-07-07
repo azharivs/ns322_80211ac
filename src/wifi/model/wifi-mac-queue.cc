@@ -62,8 +62,6 @@ WifiMacQueue::GetTypeId (void)
 WifiMacQueue::WifiMacQueue ()
   : m_size (0)
 {
-  //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
-  WifiMacQueue::m_perStaQInfo = NULL;
 }
 
 WifiMacQueue::~WifiMacQueue ()
@@ -316,6 +314,7 @@ Ptr<const Packet>
 WifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                      const QosBlockedDestinations *blockedPackets)
 {
+  //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
   Cleanup ();
   Ptr<const Packet> packet = 0;
   for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
@@ -339,6 +338,7 @@ Ptr<const Packet>
 WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                   const QosBlockedDestinations *blockedPackets)
 {
+  //std::cout << "WifiMacQueue::PeekFirstAvailable \n";
   Cleanup ();
   for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
     {
@@ -353,12 +353,118 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
   return 0;
 }
 
+
+
+/**
+ * PerStaWifiMacQueue implementation starts here
+ */
+
+NS_OBJECT_ENSURE_REGISTERED (PerStaWifiMacQueue);
+
+TypeId
+PerStaWifiMacQueue::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::PerStaWifiMacQueue")
+    .SetParent<WifiMacQueue> ()
+    .AddConstructor<PerStaWifiMacQueue> ()
+  ;
+  return tid;
+}
+
+PerStaWifiMacQueue::PerStaWifiMacQueue ()
+{
+  //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
+  PerStaWifiMacQueue::m_perStaQInfo = NULL;
+}
+
+PerStaWifiMacQueue::~PerStaWifiMacQueue ()
+{
+  Flush ();
+}
+
 bool
-WifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
+PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
 {
   if (c.IsEmpty()) return 0;
   m_perStaQInfo = &c;
   return 1;
 }
+
+
+Ptr<const Packet>
+PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
+                                     const QosBlockedDestinations *blockedPackets)
+{
+  //std::cout << "PerStaWifiMacQueue::DequeueFirstAvailable \n";
+  Cleanup ();
+  Ptr<const Packet> packet = 0;
+  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
+    {
+      if (!it->hdr.IsQosData ()
+          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
+        {
+          *hdr = it->hdr;
+          timestamp = it->tstamp;
+          packet = it->packet;
+          m_queue.erase (it);
+          m_size--;
+          return packet;
+        }
+    }
+  return packet;
+}
+
+Ptr<const Packet>
+PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
+                                  const QosBlockedDestinations *blockedPackets)
+{
+  //std::cout << "PerStaWifiMacQueue::PeekFirstAvailable \n";
+  Cleanup ();
+  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
+    {
+      if (!it->hdr.IsQosData ()
+          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
+        {
+          *hdr = it->hdr;
+          timestamp = it->tstamp;
+          return it->packet;
+        }
+    }
+  return 0;
+}
+
+/*
+void
+PerStaWifiMacQueue::Cleanup (void)
+{
+  if (m_queue.empty ())
+    {
+      return;
+    }
+
+  Time now = Simulator::Now ();
+  uint32_t n = 0;
+  for (PacketQueueI i = m_queue.begin (); i != m_queue.end ();)
+    {
+      if (i->tstamp + m_maxDelay > now)
+        {
+          i++;
+        }
+      else
+        {
+          i = m_queue.erase (i);
+          n++;
+        }
+    }
+  m_size -= n;
+}
+
+void
+PerStaWifiMacQueue::Flush (void)
+{
+  m_queue.erase (m_queue.begin (), m_queue.end ());
+  m_size = 0;
+}
+*/
 
 } // namespace ns3

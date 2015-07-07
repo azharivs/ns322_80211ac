@@ -113,6 +113,7 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       Ptr<Node> node = *i;
       Ptr<WifiNetDevice> device = CreateObject<WifiNetDevice> ();
       Ptr<WifiRemoteStationManager> manager = m_stationManager.Create<WifiRemoteStationManager> ();
+      //sva: MAC gets created of type RegularWifiMac or ApWifiMac along with EdcaTxopN and WifiMacQueue
       Ptr<WifiMac> mac = macHelper.Create ();
       Ptr<WifiPhy> phy = phyHelper.Create (node, device);
       mac->SetAddress (Mac48Address::Allocate ());
