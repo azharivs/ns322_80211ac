@@ -27,6 +27,7 @@
 //#include "wifi-mac-header.h"
 //#include "wifi-mac-queue.h"
 #include "per-sta-q-info-container.h"
+#include "ns3/qos-tag.h"
 
 namespace ns3 {
 
@@ -61,38 +62,85 @@ PerStaQInfoContainer::Get (uint32_t i) const
 
 Ptr<PerStaQInfo>
 PerStaQInfoContainer::GetByMac (Mac48Address addr, uint8_t tid) const
-{//TODO
-  return *m_staQInfo.begin();
+{
+  Ptr<PerStaQInfo> qInfo = 0;
+  uint8_t flag = 0;
+  for (Iterator i = m_staQInfo.begin(); i != m_staQInfo.end(); ++i)
+    {
+      qInfo = *i;
+      if ( qInfo->GetMac() == addr && qInfo->GetTid() == tid)
+        {
+          flag = 1;
+          break;
+        }
+    }
+  if (flag)
+    {
+      return qInfo;
+    }
+  else
+    {
+      return NULL;
+    }
 }
 
 Ptr<PerStaQInfo>
 PerStaQInfoContainer::GetByIpv4 (Ipv4Address addr, uint8_t tid) const
-{//TODO
+{//TODO : Not implemented
+  NS_ASSERT(true);//Not implemented yet: throw exception if execution reaches this point
   return *m_staQInfo.begin();
 }
 
 PerStaQInfoContainer
 PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap)
-{//TODO
+{
+  NS_ASSERT(ap);
+  if (!sta)
+    {
+      return *this; //do nothing
+    }
+  Ptr<PerStaQInfo> qInfo = CreateObject<PerStaQInfo>();
+  Ptr<WifiMac> mac = sta->GetMac();
+  Mac48Address addrs = mac->GetAddress();
+  qInfo->SetMac(addrs);
+  qInfo->SetTid(UP_VI); //TODO sva: default TID should change later for generalization
+  m_staQInfo.push_back(qInfo);
   return *this;
 }
 
 void
 PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
-{//TODO
-  return;
+{
+  if (!hdr.IsData()) //don't count non data packets
+    {
+      return ;
+    }
+  //get which queue to use based on destination MAC and TID
+  Ptr<PerStaQInfo> qInfo = GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
+  NS_ASSERT(qInfo); //make sure is not NULL
+  qInfo->Arrival(packet->GetSize(), tstamp);
 }
 
 void
 PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
-{//TODO
-  return;
+{
+  if (!hdr.IsData()) //don't count non data packets
+    {
+      return ;
+    }
+  //get which queue to use based on destination MAC and TID
+  Ptr<PerStaQInfo> qInfo = PerStaQInfoContainer::GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
+  NS_ASSERT(qInfo); //make sure is not NULL
+  qInfo->Departure(packet->GetSize(), tstamp);
 }
 
 void
 PerStaQInfoContainer::Reset (void)
-{//TODO
-  return;
+{
+  for (Iterator i = m_staQInfo.begin(); i != m_staQInfo.end(); ++i)
+    {
+      (*i)->Reset(); //reset i-th PerStaQInfo element
+    }
 }
 
 bool

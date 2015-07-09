@@ -62,12 +62,33 @@ public:
    * \param histSize the maximum sample history size
    */
   //void SetHistorySize (uint32_t histSize);
+
+  /**
+   * Set MAC address associated to this queue
+   * \param addrs: reference to address to be set
+   */
+  void SetMac (const Mac48Address &addrs);
+
+  /**
+   * Set Traffic Indication Map associated to this queue
+   *
+   * \param tid: TID to be set for this queue
+   */
+  void SetTid (uint8_t tid);
+
   /**
    * Get MAC address associated to this queue
    *
    * \return reference to MAC address
    */
   Mac48Address& GetMac (void);
+
+  /**
+   * Get Traffic Indication Map associated to this queue
+   *
+   * \return TID
+   */
+  uint8_t GetTid (void);
 
   /**
    * Get current number of queued packets belonging to this station MAC and TID
@@ -114,25 +135,33 @@ public:
   double GetAvgArrivalRateBytes (void);
 
   /**
-   * Enqueue the given packet and its corresponding WifiMacHeader at the <i>end</i> of the queue.
+   * A new packet has arrived: collect statistics and update
+   * If successful, should call private member Update() before returning
    *
-   * \param packet the packet to be enqueued at the end
-   * \param hdr the header of the given packet
+   * \param bytes : number of incoming bytes
+   * \param tstamp: time of packet arrival (should always be set by caller to now())
    */
-  void Arrival (void);//Ptr<const Packet> packet, const WifiMacHeader &hdr);
+  void Arrival (uint32_t bytes, Time tstamp);
   /**
-   * Dequeue the packet in the front of the queue.
+   * A packet has departed, collect and update statistics
+   * if successful, should call private member Update() before returning
    *
-   * \param hdr the WifiMacHeader of the packet
-   * \return the packet
+   * \param bytes : number of incoming bytes
+   * \param tstamp: time of packet arrival (should always be set by caller to now())
    */
-  void Departure (void);//WifiMacHeader *hdr);
+  void Departure (uint32_t bytes, Time tstamp);
   /**
    * Return if the queue is empty.
    *
    * \return true if the queue is empty, false otherwise
    */
   bool IsEmpty (void);
+
+  /**
+   * Reset all statistics and flush sample history
+   * call chain initiated by PerStaWifiMacQueue::Flush()
+   */
+  void Reset (void);
 
 private:
 

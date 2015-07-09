@@ -67,10 +67,30 @@ PerStaQInfo::~PerStaQInfo()
   m_queueWaitHistory.clear();
 }
 
+void
+PerStaQInfo::SetMac (const Mac48Address &addrs)
+{
+  uint8_t buff[6];
+  addrs.CopyTo(buff);
+  m_addrs.CopyFrom(buff);
+}
+
+void
+PerStaQInfo::SetTid(uint8_t tid)
+{
+  m_tid = tid;
+}
+
 Mac48Address&
 PerStaQInfo::GetMac (void)
 {
   return m_addrs;
+}
+
+uint8_t
+PerStaQInfo::GetTid (void)
+{
+  return m_tid;
 }
 
 uint32_t
@@ -116,12 +136,12 @@ PerStaQInfo::GetAvgArrivalRateBytes (void)
 }
 
 void
-PerStaQInfo::Arrival (void)
+PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
 {
 }
 
 void
-PerStaQInfo::Departure (void)
+PerStaQInfo::Departure (uint32_t bytes, Time tstamp)
 {
 }
 
@@ -129,6 +149,23 @@ bool
 PerStaQInfo::IsEmpty (void)
 {
   return (m_queueSize == 0);
+}
+
+void
+PerStaQInfo::Reset (void)
+{
+  m_queueSize = 0;
+  m_queueBytes = 0;
+  m_avgQueueSize = 0;
+  m_avgQueueBytes = 0;
+  m_avgQueueWait = 0;
+  m_avgArrivalRate = 0;
+  m_avgArrivalRateBytes = 0;
+
+  m_queueSizeHistory.clear();
+  m_queueBytesHistory.clear();
+  m_queueWaitHistory.clear();
+
 }
 
 /*

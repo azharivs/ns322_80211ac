@@ -349,6 +349,9 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 
 /**
  * PerStaWifiMacQueue implementation starts here
+ *
+ *
+ *
  */
 
 NS_OBJECT_ENSURE_REGISTERED (PerStaWifiMacQueue);
@@ -377,9 +380,9 @@ PerStaWifiMacQueue::~PerStaWifiMacQueue ()
 bool
 PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
 {
-  if (c.IsEmpty()) return 0;
+  if (c.IsEmpty()) return false;
   m_perStaQInfo = &c;
-  return 1;
+  return true;
 }
 
 
@@ -415,7 +418,9 @@ PerStaWifiMacQueue::Cleanup (void)
         }
       else
         {
-          m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);//sva: deal with PerStaQInfo issues
+          //sva: should I differentiate between lost packets and those dequeued?
+          //TODO: right now they are treated the same. Could cause false average waiting times
+          m_perStaQInfo->Departure(i->packet,i->hdr,now);
           i = m_queue.erase (i);
           n++;
         }
@@ -439,11 +444,12 @@ PerStaWifiMacQueue::Peek (WifiMacHeader *hdr)
 Ptr<const Packet>
 PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
 {
+  Time now = Simulator::Now();
   Cleanup ();
   if (!m_queue.empty ())
     {
       Item i = m_queue.front ();
-      m_perStaQInfo->Departure(i.packet,i.hdr,i.tstamp);//sva: deal with PerStaQInfo issues
+      m_perStaQInfo->Departure(i.packet,i.hdr,now);//sva: deal with PerStaQInfo issues
       m_queue.pop_front ();
       m_size--;
       *hdr = i.hdr;
@@ -457,6 +463,7 @@ Ptr<const Packet>
 PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                                       WifiMacHeader::AddressType type, Mac48Address dest)
 {
+  Time now = Simulator::Now();
   Cleanup ();
   Ptr<const Packet> packet = 0;
   if (!m_queue.empty ())
@@ -471,7 +478,7 @@ PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                 {
                   packet = it->packet;
                   *hdr = it->hdr;
-                  m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+                  m_perStaQInfo->Departure(it->packet,it->hdr,now);//sva: deal with PerStaQInfo issues
                   m_queue.erase (it);
                   m_size--;
                   break;
@@ -495,12 +502,13 @@ PerStaWifiMacQueue::Flush (void)
 bool
 PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
 {
+  Time now = Simulator::Now();
   PacketQueueI it = m_queue.begin ();
   for (; it != m_queue.end (); it++)
     {
       if (it->packet == packet)
         {
-          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+          m_perStaQInfo->Departure(it->packet,it->hdr,now);//sva: deal with PerStaQInfo issues
           m_queue.erase (it);
           m_size--;
           return true;
@@ -529,6 +537,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                      const QosBlockedDestinations *blockedPackets)
 {
   //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
+  Time now = Simulator::Now();
   Cleanup ();
   Ptr<const Packet> packet = 0;
   for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
@@ -539,7 +548,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
           *hdr = it->hdr;
           timestamp = it->tstamp;
           packet = it->packet;
-          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+          m_perStaQInfo->Departure(it->packet,it->hdr,now);//sva: deal with PerStaQInfo issues
           m_queue.erase (it);
           m_size--;
           return packet;
