@@ -122,9 +122,6 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       device->SetMac (mac);
       device->SetPhy (phy);
       device->SetRemoteStationManager (manager);//sva: one for each station
-      //sva: This is probably a good place for populating PerStaQInfoContainer as well.
-      //sva: This is of course assuming that we have only one queue per STA (for now)
-      //sva: So the container will now be part of (EdcaTxopN) mac::m_edca. I hope this works!
       node->AddDevice (device);
       devices.Add (device);
       NS_LOG_DEBUG ("node=" << node << ", mob=" << node->GetObject<MobilityModel> ());
@@ -148,18 +145,25 @@ WifiHelper::Install (const WifiPhyHelper &phy,
 }
 
 void
-WifiHelper::EnablePerStaQInfo (const WifiMacHelper &mac,
-                                const NetDeviceContainer sta, Ptr<NetDevice> ap) const
+WifiHelper::EnablePerStaQInfo (const NetDeviceContainer sta, Ptr<WifiNetDevice> ap, uint8_t ac) const
 {
   if (sta.GetN()==0 || !ap)
     {
       return;//sva: no stations or AP are initialized. Should not happen. TODO: Need to NS_ASSERT
     }
   PerStaQInfoContainer c;
+  Ptr<NetDevice> device;
+  Ptr<WifiNetDevice> staDevice;
   for (NetDeviceContainer::Iterator i=sta.Begin(); i != sta.End(); ++i)
     {
-
+      device = *i;
+      staDevice = device->GetObject<WifiNetDevice>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
+      c.Add(staDevice,ap);
     }
+  Ptr<WifiMac> mac = ap->GetMac();
+  Ptr<ApWifiMac> apMac = mac->GetObject<ApWifiMac>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
+  apMac->SetPerStaQInfo(c,ac);
+
 }
 
 

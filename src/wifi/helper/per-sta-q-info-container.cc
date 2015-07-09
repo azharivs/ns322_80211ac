@@ -58,40 +58,40 @@ PerStaQInfoContainer::Get (uint32_t i) const
   return m_staQInfo.at(i);
 }
 
-/*
+
 Ptr<PerStaQInfo>
-PerStaQInfoContainer::GetByMac (Mac48Address addr, uint8_t tid=UP_VI) const
-{
-  for
+PerStaQInfoContainer::GetByMac (Mac48Address addr, uint8_t tid) const
+{//TODO
+  return *m_staQInfo.begin();
 }
 
 Ptr<PerStaQInfo>
-PerStaQInfoContainer::GetByIpv4 (Ipv4Address addr, uint8_t tid=UP_VI) const
-{
-
+PerStaQInfoContainer::GetByIpv4 (Ipv4Address addr, uint8_t tid) const
+{//TODO
+  return *m_staQInfo.begin();
 }
 
 PerStaQInfoContainer
-PerStaQInfoContainer::Install (NetDeviceContainer sta, NetDeviceContainer ap)
-{
-
+PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap)
+{//TODO
+  return *this;
 }
-*/
+
 void
 PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
-{
+{//TODO
   return;
 }
 
 void
 PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp)
-{
+{//TODO
   return;
 }
 
 void
 PerStaQInfoContainer::Reset (void)
-{
+{//TODO
   return;
 }
 

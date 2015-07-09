@@ -52,9 +52,10 @@ PerStaQInfo::GetTypeId (void)
 }
 
 PerStaQInfo::PerStaQInfo()
-  : m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
-    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
-    m_addrs (NULL)
+  : m_addrs (NULL),
+    m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
+    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0)
+
 {
 }
 
