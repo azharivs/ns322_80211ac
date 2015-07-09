@@ -104,7 +104,6 @@ WifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
   Time now = Simulator::Now ();
   m_queue.push_back (Item (packet, hdr, now));
   m_size++;
-  m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
 }
 
 void
@@ -125,7 +124,6 @@ WifiMacQueue::Cleanup (void)
         }
       else
         {
-          m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);//sva: deal with PerStaQInfo issues
           i = m_queue.erase (i);
           n++;
         }
@@ -140,7 +138,6 @@ WifiMacQueue::Dequeue (WifiMacHeader *hdr)
   if (!m_queue.empty ())
     {
       Item i = m_queue.front ();
-      m_perStaQInfo->Departure(i.packet,i.hdr,i.tstamp);//sva: deal with PerStaQInfo issues
       m_queue.pop_front ();
       m_size--;
       *hdr = i.hdr;
@@ -180,7 +177,6 @@ WifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                 {
                   packet = it->packet;
                   *hdr = it->hdr;
-                  m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
                   m_queue.erase (it);
                   m_size--;
                   break;
@@ -232,7 +228,6 @@ WifiMacQueue::GetSize (void)
 void
 WifiMacQueue::Flush (void)
 {
-  m_perStaQInfo->Reset();//sva: deal with PerStaQInfo issues
   m_queue.erase (m_queue.begin (), m_queue.end ());
   m_size = 0;
 }
@@ -263,7 +258,6 @@ WifiMacQueue::Remove (Ptr<const Packet> packet)
     {
       if (it->packet == packet)
         {
-          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
           m_queue.erase (it);
           m_size--;
           return true;
@@ -283,7 +277,6 @@ WifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr)
   Time now = Simulator::Now ();
   m_queue.push_front (Item (packet, hdr, now));
   m_size++;
-  m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
 }
 
 //sva: could be optimized using PerStaQInfoContainer
@@ -325,7 +318,6 @@ WifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
           *hdr = it->hdr;
           timestamp = it->tstamp;
           packet = it->packet;
-          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
           m_queue.erase (it);
           m_size--;
           return packet;
@@ -391,49 +383,20 @@ PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
 }
 
 
-Ptr<const Packet>
-PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
-                                     const QosBlockedDestinations *blockedPackets)
+void
+PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
 {
-  //std::cout << "PerStaWifiMacQueue::DequeueFirstAvailable \n";
   Cleanup ();
-  Ptr<const Packet> packet = 0;
-  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
+  if (m_size == m_maxSize)
     {
-      if (!it->hdr.IsQosData ()
-          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
-        {
-          *hdr = it->hdr;
-          timestamp = it->tstamp;
-          packet = it->packet;
-          m_queue.erase (it);
-          m_size--;
-          return packet;
-        }
+      return;
     }
-  return packet;
+  Time now = Simulator::Now ();
+  m_queue.push_back (Item (packet, hdr, now));
+  m_size++;
+  m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
 }
 
-Ptr<const Packet>
-PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
-                                  const QosBlockedDestinations *blockedPackets)
-{
-  //std::cout << "PerStaWifiMacQueue::PeekFirstAvailable \n";
-  Cleanup ();
-  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
-    {
-      if (!it->hdr.IsQosData ()
-          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
-        {
-          *hdr = it->hdr;
-          timestamp = it->tstamp;
-          return it->packet;
-        }
-    }
-  return 0;
-}
-
-/*
 void
 PerStaWifiMacQueue::Cleanup (void)
 {
@@ -452,6 +415,7 @@ PerStaWifiMacQueue::Cleanup (void)
         }
       else
         {
+          m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);//sva: deal with PerStaQInfo issues
           i = m_queue.erase (i);
           n++;
         }
@@ -459,12 +423,148 @@ PerStaWifiMacQueue::Cleanup (void)
   m_size -= n;
 }
 
+Ptr<const Packet>
+PerStaWifiMacQueue::Peek (WifiMacHeader *hdr)
+{
+  Cleanup ();
+  if (!m_queue.empty ())
+    {
+      Item i = m_queue.front ();
+      *hdr = i.hdr;
+      return i.packet;
+    }
+  return 0;
+}
+
+Ptr<const Packet>
+PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
+{
+  Cleanup ();
+  if (!m_queue.empty ())
+    {
+      Item i = m_queue.front ();
+      m_perStaQInfo->Departure(i.packet,i.hdr,i.tstamp);//sva: deal with PerStaQInfo issues
+      m_queue.pop_front ();
+      m_size--;
+      *hdr = i.hdr;
+      return i.packet;
+    }
+  return 0;
+}
+
+
+Ptr<const Packet>
+PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
+                                      WifiMacHeader::AddressType type, Mac48Address dest)
+{
+  Cleanup ();
+  Ptr<const Packet> packet = 0;
+  if (!m_queue.empty ())
+    {
+      PacketQueueI it;
+      for (it = m_queue.begin (); it != m_queue.end (); ++it)
+        {
+          if (it->hdr.IsQosData ())
+            {
+              if (GetAddressForPacket (type, it) == dest
+                  && it->hdr.GetQosTid () == tid)
+                {
+                  packet = it->packet;
+                  *hdr = it->hdr;
+                  m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+                  m_queue.erase (it);
+                  m_size--;
+                  break;
+                }
+            }
+        }
+    }
+  return packet;
+}
+
+
 void
 PerStaWifiMacQueue::Flush (void)
 {
+  m_perStaQInfo->Reset();//sva: deal with PerStaQInfo issues
   m_queue.erase (m_queue.begin (), m_queue.end ());
   m_size = 0;
 }
-*/
+
+
+bool
+PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
+{
+  PacketQueueI it = m_queue.begin ();
+  for (; it != m_queue.end (); it++)
+    {
+      if (it->packet == packet)
+        {
+          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+          m_queue.erase (it);
+          m_size--;
+          return true;
+        }
+    }
+  return false;
+}
+
+void
+PerStaWifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr)
+{
+  Cleanup ();
+  if (m_size == m_maxSize)
+    {
+      return;
+    }
+  Time now = Simulator::Now ();
+  m_queue.push_front (Item (packet, hdr, now));
+  m_size++;
+  m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
+}
+
+
+Ptr<const Packet>
+PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
+                                     const QosBlockedDestinations *blockedPackets)
+{
+  //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
+  Cleanup ();
+  Ptr<const Packet> packet = 0;
+  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
+    {
+      if (!it->hdr.IsQosData ()
+          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
+        {
+          *hdr = it->hdr;
+          timestamp = it->tstamp;
+          packet = it->packet;
+          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+          m_queue.erase (it);
+          m_size--;
+          return packet;
+        }
+    }
+  return packet;
+}
+
+Ptr<const Packet>
+PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
+                                  const QosBlockedDestinations *blockedPackets)
+{
+  //std::cout << "WifiMacQueue::PeekFirstAvailable \n";
+  Cleanup ();
+  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
+    {
+      if (!it->hdr.IsQosData ()
+          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
+        {
+          *hdr = it->hdr;
+          timestamp = it->tstamp;
+          return it->packet;
+        }
+    }
+  return 0;
+}
 
 } // namespace ns3

@@ -166,14 +166,14 @@ public:
                               const WifiMacHelper &mac, std::string nodeName) const;
   /**
    * SVA: Installs PerStaQInfoContainer and populates its entries
+   * should be explicitly called from main() after WifiHelper::Install()
    *
-   * \param mac: the MAC helper put in AP mode to point to EdcaTxopN mac::m_edca
-   * \param sta: container of all instantiated station wifi net devices used to get MAC address
+   * \param sta: container of all instantiated station wifi net devices used to get their MAC address
    * \param ap: pointer to WifiNetDevice of the access point so that PerStaQInfoContainer can be binded to it
+   * \param ac: AC for which PerStaQInfo is to be enabled
    * \returns void
    */
-  virtual void EnablePerStaQInfo (const WifiMacHelper &mac,
-                                  const NetDeviceContainer sta, Ptr<NetDevice> ap) const;
+  virtual void EnablePerStaQInfo (const NetDeviceContainer sta, Ptr<WifiNetDevice> ap, uint8_t ac) const;
   /**
    * \param standard the phy standard to configure during installation
    *

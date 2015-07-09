@@ -28,7 +28,8 @@
 #include "ns3/object.h"
 //#include "wifi-mac-header.h"
 //#include "wifi-mac-queue.h"
-#include "ns3/net-device-container.h"
+//#include "ns3/net-device-container.h"
+#include "ns3/wifi-net-device.h"
 #include "ns3/per-sta-q-info.h"
 
 namespace ns3 {
@@ -165,14 +166,14 @@ public:
   Ptr<PerStaQInfo> GetByIpv4 (Ipv4Address addr, uint8_t tid=UP_VI) const;
 
   /**
-   * Create one PerStaQInfo per station net device in the provided NetDeviceContainer
+   * Create one PerStaQInfo and add it to the container
    *
-   * \param sta: Container for all station's net devices
-   * \param ap: Container for AP net device
+   * \param sta: station net devices pointer
+   * \param ap:  AP net device pointer
    * Currently assumes only one NetDevice per STA and AP
    * \returns the Container containing vector of pointers to PeStaQInfo objects
    */
-  PerStaQInfoContainer Add (Ptr<NetDevice> sta, Ptr<NetDevice> ap);
+  PerStaQInfoContainer Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap);
 
   /**
    * Takes care of updating queue statistics for appropriate station
