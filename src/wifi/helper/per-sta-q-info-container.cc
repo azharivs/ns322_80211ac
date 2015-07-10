@@ -28,6 +28,7 @@
 //#include "wifi-mac-queue.h"
 #include "per-sta-q-info-container.h"
 #include "ns3/qos-tag.h"
+#include "ns3/regular-wifi-mac.h"
 
 namespace ns3 {
 
@@ -100,8 +101,9 @@ PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap)
       return *this; //do nothing
     }
   Ptr<PerStaQInfo> qInfo = CreateObject<PerStaQInfo>();
-  Ptr<WifiMac> mac = sta->GetMac();
-  Mac48Address addrs = mac->GetAddress();
+  //Ptr<WifiMac> wifiMac = sta->GetMac();
+  //Ptr<RegularWifiMac> mac =  sta->GetMac()->GetObject<RegularWifiMac>();
+  Mac48Address addrs = sta->GetMac()->GetObject<RegularWifiMac>()->GetAddress();
   qInfo->SetMac(addrs);
   qInfo->SetTid(UP_VI); //TODO sva: default TID should change later for generalization
   m_staQInfo.push_back(qInfo);

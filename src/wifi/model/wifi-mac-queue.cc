@@ -397,6 +397,7 @@ PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
   Time now = Simulator::Now ();
   m_queue.push_back (Item (packet, hdr, now));
   m_size++;
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
 }
 
@@ -410,6 +411,7 @@ PerStaWifiMacQueue::Cleanup (void)
 
   Time now = Simulator::Now ();
   uint32_t n = 0;
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   for (PacketQueueI i = m_queue.begin (); i != m_queue.end ();)
     {
       if (i->tstamp + m_maxDelay > now)
@@ -431,6 +433,7 @@ PerStaWifiMacQueue::Cleanup (void)
 Ptr<const Packet>
 PerStaWifiMacQueue::Peek (WifiMacHeader *hdr)
 {
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
   if (!m_queue.empty ())
     {
@@ -449,6 +452,7 @@ PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
   if (!m_queue.empty ())
     {
       Item i = m_queue.front ();
+      NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
       m_perStaQInfo->Departure(i.packet,i.hdr,now);//sva: deal with PerStaQInfo issues
       m_queue.pop_front ();
       m_size--;
@@ -464,6 +468,7 @@ PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                                       WifiMacHeader::AddressType type, Mac48Address dest)
 {
   Time now = Simulator::Now();
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
   Ptr<const Packet> packet = 0;
   if (!m_queue.empty ())
@@ -493,6 +498,7 @@ PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
 void
 PerStaWifiMacQueue::Flush (void)
 {
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   m_perStaQInfo->Reset();//sva: deal with PerStaQInfo issues
   m_queue.erase (m_queue.begin (), m_queue.end ());
   m_size = 0;
@@ -503,6 +509,7 @@ bool
 PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
 {
   Time now = Simulator::Now();
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   PacketQueueI it = m_queue.begin ();
   for (; it != m_queue.end (); it++)
     {
@@ -520,6 +527,7 @@ PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
 void
 PerStaWifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hdr)
 {
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
   if (m_size == m_maxSize)
     {
@@ -538,6 +546,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 {
   //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
   Time now = Simulator::Now();
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
   Ptr<const Packet> packet = 0;
   for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
@@ -563,6 +572,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 {
   //std::cout << "WifiMacQueue::PeekFirstAvailable \n";
   Cleanup ();
+  NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
     {
       if (!it->hdr.IsQosData ()
