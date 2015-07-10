@@ -92,14 +92,10 @@ PerStaQInfoContainer::GetByIpv4 (Ipv4Address addr, uint8_t tid) const
   return *m_staQInfo.begin();
 }
 
-PerStaQInfoContainer
-PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap)
+void
+PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta)//, Ptr<WifiNetDevice> ap)
 {
-  NS_ASSERT(ap);
-  if (!sta)
-    {
-      return *this; //do nothing
-    }
+  NS_ASSERT_MSG(sta,"Station Pointer NULL!");
   Ptr<PerStaQInfo> qInfo = CreateObject<PerStaQInfo>();
   //Ptr<WifiMac> wifiMac = sta->GetMac();
   //Ptr<RegularWifiMac> mac =  sta->GetMac()->GetObject<RegularWifiMac>();
@@ -107,7 +103,6 @@ PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap)
   qInfo->SetMac(addrs);
   qInfo->SetTid(UP_VI); //TODO sva: default TID should change later for generalization
   m_staQInfo.push_back(qInfo);
-  return *this;
 }
 
 void
@@ -148,7 +143,8 @@ PerStaQInfoContainer::Reset (void)
 bool
 PerStaQInfoContainer::IsEmpty (void) const
 {
-  return (m_staQInfo.empty());
+  bool ret=m_staQInfo.empty();
+  return (ret);
 }
 
 } // namespace ns3

@@ -144,13 +144,10 @@ WifiHelper::Install (const WifiPhyHelper &phy,
   return Install (phy, mac, NodeContainer (node));
 }
 
-void
-WifiHelper::EnablePerStaQInfo (const NetDeviceContainer sta, Ptr<WifiNetDevice> ap, uint8_t ac) const
+PerStaQInfoContainer
+WifiHelper::InitPerStaQInfo (const NetDeviceContainer sta, uint8_t ac) const
 {
-  if (sta.GetN()==0 || !ap)
-    {
-      return;//sva: no stations or AP are initialized. Should not happen. TODO: Need to NS_ASSERT
-    }
+  NS_ASSERT_MSG(sta.GetN()!=0,"No Stations Initialized.");
   PerStaQInfoContainer c;
   Ptr<NetDevice> device;
   Ptr<WifiNetDevice> staDevice;
@@ -158,12 +155,10 @@ WifiHelper::EnablePerStaQInfo (const NetDeviceContainer sta, Ptr<WifiNetDevice> 
     {
       device = *i;
       staDevice = device->GetObject<WifiNetDevice>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
-      c.Add(staDevice,ap);
+      c.Add(staDevice);
     }
-  Ptr<WifiMac> mac = ap->GetMac();
-  Ptr<ApWifiMac> apMac = mac->GetObject<ApWifiMac>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
-  apMac->SetPerStaQInfo(c,ac);
 
+  return c;
 }
 
 
