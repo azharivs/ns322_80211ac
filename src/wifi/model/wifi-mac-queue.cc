@@ -431,7 +431,7 @@ PerStaWifiMacQueue::Cleanup (void)
           //TODO: right now they are treated the same. Could cause false average waiting times
           if (m_perStaQInfo)
             {
-              m_perStaQInfo->Departure(i->packet,i->hdr,now);
+              m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);
             }
           i = m_queue.erase (i);
           n++;
@@ -465,7 +465,7 @@ PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
       //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
       if (m_perStaQInfo)
         {
-          m_perStaQInfo->Departure(i.packet,i.hdr,now);//sva: deal with PerStaQInfo issues
+          m_perStaQInfo->Departure(i.packet,i.hdr,i.tstamp);//sva: deal with PerStaQInfo issues
         }
       m_queue.pop_front ();
       m_size--;
@@ -498,7 +498,7 @@ PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                   *hdr = it->hdr;
                   if (m_perStaQInfo)
                     {
-                      m_perStaQInfo->Departure(it->packet,it->hdr,now);//sva: deal with PerStaQInfo issues
+                      m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
                     }
                   m_queue.erase (it);
                   m_size--;
@@ -536,7 +536,7 @@ PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
         {
           if (m_perStaQInfo)
             {
-              m_perStaQInfo->Departure(it->packet,it->hdr,now);//sva: deal with PerStaQInfo issues
+              m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
             }
           m_queue.erase (it);
           m_size--;
@@ -584,7 +584,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
           packet = it->packet;
           if (m_perStaQInfo)
             {
-              m_perStaQInfo->Departure(it->packet,it->hdr,now);//sva: deal with PerStaQInfo issues
+              m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
             }
           m_queue.erase (it);
           m_size--;

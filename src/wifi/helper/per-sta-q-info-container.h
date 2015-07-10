@@ -194,7 +194,7 @@ public:
    *
    * \param packet: the departed packet used to extract size
    * \param hdr: the packet header used to extract MAC address and TID
-   * \param tstamp: packet time stamp used to log waiting time, etc.
+   * \param tstamp: packet time stamp indicating original arrival time
    *
    */
   void Departure(Ptr<const Packet> packet, const WifiMacHeader &hdr, Time tstamp);

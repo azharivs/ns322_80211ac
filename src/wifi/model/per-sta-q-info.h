@@ -147,9 +147,9 @@ public:
    * if successful, should call private member Update() before returning
    *
    * \param bytes : number of incoming bytes
-   * \param tstamp: time of packet arrival (should always be set by caller to now())
+   * \param wait: packet waiting time (should always be set by caller to now()- packet queue time stamp)
    */
-  void Departure (uint32_t bytes, Time tstamp);
+  void Departure (uint32_t bytes, Time wait);
   /**
    * Return if the queue is empty.
    *

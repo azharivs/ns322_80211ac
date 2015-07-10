@@ -24,6 +24,7 @@
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
+#include "ns3/simulator.h"
 //#include "wifi-mac-header.h"
 //#include "wifi-mac-queue.h"
 #include "per-sta-q-info-container.h"
@@ -125,10 +126,11 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
     {
       return ;
     }
+  Time now = Simulator::Now();
   //get which queue to use based on destination MAC and TID
-  Ptr<PerStaQInfo> qInfo = PerStaQInfoContainer::GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
+  Ptr<PerStaQInfo> qInfo = GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
   NS_ASSERT(qInfo); //make sure is not NULL
-  qInfo->Departure(packet->GetSize(), tstamp);
+  qInfo->Departure(packet->GetSize(), now - tstamp);
 }
 
 void
