@@ -30,189 +30,222 @@
 
 namespace ns3 {
 
-NS_OBJECT_ENSURE_REGISTERED (PerStaQInfo);
+  NS_OBJECT_ENSURE_REGISTERED (PerStaQInfo);
 
-TypeId
-PerStaQInfo::GetTypeId (void)
-{
-  static TypeId tid = TypeId ("ns3::PerStaQInfo")
-    .SetParent<Object> ()
-    .AddConstructor<PerStaQInfo> ()
-    .AddAttribute ("HistorySize", "Number of Samples Kept for Calculating Statistics.",
-                   UintegerValue (100),
-                   MakeUintegerAccessor (&PerStaQInfo::m_histSize),
-                   MakeUintegerChecker<uint32_t> ())
-    .AddAttribute ("TID", "Traffic Indication Map of Interest.",
-                   UintegerValue (UP_VI),
-                   MakeUintegerAccessor (&PerStaQInfo::m_tid),
-                   MakeUintegerChecker<uint32_t> ())
+  TypeId
+  PerStaQInfo::GetTypeId (void)
+  {
+    static TypeId tid = TypeId ("ns3::PerStaQInfo")
+        .SetParent<Object> ()
+        .AddConstructor<PerStaQInfo> ()
+        .AddAttribute ("HistorySize", "Number of Samples Kept for Calculating Statistics.",
+                       UintegerValue (100),
+                       MakeUintegerAccessor (&PerStaQInfo::m_histSize),
+                       MakeUintegerChecker<uint32_t> ())
+                       .AddAttribute ("TID", "Traffic Indication Map of Interest.",
+                                      UintegerValue (UP_VI),
+                                      MakeUintegerAccessor (&PerStaQInfo::m_tid),
+                                      MakeUintegerChecker<uint32_t> ())
 
-  ;
-  return tid;
-}
+                                      ;
+    return tid;
+  }
 
-PerStaQInfo::PerStaQInfo()
+  PerStaQInfo::PerStaQInfo()
   : m_addrs (),
     m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
     m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0)
 
-{
-}
+  {
+  }
 
-PerStaQInfo::~PerStaQInfo()
-{
-//TODO: where do the deques get deleted? Do I have to deal with that here?
-  m_queueSizeHistory.clear();
-  m_queueBytesHistory.clear();
-  m_queueWaitHistory.clear();
-}
+  PerStaQInfo::~PerStaQInfo()
+  {
+    //TODO: where do the deques get deleted? Do I have to deal with that here?
+    m_queueSizeHistory.clear();
+    m_queueBytesHistory.clear();
+    m_queueWaitHistory.clear();
+  }
 
-void
-PerStaQInfo::SetMac (const Mac48Address &addrs)
-{
-  uint8_t buff[6];
-  addrs.CopyTo(buff);
-  m_addrs.CopyFrom(buff);
-}
+  void
+  PerStaQInfo::SetMac (const Mac48Address &addrs)
+  {
+    uint8_t buff[6];
+    addrs.CopyTo(buff);
+    m_addrs.CopyFrom(buff);
+  }
 
-void
-PerStaQInfo::SetTid(uint8_t tid)
-{
-  m_tid = tid;
-}
+  void
+  PerStaQInfo::SetTid(uint8_t tid)
+  {
+    m_tid = tid;
+  }
 
-Mac48Address&
-PerStaQInfo::GetMac (void)
-{
-  return m_addrs;
-}
+  Mac48Address&
+  PerStaQInfo::GetMac (void)
+  {
+    return m_addrs;
+  }
 
-uint8_t
-PerStaQInfo::GetTid (void)
-{
-  return m_tid;
-}
+  uint8_t
+  PerStaQInfo::GetTid (void)
+  {
+    return m_tid;
+  }
 
-uint32_t
-PerStaQInfo::GetSize (void)
-{
-  return m_queueSize;
-}
+  uint32_t
+  PerStaQInfo::GetSize (void)
+  {
+    return m_queueSize;
+  }
 
-uint32_t
-PerStaQInfo::GetSizeBytes (void)
-{
-  return m_queueBytes;
-}
+  uint32_t
+  PerStaQInfo::GetSizeBytes (void)
+  {
+    return m_queueBytes;
+  }
 
-double
-PerStaQInfo::GetAvgSize (void)
-{
-  return m_avgQueueSize;
-}
+  double
+  PerStaQInfo::GetAvgSize (void)
+  {
+    return m_avgQueueSize;
+  }
 
-double
-PerStaQInfo::GetAvgSizeBytes (void)
-{
-  return m_avgQueueBytes;
-}
+  double
+  PerStaQInfo::GetAvgSizeBytes (void)
+  {
+    return m_avgQueueBytes;
+  }
 
-double
-PerStaQInfo::GetAvgWait (void)
-{
-  return m_avgQueueWait;
-}
+  double
+  PerStaQInfo::GetAvgWait (void)
+  {
+    return m_avgQueueWait;
+  }
 
-double
-PerStaQInfo::GetAvgArrivalRate (void)
-{
-  return m_avgArrivalRate;
-}
+  double
+  PerStaQInfo::GetAvgArrivalRate (void)
+  {
+    return m_avgArrivalRate;
+  }
 
-double
-PerStaQInfo::GetAvgArrivalRateBytes (void)
-{
-  return m_avgArrivalRateBytes;
-}
+  double
+  PerStaQInfo::GetAvgArrivalRateBytes (void)
+  {
+    return m_avgArrivalRateBytes;
+  }
 
-void
-PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
-{
-}
+  void
+  PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
+  {//TODO: record time of arrival as well for avgArrival and avgWait calculation
+    m_queueSize ++;
+    m_queueBytes += bytes;
 
-void
-PerStaQInfo::Departure (uint32_t bytes, Time tstamp)
-{
-}
+    if (m_queueSizeHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_queueSizeHistory.pop_back();
+      }
+    m_queueSizeHistory.push_front(m_queueSize);
 
-bool
-PerStaQInfo::IsEmpty (void)
-{
-  return (m_queueSize == 0);
-}
+    if (m_queueBytesHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_queueBytesHistory.pop_back();
+      }
+    m_queueBytesHistory.push_front(m_queueBytes);
+    Update();
+  }
 
-void
-PerStaQInfo::Reset (void)
-{
-  m_queueSize = 0;
-  m_queueBytes = 0;
-  m_avgQueueSize = 0;
-  m_avgQueueBytes = 0;
-  m_avgQueueWait = 0;
-  m_avgArrivalRate = 0;
-  m_avgArrivalRateBytes = 0;
+  void
+  PerStaQInfo::Departure (uint32_t bytes, Time wait)
+  {
+    m_queueSize --;
+    m_queueBytes -= bytes;
 
-  m_queueSizeHistory.clear();
-  m_queueBytesHistory.clear();
-  m_queueWaitHistory.clear();
+    if (m_queueSizeHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_queueSizeHistory.pop_back();
+      }
+    m_queueSizeHistory.push_front(m_queueSize);
 
-}
+    if (m_queueBytesHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_queueBytesHistory.pop_back();
+      }
+    m_queueBytesHistory.push_front(m_queueBytes);
 
-/*
- * still need to calculate average arrival rate. This requires to store
- * the arrival instances in another deque. This deque will have a depth which
- * is specified in terms of time rather than number of samples.
- * May be the other sample histories should also be made according to a time depth??
- *
- * TODO:
- * I think it's better to leave the implementation of arrival rates to later after this
- * whole class is tested.
- */
-void
-PerStaQInfo::Update(void)
-{
-  double tmp=0;
+    if (m_queueWaitHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_queueWaitHistory.pop_back();
+      }
+    m_queueWaitHistory.push_front(wait.GetSeconds());
+    Update();
+  }
 
-  if (!m_queueSizeHistory.empty())
-    {
-      for (std::deque<uint32_t>::iterator it=m_queueSizeHistory.begin(); it != m_queueSizeHistory.end(); ++it)
-        {
-          tmp += *it;
-        }
-      m_avgQueueSize = tmp / (double) m_queueSizeHistory.size();
-    }
+  bool
+  PerStaQInfo::IsEmpty (void)
+  {
+    return (m_queueSize == 0);
+  }
 
-  tmp = 0;
-  if (!m_queueBytesHistory.empty())
-    {
-      for (std::deque<uint32_t>::iterator it=m_queueBytesHistory.begin(); it != m_queueBytesHistory.end(); ++it)
-        {
-          tmp += *it;
-        }
-      m_avgQueueBytes = tmp / (double) m_queueBytesHistory.size();
-    }
+  void
+  PerStaQInfo::Reset (void)
+  {
+    m_queueSize = 0;
+    m_queueBytes = 0;
+    m_avgQueueSize = 0;
+    m_avgQueueBytes = 0;
+    m_avgQueueWait = 0;
+    m_avgArrivalRate = 0;
+    m_avgArrivalRateBytes = 0;
 
-  tmp = 0;
-  if (!m_queueWaitHistory.empty())
-    {
-      for (std::deque<double>::iterator dit=m_queueWaitHistory.begin(); dit != m_queueWaitHistory.end(); ++dit)
-        {
-          tmp += *dit;
-        }
-      m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
-    }
+    m_queueSizeHistory.clear();
+    m_queueBytesHistory.clear();
+    m_queueWaitHistory.clear();
 
-}
+  }
+
+  /*
+   * still need to calculate average arrival rate. This requires to store
+   * the arrival instances in another deque. This deque will have a depth which
+   * is specified in terms of time rather than number of samples.
+   * May be the other sample histories should also be made according to a time depth??
+   *
+   * TODO:
+   * I think it's better to leave the implementation of arrival rates to later after this
+   * whole class is tested.
+   */
+  void
+  PerStaQInfo::Update(void)
+  {
+    double tmp=0;
+
+    for (std::deque<uint32_t>::iterator it=m_queueSizeHistory.begin(); it != m_queueSizeHistory.end(); ++it)
+      {
+        tmp += *it;
+      }
+    m_avgQueueSize = tmp / (double) m_queueSizeHistory.size();
+
+    tmp = 0;
+    for (std::deque<uint32_t>::iterator it=m_queueBytesHistory.begin(); it != m_queueBytesHistory.end(); ++it)
+      {
+        tmp += *it;
+      }
+    m_avgQueueBytes = tmp / (double) m_queueBytesHistory.size();
+
+    tmp = 0;
+    for (std::deque<double>::iterator dit=m_queueWaitHistory.begin(); dit != m_queueWaitHistory.end(); ++dit)
+      {
+        tmp += *dit;
+      }
+    m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
+
+    std::cout << "@ " << GetMac() << "[TID " << (int) m_tid << "] \n" ;
+    std::cout << "Q=" << m_queueSize << " Pkts, " << (double)m_queueBytes/1000000 << " MB, " ;
+    std::cout << "avgQ=" << m_avgQueueSize << " Pkts, " << m_avgQueueBytes/1000000 << " MB; avgW=" << m_avgQueueWait*1000
+            << " msec, History = " << m_queueSizeHistory.size() << "\n" ;
+
+
+  }
 
 
 
