@@ -25,6 +25,7 @@
 #include "ns3/mobility-module.h"
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/internet-module.h"
+#include "ns3/per-sta-q-info-container.h"
 
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
@@ -128,6 +129,12 @@ int main (int argc, char *argv[])
 
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
+
+  //sva: AP and STAs initialized, time to initialize PerStaQInfo
+
+  PerStaQInfoContainer perStaQueue = wifi.InitPerStaQInfo(staDevice, AC_VI);
+  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
+      SetPerStaQInfo(perStaQueue,AC_VI);
 
   /* Setting mobility model */
   MobilityHelper mobility;

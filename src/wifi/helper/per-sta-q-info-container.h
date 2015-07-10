@@ -173,7 +173,7 @@ public:
    * Currently assumes only one NetDevice per STA and AP
    * \returns the Container containing vector of pointers to PeStaQInfo objects
    */
-  PerStaQInfoContainer Add (Ptr<WifiNetDevice> sta, Ptr<WifiNetDevice> ap);
+  void Add (Ptr<WifiNetDevice> sta);//, Ptr<WifiNetDevice> ap);
 
   /**
    * Takes care of updating queue statistics for appropriate station

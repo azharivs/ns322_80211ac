@@ -380,7 +380,11 @@ PerStaWifiMacQueue::~PerStaWifiMacQueue ()
 bool
 PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
 {
-  if (c.IsEmpty()) return false;
+  if (c.IsEmpty())
+    {
+      NS_ASSERT_MSG(true,"Initializing with Empty Container !!");
+      return false;
+    }
   m_perStaQInfo = &c;
   return true;
 }
