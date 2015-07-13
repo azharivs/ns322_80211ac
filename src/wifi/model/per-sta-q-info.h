@@ -24,8 +24,12 @@
 //             also be provided as a parameter so that this class gets binded to WifiMacQueue of the AP.
 //             We need a constructor with the appropriate signature. May be it is better to have these as
 //             a container and then write the appropriate container constructor, i.e., PerStaQInfoContainer
+
 #ifndef PER_STA_Q_INFO_H
 #define PER_STA_Q_INFO_H
+
+//sva: when enabled will print PerStaQInfo statistics to the stdout
+//#define SVA_DEBUG
 
 #include <list>
 #include <deque>

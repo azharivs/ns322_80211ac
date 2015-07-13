@@ -361,6 +361,20 @@ public:
                                            Time &tStamp,
                                            const QosBlockedDestinations *blockedPackets);
   /**
+   * Returns number of QoS packets having tid equals to <i>tid</i> and address
+   * specified by <i>type</i> equals to <i>addr</i>.
+   * sva: can be optimized using PerStaQInfo methods since this information
+   * is already available there.
+   *
+   * \param tid the given TID
+   * \param type the given address type
+   * \param addr the given destination
+   * \return the number of QoS packets
+   */
+  uint32_t GetNPacketsByTidAndAddress (uint8_t tid,
+                                       WifiMacHeader::AddressType type,
+                                       Mac48Address addr);
+  /**
    * Returns first available packet for transmission. The packet isn't removed from queue.
    *
    * \param hdr the header of the dequeued packet
@@ -385,6 +399,13 @@ public:
    * Flush the queue.
    */
   void Flush (void);
+
+  /**
+   * Return if the queue is empty.
+   *
+   * \return true if the queue is empty, false otherwise
+   */
+  bool IsEmpty (void);
 
  /**
    * Initialize pointer to PerStaQInfoContainer if support is required

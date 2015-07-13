@@ -114,6 +114,7 @@ WifiMacQueue::Cleanup (void)
       return;
     }
 
+  //std::cout << "WifiMacQueue::CleanUp()\n";
   Time now = Simulator::Now ();
   uint32_t n = 0;
   for (PacketQueueI i = m_queue.begin (); i != m_queue.end ();)
@@ -258,6 +259,10 @@ WifiMacQueue::Remove (Ptr<const Packet> packet)
     {
       if (it->packet == packet)
         {
+#ifdef SVA_DEBUG
+          if (it->hdr.IsData()) std::cout << "@Remove ------WifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
+          else std::cout << "@Remove ------WifiMacQueue = " << m_size-1 << " TID= ?\n";
+#endif
           m_queue.erase (it);
           m_size--;
           return true;
@@ -406,6 +411,9 @@ PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
     {
       m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
     }
+#ifdef SVA_DEBUG
+  if (hdr.IsData()) std::cout << "@Enqueue PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) hdr.GetQosTid() << "\n";
+#endif
 }
 
 void
@@ -433,6 +441,9 @@ PerStaWifiMacQueue::Cleanup (void)
             {
               m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);
             }
+#ifdef SVA_DEBUG
+          if (i->hdr.IsData()) std::cout << "@Cleanup PerStaWifiMacQueue = " << m_size-n-1 << " TID= " << (int) i->hdr.GetQosTid() << "\n";
+#endif
           i = m_queue.erase (i);
           n++;
         }
@@ -469,6 +480,9 @@ PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
         }
       m_queue.pop_front ();
       m_size--;
+#ifdef SVA_DEBUG
+      if (i.hdr.IsData()) std::cout << "@Dequeue PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) i.hdr.GetQosTid() << "\n";
+#endif
       *hdr = i.hdr;
       return i.packet;
     }
@@ -500,6 +514,9 @@ PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                     {
                       m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
                     }
+#ifdef SVA_DEBUG
+                  if (it->hdr.IsData()) std::cout << "@DequeueByTidAndAddress PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
+#endif
                   m_queue.erase (it);
                   m_size--;
                   break;
@@ -538,6 +555,10 @@ PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
             {
               m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
             }
+#ifdef SVA_DEBUG
+          if (it->hdr.IsData()) std::cout << "@Remove PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
+          else std::cout << "@Remove PerStaWifiMacQueue = " << m_size-1 << " TID= ?\n";
+#endif
           m_queue.erase (it);
           m_size--;
           return true;
@@ -562,6 +583,9 @@ PerStaWifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hd
     {
       m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
     }
+#ifdef SVA_DEBUG
+  if (hdr.IsData()) std::cout << "@PushFront PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) hdr.GetQosTid() << "\n";
+#endif
 }
 
 
@@ -586,6 +610,9 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
             {
               m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
             }
+#ifdef SVA_DEBUG
+          if (it->hdr.IsData()) std::cout << "@DequeueFirstAvailable PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
+#endif
           m_queue.erase (it);
           m_size--;
           return packet;
@@ -612,6 +639,37 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
         }
     }
   return 0;
+}
+
+//sva: can be optimized
+uint32_t
+PerStaWifiMacQueue::GetNPacketsByTidAndAddress (uint8_t tid, WifiMacHeader::AddressType type,
+                                          Mac48Address addr)
+{
+  Cleanup ();
+  uint32_t nPackets = 0;
+  if (!m_queue.empty ())
+    {
+      PacketQueueI it;
+      for (it = m_queue.begin (); it != m_queue.end (); it++)
+        {
+          if (GetAddressForPacket (type, it) == addr)
+            {
+              if (it->hdr.IsQosData () && it->hdr.GetQosTid () == tid)
+                {
+                  nPackets++;
+                }
+            }
+        }
+    }
+  return nPackets;
+}
+
+bool
+PerStaWifiMacQueue::IsEmpty (void)
+{
+  Cleanup ();
+  return m_queue.empty ();
 }
 
 } // namespace ns3

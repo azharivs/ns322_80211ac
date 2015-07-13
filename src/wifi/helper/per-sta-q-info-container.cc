@@ -35,6 +35,9 @@ namespace ns3 {
 
 PerStaQInfoContainer::PerStaQInfoContainer()
 {
+#ifdef SVA_DEBUG
+  m_cnt = 0;
+#endif
 }
 
 PerStaQInfoContainer::Iterator
@@ -111,12 +114,19 @@ PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hd
 {
   if (!hdr.IsData()) //don't count non data packets
     {
+#ifdef SVA_DEBUG
+      std::cout << " Arrival NON DATA   " << m_cnt << "   NON DATA \n";
+#endif
       return ;
     }
   //get which queue to use based on destination MAC and TID
   Ptr<PerStaQInfo> qInfo = GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
   NS_ASSERT(qInfo); //make sure is not NULL
   qInfo->Arrival(packet->GetSize(), tstamp);
+#ifdef SVA_DEBUG
+  m_cnt ++;
+  std::cout << " Arrival XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
+#endif
 }
 
 void
@@ -124,6 +134,9 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
 {
   if (!hdr.IsData()) //don't count non data packets
     {
+#ifdef SVA_DEBUG
+      std::cout << " Departure NON DATA   " << m_cnt << "   NON DATA \n";
+#endif
       return ;
     }
   Time now = Simulator::Now();
@@ -131,11 +144,18 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
   Ptr<PerStaQInfo> qInfo = GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
   NS_ASSERT(qInfo); //make sure is not NULL
   qInfo->Departure(packet->GetSize(), now - tstamp);
+#ifdef SVA_DEBUG
+  m_cnt --;
+  std::cout << " Departure XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
+#endif
 }
 
 void
 PerStaQInfoContainer::Reset (void)
 {
+#ifdef SVA_DEBUG
+  std::cout << "PerStaQInfoContainer::Reset \n";
+#endif
   for (Iterator i = m_staQInfo.begin(); i != m_staQInfo.end(); ++i)
     {
       (*i)->Reset(); //reset i-th PerStaQInfo element

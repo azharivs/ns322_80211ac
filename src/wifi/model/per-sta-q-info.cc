@@ -239,11 +239,12 @@ namespace ns3 {
       }
     m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
 
+#ifdef SVA_DEBUG
     std::cout << "@ " << GetMac() << "[TID " << (int) m_tid << "] \n" ;
     std::cout << "Q=" << m_queueSize << " Pkts, " << (double)m_queueBytes/1000000 << " MB, " ;
     std::cout << "avgQ=" << m_avgQueueSize << " Pkts, " << m_avgQueueBytes/1000000 << " MB; avgW=" << m_avgQueueWait*1000
             << " msec, History = " << m_queueSizeHistory.size() << "\n" ;
-
+#endif
 
   }
 
