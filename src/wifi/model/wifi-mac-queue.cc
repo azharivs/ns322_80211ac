@@ -48,7 +48,7 @@ WifiMacQueue::GetTypeId (void)
     .SetParent<Object> ()
     .AddConstructor<WifiMacQueue> ()
     .AddAttribute ("MaxPacketNumber", "If a packet arrives when there are already this number of packets, it is dropped.",
-                   UintegerValue (400),
+                   UintegerValue (4000),
                    MakeUintegerAccessor (&WifiMacQueue::m_maxSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("MaxDelay", "If a packet stays longer than this delay in the queue, it is dropped.",
