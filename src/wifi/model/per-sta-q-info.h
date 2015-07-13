@@ -18,18 +18,12 @@
  * Author: Seyed Vahid Azhari <azharivs@iust.ac.ir>
  */
 
-// TODO: need to bind this to a station NetDevice and to the WifiMacQueue of the AP NetDevice
-// Approach 1. Create a container of this type and have it initialized with station NetDevices container
-//             so that each station MAC and tid can be used to create one of these classes. The AP should
-//             also be provided as a parameter so that this class gets binded to WifiMacQueue of the AP.
-//             We need a constructor with the appropriate signature. May be it is better to have these as
-//             a container and then write the appropriate container constructor, i.e., PerStaQInfoContainer
 
 #ifndef PER_STA_Q_INFO_H
 #define PER_STA_Q_INFO_H
 
 //sva: when enabled will print PerStaQInfo statistics to the stdout
-//#define SVA_DEBUG
+#define SVA_DEBUG
 
 #include <list>
 #include <deque>
@@ -170,25 +164,22 @@ public:
 private:
 
   /**
-   * A struct that holds information about a packet for putting
-   * in a packet queue.
-   *
+   * A struct that holds information about a packet arrival event for putting
+   * in history
+   */
   struct Item
   {
-    **
+    /**
      * Create a struct with the given parameters.
      *
-     * \param packet
-     * \param hdr
+     * \param bytes
      * \param tstamp
-     *
-    Item (Ptr<const Packet> packet,
-          const WifiMacHeader &hdr,
+     */
+    Item (uint32_t bytes,
           Time tstamp);
-    Ptr<const Packet> packet; //!< Actual packet
-    WifiMacHeader hdr; //!< Wifi MAC header associated with the packet
+    uint32_t bytes; //!< number of bytes in the packet
     Time tstamp; //!< timestamp when the packet arrived at the queue
-  };*/
+  };
 
   /**
    * typedef for sample history.
@@ -223,6 +214,7 @@ private:
   std::deque<uint32_t> m_queueSizeHistory; //!< Array of samples of queue length in packets
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
+  std::deque<Item> m_arrivalHistory; //!< Array of samples of packet arrival times
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element

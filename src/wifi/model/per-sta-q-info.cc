@@ -61,10 +61,15 @@ namespace ns3 {
 
   PerStaQInfo::~PerStaQInfo()
   {
-    //TODO: where do the deques get deleted? Do I have to deal with that here?
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();
     m_queueWaitHistory.clear();
+    m_arrivalHistory.clear();
+  }
+
+  PerStaQInfo::Item::Item(uint32_t bytes, Time tstamp)
+    : bytes(bytes), tstamp(tstamp)
+  {
   }
 
   void
@@ -152,6 +157,13 @@ namespace ns3 {
         m_queueBytesHistory.pop_back();
       }
     m_queueBytesHistory.push_front(m_queueBytes);
+
+    if (m_arrivalHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_arrivalHistory.pop_back();
+      }
+    m_arrivalHistory.push_front(Item(bytes,tstamp));
+
     Update();
   }
 
@@ -178,6 +190,7 @@ namespace ns3 {
         m_queueWaitHistory.pop_back();
       }
     m_queueWaitHistory.push_front(wait.GetSeconds());
+
     Update();
   }
 
@@ -201,18 +214,16 @@ namespace ns3 {
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();
     m_queueWaitHistory.clear();
+    m_arrivalHistory.clear();
 
   }
 
   /*
-   * still need to calculate average arrival rate. This requires to store
+   * TODO: still need to calculate average arrival rate. This requires to store
    * the arrival instances in another deque. This deque will have a depth which
    * is specified in terms of time rather than number of samples.
    * May be the other sample histories should also be made according to a time depth??
    *
-   * TODO:
-   * I think it's better to leave the implementation of arrival rates to later after this
-   * whole class is tested.
    */
   void
   PerStaQInfo::Update(void)
@@ -239,11 +250,21 @@ namespace ns3 {
       }
     m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
 
+    tmp = 0;
+    for (std::deque<Item>::iterator ait=m_arrivalHistory.begin(); ait != m_arrivalHistory.end(); ++ait)
+      {
+        tmp += (*ait).bytes;
+      }
+    double timespan = (m_arrivalHistory.begin()->tstamp - m_arrivalHistory.end()->tstamp).GetSeconds();
+    m_avgArrivalRateBytes = tmp / timespan;
+    m_avgArrivalRate = m_arrivalHistory.size() / timespan;
+
 #ifdef SVA_DEBUG
     std::cout << "@ " << GetMac() << "[TID " << (int) m_tid << "] \n" ;
-    std::cout << "Q=" << m_queueSize << " Pkts, " << (double)m_queueBytes/1000000 << " MB, " ;
-    std::cout << "avgQ=" << m_avgQueueSize << " Pkts, " << m_avgQueueBytes/1000000 << " MB; avgW=" << m_avgQueueWait*1000
-            << " msec, History = " << m_queueSizeHistory.size() << "\n" ;
+    std::cout << "Q=" << m_queueSize << " Pkts(" << (double)m_queueBytes/1000000 << " MB), " ;
+    std::cout << "avgQ=" << m_avgQueueSize << " Pkts(" << m_avgQueueBytes/1000000 << " MB); avgW=" << m_avgQueueWait*1000
+        << " msec, arrRate = " << m_avgArrivalRate << " pps(" << m_avgArrivalRateBytes*8/1000000 << " Mbps); History = "
+        << m_queueSizeHistory.size() << "\n" ;
 #endif
 
   }
