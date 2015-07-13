@@ -39,22 +39,22 @@ namespace ns3 {
         .SetParent<Object> ()
         .AddConstructor<PerStaQInfo> ()
         .AddAttribute ("HistorySize", "Number of Samples Kept for Calculating Statistics.",
-                       UintegerValue (100),
+                       UintegerValue (200),
                        MakeUintegerAccessor (&PerStaQInfo::m_histSize),
                        MakeUintegerChecker<uint32_t> ())
-                       .AddAttribute ("TID", "Traffic Indication Map of Interest.",
-                                      UintegerValue (UP_VI),
-                                      MakeUintegerAccessor (&PerStaQInfo::m_tid),
-                                      MakeUintegerChecker<uint32_t> ())
+        .AddAttribute ("TID", "Traffic Indication Map of Interest.",
+                       UintegerValue (UP_VI),
+                       MakeUintegerAccessor (&PerStaQInfo::m_tid),
+                       MakeUintegerChecker<uint32_t> ())
 
-                                      ;
+        ;
     return tid;
   }
 
   PerStaQInfo::PerStaQInfo()
   : m_addrs (),
     m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
-    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0)
+    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0), m_dvp (0.0)
 
   {
   }
@@ -65,6 +65,7 @@ namespace ns3 {
     m_queueBytesHistory.clear();
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
+    m_queueDelayViolationHistory.clear();
   }
 
   PerStaQInfo::Item::Item(uint32_t bytes, Time tstamp)
@@ -168,7 +169,7 @@ namespace ns3 {
   }
 
   void
-  PerStaQInfo::Departure (uint32_t bytes, Time wait)
+  PerStaQInfo::Departure (uint32_t bytes, Time wait, Time deadline)
   {
     m_queueSize --;
     m_queueBytes -= bytes;
@@ -191,6 +192,14 @@ namespace ns3 {
       }
     m_queueWaitHistory.push_front(wait.GetSeconds());
 
+
+    if (m_queueDelayViolationHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_queueDelayViolationHistory.pop_back();
+      }
+    m_queueDelayViolationHistory.push_front( (deadline - Simulator::Now()).GetSeconds() );
+    std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline \n";
+
     Update();
   }
 
@@ -210,11 +219,13 @@ namespace ns3 {
     m_avgQueueWait = 0;
     m_avgArrivalRate = 0;
     m_avgArrivalRateBytes = 0;
+    m_dvp = 0;
 
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
+    m_queueDelayViolationHistory.clear();
 
   }
 
@@ -247,6 +258,7 @@ namespace ns3 {
     for (std::deque<double>::iterator dit=m_queueWaitHistory.begin(); dit != m_queueWaitHistory.end(); ++dit)
       {
         tmp += *dit;
+
       }
     m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
 
@@ -259,12 +271,19 @@ namespace ns3 {
     m_avgArrivalRateBytes = tmp / timespan;
     m_avgArrivalRate = m_arrivalHistory.size() / timespan;
 
+    tmp = 0;
+    for (std::deque<double>::iterator dit=m_queueDelayViolationHistory.begin(); dit != m_queueDelayViolationHistory.end(); ++dit)
+      {
+        if (*dit < 0) tmp ++;//count number of violations
+      }
+    m_dvp = tmp / m_queueDelayViolationHistory.size();
+
 #ifdef SVA_DEBUG
     std::cout << "@ " << GetMac() << "[TID " << (int) m_tid << "] \n" ;
     std::cout << "Q=" << m_queueSize << " Pkts(" << (double)m_queueBytes/1000000 << " MB), " ;
     std::cout << "avgQ=" << m_avgQueueSize << " Pkts(" << m_avgQueueBytes/1000000 << " MB); avgW=" << m_avgQueueWait*1000
-        << " msec, arrRate = " << m_avgArrivalRate << " pps(" << m_avgArrivalRateBytes*8/1000000 << " Mbps); History = "
-        << m_queueSizeHistory.size() << "\n" ;
+        << " msec, arrRate = " << m_avgArrivalRate << " pps(" << m_avgArrivalRateBytes*8/1000000 << " Mbps); DVP="
+        << m_dvp << "; History = " << m_queueSizeHistory.size() << "\n" ;
 #endif
 
   }

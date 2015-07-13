@@ -143,7 +143,10 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
   //get which queue to use based on destination MAC and TID
   Ptr<PerStaQInfo> qInfo = GetByMac(hdr.GetAddr1(),hdr.GetQosTid());
   NS_ASSERT(qInfo); //make sure is not NULL
-  qInfo->Departure(packet->GetSize(), now - tstamp);
+  TimestampTag deadline;
+  bool ok = packet->FindFirstMatchingByteTag(deadline);
+  NS_ASSERT_MSG(ok,"Did not find TimestampTag in packet!");
+  qInfo->Departure(packet->GetSize(), now - tstamp, deadline.GetTimestamp());
 #ifdef SVA_DEBUG
   m_cnt --;
   std::cout << " Departure XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
