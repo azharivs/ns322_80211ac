@@ -33,7 +33,7 @@
 #include "ns3/object.h"
 #include "ns3/qos-tag.h"
 #include "wifi-mac-header.h"
-//#include "wifi-mac-queue.h"
+#include "ns3/simulator.h"
 
 namespace ns3 {
 //class WiFiMacQueue;
@@ -146,8 +146,9 @@ public:
    *
    * \param bytes : number of incoming bytes
    * \param wait: packet waiting time (should always be set by caller to now()- packet queue time stamp)
+   * \param deadline: absolute time of deadline of the packet
    */
-  void Departure (uint32_t bytes, Time wait);
+  void Departure (uint32_t bytes, Time wait, Time deadline);
   /**
    * Return if the queue is empty.
    *
@@ -215,6 +216,7 @@ private:
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
   std::deque<Item> m_arrivalHistory; //!< Array of samples of packet arrival times
+  std::deque<double> m_queueDelayViolationHistory; //!< Array of samples of queue deadline violations in seconds (pos. value means no violation)
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
@@ -226,6 +228,7 @@ private:
   double m_avgQueueWait; //!< Last updated average queue waiting time in seconds
   double m_avgArrivalRate; //!< Last updated average packet arrival rate in pps
   double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
+  double m_dvp; //!< Delay violation probability measured right before transmission
 };
 
 } // namespace ns3
