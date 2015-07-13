@@ -581,6 +581,7 @@ EdcaTxopN::NotifyAccessGranted (void)
               && !m_currentHdr.GetAddr1 ().IsBroadcast ()
               && m_aggregator != 0 && !m_currentHdr.IsRetry ())
             {
+              //sva-debug: std::cout << "A-MSDU AGGREGATION \n";
               /* here is performed aggregation */
         	  //sva: This is MSDU aggregation
         	  //sva: Probably we don't need to touch anything here because we have

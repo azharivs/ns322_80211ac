@@ -212,10 +212,11 @@ public:
    */
   bool IsEmpty (void) const;
 
-
+#ifdef SVA_DEBUG
+  uint32_t m_cnt; //for testing
+#endif
 
 private:
-
   std::vector<Ptr<PerStaQInfo> > m_staQInfo; //!< PerStaQInfo smart pointers
 };
 

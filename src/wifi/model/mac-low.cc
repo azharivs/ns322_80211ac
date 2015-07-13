@@ -2610,6 +2610,7 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
 Ptr<Packet>
 MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
 {
+  //sva: start with an empty aggregation queue (last aggregation should be out by now)
   NS_ASSERT (m_aggregateQueue->GetSize () == 0);
   bool isAmpdu = false;
   Ptr<Packet> newPacket;
@@ -2620,12 +2621,13 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
     {
       Time tstamp;
       uint8_t tid = GetTid (packet, hdr);
-      Ptr<WifiMacQueue> queue;
+      Ptr<PerStaWifiMacQueue> queue;
       AcIndex ac = QosUtilsMapTidToAc (tid);
       //since a blockack agreement always preceeds mpdu aggregation there should always exist blockAck listener
       std::map<AcIndex, MacLowBlockAckEventListener*>::const_iterator listenerIt= m_edcaListeners.find(ac);
       NS_ASSERT (listenerIt != m_edcaListeners.end ());
-      queue = listenerIt->second->GetQueue();
+      //sva TODO: bad design! probably better if I just replace WifiMacQueue with PerStaWifiMacQueue
+      queue = listenerIt->second->GetQueue()->GetObject<PerStaWifiMacQueue>();
       
       if (!hdr.GetAddr1 ().IsBroadcast () && m_mpduAggregator!= 0)
         {
@@ -2728,8 +2730,8 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       listenerIt->second->CompleteMpduTx (peekedPacket, peekedHdr, tstamp);
                       if (retry)
                           listenerIt->second->RemoveFromBaQueue(tid, hdr.GetAddr1 (), peekedHdr.GetSequenceNumber ());
-                      else
-                          queue->Remove (peekedPacket);
+                      else //sva: if correctly aggregated and sent then remove from EDCA queue (the main one).
+                          queue->Remove (peekedPacket);//sva-bug: This does not resolve to PreStaWifiMacQueue !!!
                       newPacket = 0;
                     }
                   else
