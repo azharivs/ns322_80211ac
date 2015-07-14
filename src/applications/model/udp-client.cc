@@ -75,7 +75,7 @@ UdpClient::GetTypeId (void)
                    MakeUintegerAccessor (&UdpClient::m_size),
                    MakeUintegerChecker<uint32_t> (12,1500))
     .AddAttribute ("Deadline",
-                   "Deadline (Maximum Tolerable Delay) of each packet in seconds.", DoubleValue (2.0),
+                   "Deadline (Maximum Tolerable Delay) of each packet in seconds.", DoubleValue (1.0),
                     MakeDoubleAccessor (&UdpClient::m_deadline),
                     MakeDoubleChecker<double> ())
   ;
@@ -178,7 +178,7 @@ UdpClient::Send (void)
   p->AddPacketTag(tag);
   //sva: add deadline as absolute timestamp
   TimestampTag tsTag;
-  tsTag.SetTimestamp(Simulator::Now() + Time(m_deadline));
+  tsTag.SetTimestamp(Simulator::Now() + Seconds(m_deadline));
   p->AddByteTag(tsTag);
 
 

@@ -198,7 +198,9 @@ namespace ns3 {
         m_queueDelayViolationHistory.pop_back();
       }
     m_queueDelayViolationHistory.push_front( (deadline - Simulator::Now()).GetSeconds() );
+#ifdef SVA_DEBUG
     std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline \n";
+#endif
 
     Update();
   }
