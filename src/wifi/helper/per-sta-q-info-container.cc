@@ -126,6 +126,11 @@ PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hd
 #ifdef SVA_DEBUG
   m_cnt ++;
   std::cout << " Arrival XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
+  Time now = Simulator::Now();
+  TimestampTag deadline;
+  bool ok = packet->FindFirstMatchingByteTag(deadline);
+  NS_ASSERT_MSG(ok,"Did not find TimestampTag in packet!");
+  std::cout << " @ "<< now/1000000000 << " Deadline is " << deadline.GetTimestamp()/1000000000 << " \n";
 #endif
 }
 
@@ -150,6 +155,7 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
 #ifdef SVA_DEBUG
   m_cnt --;
   std::cout << " Departure XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
+  std::cout << " @ "<< now/1000000000 << " Deadline is " << deadline.GetTimestamp()/1000000000 << " \n";
 #endif
 }
 
