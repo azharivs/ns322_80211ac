@@ -29,6 +29,7 @@
 #include "ns3/object.h"
 #include "wifi-mac-header.h"
 #include "ns3/per-sta-q-info-container.h"
+#include "ns3/enum.h"
 
 namespace ns3 {
 class QosBlockedDestinations;
@@ -112,6 +113,8 @@ public:
    *
    * \param hdr the WifiMacHeader of the packet
    * \return the packet
+   *
+   * Apparently never called!!
    */
   virtual Ptr<const Packet> Peek (WifiMacHeader *hdr);
   /**
@@ -290,6 +293,13 @@ protected:
  * Otherwise, it is returned to the caller.
  */
 
+typedef enum
+{
+  FCFS,
+  EDF,
+  EDF_RR
+} ServicePolicyType;
+
 class PerStaWifiMacQueue : public WifiMacQueue
 {
 public:
@@ -316,6 +326,13 @@ public:
    *
    * \param hdr the WifiMacHeader of the packet
    * \return the packet
+   *
+   * Dequeue() is called by DcaTxop::NotifyAccessGranted() which is for non-11e
+   * So we should not be worried about implementing our arbitration in it.
+   * Unless we want to define a new way of arbitration for non-11e (DCA) traffic as well.
+   *
+   * Dequeue() is also called by MacLow::ForwardDown() on its aggregation queue.
+   * This is also a FCFS queue so we should not be concerned with it either.
    */
   Ptr<const Packet> Dequeue (WifiMacHeader *hdr);
 
@@ -324,6 +341,9 @@ public:
    *
    * \param hdr the WifiMacHeader of the packet
    * \return the packet
+   *
+   * Apparently not called from anywehere!!
+   *
    */
   Ptr<const Packet> Peek (WifiMacHeader *hdr);
 
@@ -339,6 +359,8 @@ public:
    * \param type the given address type
    * \param addr the given destination
    * \return packet
+   *
+   * could not find where it was used !!
    */
   Ptr<const Packet> DequeueByTidAndAddress (WifiMacHeader *hdr,
                                             uint8_t tid,
@@ -356,6 +378,8 @@ public:
    * \param tStamp
    * \param blockedPackets
    * \return packet
+   *
+   * should reflect our queue arbitration algorithm
    */
   Ptr<const Packet> DequeueFirstAvailable (WifiMacHeader *hdr,
                                            Time &tStamp,
@@ -370,6 +394,8 @@ public:
    * \param type the given address type
    * \param addr the given destination
    * \return the number of QoS packets
+   *
+   * not a concern. Don't change
    */
   uint32_t GetNPacketsByTidAndAddress (uint8_t tid,
                                        WifiMacHeader::AddressType type,
@@ -381,6 +407,7 @@ public:
    * \param tStamp
    * \param blockedPackets
    * \return packet
+   * should reflect our queue arbitration algorithm
    */
   Ptr<const Packet> PeekFirstAvailable (WifiMacHeader *hdr,
                                         Time &tStamp,
@@ -415,7 +442,16 @@ public:
    */
   bool EnablePerStaQInfo (PerStaQInfoContainer &c);
 
-protected:
+private:
+
+  ServicePolicyType m_servicePolicy; //!< type of service policy
+
+  /*
+   * Returns HoL packet according to FCFS service policy
+   */
+  Ptr<const Packet> PeekFcfs (WifiMacHeader *hdr,
+                                       const QosBlockedDestinations *blockedPackets);
+
   /**
    * Clean up the queue by removing packets that exceeded the maximum delay.
    */

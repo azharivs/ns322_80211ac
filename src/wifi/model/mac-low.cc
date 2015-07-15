@@ -2731,7 +2731,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       if (retry)
                           listenerIt->second->RemoveFromBaQueue(tid, hdr.GetAddr1 (), peekedHdr.GetSequenceNumber ());
                       else //sva: if correctly aggregated and sent then remove from EDCA queue (the main one).
-                          queue->Remove (peekedPacket);//sva-bug: This does not resolve to PreStaWifiMacQueue !!!
+                          queue->Remove (peekedPacket);//sva: This resolves to PreStaWifiMacQueue
                       newPacket = 0;
                     }
                   else

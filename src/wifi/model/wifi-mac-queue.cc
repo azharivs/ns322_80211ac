@@ -367,6 +367,12 @@ PerStaWifiMacQueue::GetTypeId (void)
   static TypeId tid = TypeId ("ns3::PerStaWifiMacQueue")
     .SetParent<WifiMacQueue> ()
     .AddConstructor<PerStaWifiMacQueue> ()
+    .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
+                   EnumValue (FCFS),
+                   MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
+                   MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
+                                    ns3::EDF, "ns3::EDF",
+                                    ns3::EDF_RR, "ns3::EDF_RR"))
   ;
   return tid;
 }
@@ -588,11 +594,11 @@ PerStaWifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hd
 #endif
 }
 
-
+/* Original Version
 Ptr<const Packet>
 PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                      const QosBlockedDestinations *blockedPackets)
-{
+{//TODO change to reflect queue arbitration algorithm
   //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
   Time now = Simulator::Now();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
@@ -620,12 +626,84 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     }
   return packet;
 }
+*/
 
+//Modified Version with Arbitration
+Ptr<const Packet>
+PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
+                                           const QosBlockedDestinations *blockedPackets)
+{//TODO change to reflect queue arbitration algorithm
+  //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
+  Time now = Simulator::Now();
+  //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
+  Cleanup ();
+  Ptr<const Packet> packet = 0;
+  PacketQueueI it = 0;
+  switch (m_servicePolicy)
+  {
+    case FCFS:
+      it = PeekFcfs(hdr, blockedPackets);
+      break;
+    case EDF:
+      break;
+    case EDF_RR:
+      break;
+    default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
+  }
+  if (!it)
+    {
+      *hdr = it->hdr;
+      timestamp = it->tstamp;
+      packet = it->packet;
+      if (m_perStaQInfo)
+        {
+          m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
+        }
+#ifdef SVA_DEBUG
+  if (it->hdr.IsData()) std::cout << "@DequeueFirstAvailable PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
+#endif
+      m_queue.erase (it);
+      m_size--;
+    }
+  return packet;
+}
+
+//Modified Version with Arbitration
 Ptr<const Packet>
 PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                   const QosBlockedDestinations *blockedPackets)
-{
-  //std::cout << "WifiMacQueue::PeekFirstAvailable \n";
+{//TODO change to reflect queue arbitration algorithm
+  //std::cout << "PreStaWifiMacQueue::PeekFirstAvailable \n";
+  Cleanup ();
+  //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
+  Ptr<const Packet> packet = 0;
+  PacketQueueI it = 0;
+  switch (m_servicePolicy)
+  {
+    case FCFS:
+      it = PeekFcfs(hdr, blockedPackets);
+      break;
+    case EDF:
+      break;
+    case EDF_RR:
+      break;
+    default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
+  }
+  if (!it)
+    {
+      *hdr = it->hdr;
+      timestamp = it->tstamp;
+      packet = it->packet;
+    }
+  return packet;
+}
+
+/* Original Version
+Ptr<const Packet>
+PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
+                                  const QosBlockedDestinations *blockedPackets)
+{//TODO change to reflect queue arbitration algorithm
+  //std::cout << "PreStaWifiMacQueue::PeekFirstAvailable \n";
   Cleanup ();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
@@ -640,6 +718,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     }
   return 0;
 }
+*/
 
 //sva: can be optimized
 uint32_t
