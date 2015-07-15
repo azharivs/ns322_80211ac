@@ -442,6 +442,11 @@ EdcaTxopN::RemoveRetransmitPacket (uint8_t tid, Mac48Address recipient, uint16_t
    m_baManager->RemovePacket (tid, recipient, seqnumber);
 }
 
+/* sva: main function where access arbitration happens within an AC queue
+ * currently it is FCFS but we have to change it to our own arbitration
+ * EDF, etc...
+ *
+ */
 void
 EdcaTxopN::NotifyAccessGranted (void)
 {
@@ -465,7 +470,7 @@ EdcaTxopN::NotifyAccessGranted (void)
       if (m_currentPacket == 0)//No ReTx needed
         {
     	  //sva: Always need to modify PeekFirstAvailable according to DequeueFirstAvailable
-          //sva: Just checks if queue is empty no need to change
+          //sva: Just checks if queue is empty
           //also initializes m_currentHdr to the header of the first packet (HoL)
           //This should be changed for EDF scheduler.
           //PeekFirstAvailable should return the one that was picked by the scheduler and not FCFS
