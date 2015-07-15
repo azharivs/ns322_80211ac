@@ -638,11 +638,12 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
   Ptr<const Packet> packet = 0;
-  PacketQueueI it = 0;
+  PacketQueueI it;
+  bool found = false;
   switch (m_servicePolicy)
   {
     case FCFS:
-      it = PeekFcfs(hdr, blockedPackets);
+      found = PeekFcfs(it, blockedPackets);
       break;
     case EDF:
       break;
@@ -650,7 +651,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       break;
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
-  if (!it)
+  if (found)
     {
       *hdr = it->hdr;
       timestamp = it->tstamp;
@@ -677,11 +678,12 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
   Cleanup ();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Ptr<const Packet> packet = 0;
-  PacketQueueI it = 0;
+  PacketQueueI it;
+  bool found = false;
   switch (m_servicePolicy)
   {
     case FCFS:
-      it = PeekFcfs(hdr, blockedPackets);
+      found = PeekFcfs(it, blockedPackets);
       break;
     case EDF:
       break;
@@ -689,7 +691,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       break;
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
-  if (!it)
+  if (found)
     {
       *hdr = it->hdr;
       timestamp = it->tstamp;
@@ -750,5 +752,22 @@ PerStaWifiMacQueue::IsEmpty (void)
   Cleanup ();
   return m_queue.empty ();
 }
+
+bool
+PerStaWifiMacQueue::PeekFcfs (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{
+  for (PacketQueueI i = m_queue.begin (); i != m_queue.end (); i++)
+    {
+      if (!i->hdr.IsQosData ()
+          || !blockedPackets->IsBlocked (i->hdr.GetAddr1 (), i->hdr.GetQosTid ()))
+        {
+          it = i;
+          return true;
+        }
+    }
+  return false;
+
+}
+
 
 } // namespace ns3

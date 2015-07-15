@@ -447,10 +447,16 @@ private:
   ServicePolicyType m_servicePolicy; //!< type of service policy
 
   /*
-   * Returns HoL packet according to FCFS service policy
+   * Called to implement the FCFS service policy
+   * This function is only called by DequeueFirstAvailable() and PeekFirstAvailable()
+   *
+   * \param it: reference to the queue iterator pointing to the HoL queue according to service policy
+   * \param blockedPackets: exactly passed by caller
+   *
+   * Returns true if a packet was found, false if no packet was found
+   * also assigns it to the correct queue placeholder containing packet to be served
    */
-  Ptr<const Packet> PeekFcfs (WifiMacHeader *hdr,
-                                       const QosBlockedDestinations *blockedPackets);
+  bool PeekFcfs (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
   /**
    * Clean up the queue by removing packets that exceeded the maximum delay.
