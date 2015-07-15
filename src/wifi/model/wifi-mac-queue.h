@@ -458,6 +458,31 @@ private:
    */
   bool PeekFcfs (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
+  /*
+   * Called to implement the Earliest Deadline First (EDF) service policy
+   * This function is only called by DequeueFirstAvailable() and PeekFirstAvailable()
+   *
+   * \param it: reference to the queue iterator pointing to the HoL queue according to service policy
+   * \param blockedPackets: exactly passed by caller
+   *
+   * Returns true if a packet was found, false if no packet was found
+   * also assigns it to the correct queue placeholder containing packet to be served
+   */
+  bool PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
+
+  /*
+   * Return iterator pointing to queue location holding packet with
+   * appropriate tid destined to certain dest STA which is ready to be sent.
+   *
+   * \param it: PacketQueue Iterator (reference)
+   * \param tid: tid we are looking for
+   * \param dest: MAC destinaton address (i.e. of station)
+   * \param blockedPackets: passed directly by caller
+   *
+   */
+  bool GetStaHol (PacketQueueI &it, uint8_t tid, Mac48Address dest,
+                                 const QosBlockedDestinations *blockedPackets);
+
   /**
    * Clean up the queue by removing packets that exceeded the maximum delay.
    */

@@ -686,7 +686,6 @@ ApWifiMac::SetPerStaQInfo(PerStaQInfoContainer &c, uint8_t ac)
 {
   NS_ASSERT_MSG(!c.IsEmpty(),"PerStaQInfoContainer empty");
   Ptr<EdcaTxopN> edca = m_edca.find ((ns3::AcIndex) ac)->second;
-  //Ptr<PerStaWifiMacQueue> perStaQueue = Ptr<PerStaWifiMacQueue> (dynamic_cast<PerStaWifiMacQueue *> (PeekPointer (edca->GetEdcaQueue())) );
   Ptr<PerStaWifiMacQueue> perStaQueue = edca->GetEdcaQueue()->GetObject<PerStaWifiMacQueue>();
   perStaQueue->EnablePerStaQInfo(c); //simply initializes a member pointer to point to this container
   return true;

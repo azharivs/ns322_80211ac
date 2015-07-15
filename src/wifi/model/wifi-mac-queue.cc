@@ -354,7 +354,9 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 
 /**
  * PerStaWifiMacQueue implementation starts here
- *
+ * For now service descipline is determined by changing the default value in
+ * the .AddAttribute line below.
+ * TODO: do this by calling a method in the main()
  *
  *
  */
@@ -368,7 +370,7 @@ PerStaWifiMacQueue::GetTypeId (void)
     .SetParent<WifiMacQueue> ()
     .AddConstructor<PerStaWifiMacQueue> ()
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (FCFS),
+                   EnumValue (EDF),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
@@ -594,6 +596,30 @@ PerStaWifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hd
 #endif
 }
 
+
+bool
+PerStaWifiMacQueue::GetStaHol (PacketQueueI &it, uint8_t tid, Mac48Address dest,
+                               const QosBlockedDestinations *blockedPackets)
+{
+  if (!m_queue.empty ())
+    {
+      PacketQueueI i;
+      for (i = m_queue.begin (); i != m_queue.end (); ++i)
+        {
+          if (i->hdr.IsQosData ())
+            {
+              if (GetAddressForPacket (WifiMacHeader::ADDR1, i) == dest
+                  && i->hdr.GetQosTid () == tid)
+                {
+                  it = i;
+                  return true;
+                }
+            }
+        }
+    }
+  return false;
+}
+
 /* Original Version
 Ptr<const Packet>
 PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
@@ -646,6 +672,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       found = PeekFcfs(it, blockedPackets);
       break;
     case EDF:
+      found = PeekEdf(it,blockedPackets);
       break;
     case EDF_RR:
       break;
@@ -686,6 +713,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       found = PeekFcfs(it, blockedPackets);
       break;
     case EDF:
+      found = PeekEdf(it,blockedPackets);
       break;
     case EDF_RR:
       break;
@@ -766,7 +794,50 @@ PerStaWifiMacQueue::PeekFcfs (PacketQueueI &it, const QosBlockedDestinations *bl
         }
     }
   return false;
+}
 
+
+bool
+PerStaWifiMacQueue::PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{
+  PerStaQInfoContainer::Iterator sta;
+  PacketQueueI qi;
+  PacketQueueI qiServed; //the one that will eventually be served
+  Time earliestDeadline=Simulator::Now()+Seconds(100); //set to some distant future time
+  TimestampTag deadline;
+  bool found=false;
+
+  if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
+    {
+      for (sta = m_perStaQInfo->Begin(); sta != m_perStaQInfo->End(); ++sta)
+        {
+          if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
+            {
+              NS_ASSERT_MSG(qi->packet->FindFirstMatchingByteTag(deadline),"Did not find TimestampTag in packet!");
+              if (deadline.GetTimestamp() < earliestDeadline)
+                { //update selected STA for service
+                  qiServed = qi;
+                  earliestDeadline = deadline.GetTimestamp();
+                  found = true;
+                }
+            }
+        }
+      if (found)
+        {
+          it = qiServed;
+          return true;
+        }
+    }
+  //if no packet found based on EDF OR perStaQInfo not supported then resort to FCFS scheduling
+  //I'm not sure if (no packet found based on EDF) happens.
+  //May happen when there are only non-QoS packets in the queue
+  found = PeekFcfs(qiServed,blockedPackets);
+  if (found)
+    {
+      it = qiServed;
+      return true;
+    }
+  return false;
 }
 
 
