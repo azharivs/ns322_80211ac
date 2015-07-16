@@ -188,6 +188,9 @@ int main (int argc, char *argv[])
     {
 	  //sva: initialize correct remote address for next client instantiation
 	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
+	  //sva: set dealine for each stations traffic
+	  //sva: 0.5 sec, 0.7sec, 0.9sec, 1.2 sec
+	  myClient.SetAttribute("Deadline",DoubleValue(0.5+j*0.2));
 	  //sva: this is not the correct way of doing it.
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this
@@ -204,20 +207,31 @@ int main (int argc, char *argv[])
   Simulator::Stop (Seconds (simulationTime+1));
 
   Simulator::Run ();
-  Simulator::Destroy ();
 
   uint32_t totalPacketsThrough=0;
   uint32_t totalPacketsLost=0;
   double throughput=0;
   double pdr=0;
+  PerStaStatType stats;
+  Ptr<PerStaQInfo> staPtr;
   for (j = 0; j < nSta; j ++)
     {
-	  totalPacketsThrough = DynamicCast<UdpServer>(serverApp.Get (j))->GetReceived ();
-	  totalPacketsLost = DynamicCast<UdpServer>(serverApp.Get (j))->GetLost ();
-	  throughput = totalPacketsThrough*payloadSize*8/(simulationTime*1000000.0);
-	  pdr = (double) totalPacketsThrough/(double)(totalPacketsThrough+totalPacketsLost);
-      std::cout << "STA(" << j << ") Throughput: " << throughput << " Mbit/s, App layer PDR: " << pdr << '\n';
+      Ptr<NetDevice> netDevice = staDevice.Get(j);
+      Ptr<WifiNetDevice> device = netDevice->GetObject<WifiNetDevice>();
+      Ptr<RegularWifiMac> wifiMac = device->GetMac()->GetObject<RegularWifiMac>();
+      staPtr=perStaQueue.GetByMac( wifiMac->GetAddress() );
+      stats = staPtr->GetAllStats();
+	    totalPacketsThrough = DynamicCast<UdpServer>(serverApp.Get (j))->GetReceived ();
+	    totalPacketsLost = DynamicCast<UdpServer>(serverApp.Get (j))->GetLost ();
+	    throughput = totalPacketsThrough*payloadSize*8/(simulationTime*1000000.0);
+	    pdr = (double) totalPacketsThrough/(double)(totalPacketsThrough+totalPacketsLost);
+      std::cout << "STA(" << j << ") [" << staPtr->GetMac() << "] Throughput: " << throughput << " Mbps, PDR: " << pdr
+          << " Arrival Rate = " << stats.avgArrival << " pps(" << stats.avgArrivalBytes/1000000*8 << " Mbps), Average Q Size = "
+          << stats.avgQueue << " Pkts(" << stats.avgBytes/1000000 << " MBytes), Average Q Wait = "<< stats.avgWait*1000
+          << " msec, DVP = " << stats.dvp << "; \n";
     }
-    
+
+  Simulator::Destroy ();
+
   return 0;
 }

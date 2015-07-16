@@ -23,7 +23,7 @@
 #define PER_STA_Q_INFO_H
 
 //sva: when enabled will print PerStaQInfo statistics to the stdout
-#define SVA_DEBUG
+//#define SVA_DEBUG
 
 #include <list>
 #include <deque>
@@ -45,6 +45,17 @@ namespace ns3 {
  * PerStaQInfo for each station.
  *
  */
+  struct PerStaStatType
+  {
+      double avgQueue; //!< average queue size in packets
+      double avgBytes; //!< average queue size in bytes
+      double avgWait; //!< average queue waiting time in seconds
+      double avgArrival; //!< average packet arrival rate in pps
+      double avgArrivalBytes; //!< average arrival rate in Bytes per second
+      double dvp; //!< Delay violation probability measured right before transmission
+  };
+
+
 class PerStaQInfo : public Object
 {
 public:
@@ -125,12 +136,27 @@ public:
    * \return the average arrival rate for the queue (in packets per second)
    */
   double GetAvgArrivalRate (void);
+
   /**
    * Computes and returns average arrival rate in bps, over ???
    *
    * \return the average arrival rate for the queue (in bits per second)
    */
   double GetAvgArrivalRateBytes (void);
+
+  /**
+   * Computes and returns delay violation probability
+   *
+   * \return the DVP in fractions
+   */
+  double GetDvp (void);
+
+  /**
+   * Computes and returns all statistics
+   *
+   * \returns the struct containing all statistics
+   */
+  struct PerStaStatType GetAllStats (void);
 
   /**
    * A new packet has arrived: collect statistics and update
