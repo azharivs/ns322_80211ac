@@ -95,7 +95,7 @@ private:
   uint32_t m_count; //!< Maximum number of packets the application will send
   Time m_interval; //!< Packet inter-send time
   uint32_t m_size; //!< Size of the sent packet (including the SeqTsHeader)
-  double m_deadline; //!< Packet deadline in seconds
+  double m_deadline; //!< sva: Packet deadline in seconds
 
   uint32_t m_sent; //!< Counter for sent packets
   Ptr<Socket> m_socket; //!< Socket
@@ -105,6 +105,7 @@ private:
 
 };
 
+//sva:
 class TimestampTag : public Tag {
 public:
   static TypeId GetTypeId (void);

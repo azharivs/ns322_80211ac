@@ -141,6 +141,26 @@ namespace ns3 {
     return m_avgArrivalRateBytes;
   }
 
+  double
+  PerStaQInfo::GetDvp (void)
+  {
+    return m_dvp;
+  }
+
+  struct PerStaStatType
+  PerStaQInfo::GetAllStats (void)
+  {
+    struct PerStaStatType stats;
+    stats.avgArrival = GetAvgArrivalRate();
+    stats.avgArrivalBytes = GetAvgArrivalRateBytes();
+    stats.avgBytes = GetAvgSizeBytes();
+    stats.avgQueue = GetAvgSize();
+    stats.avgWait = GetAvgWait();
+    stats.dvp = GetDvp();
+
+    return stats;
+  }
+
   void
   PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
   {//TODO: record time of arrival as well for avgArrival and avgWait calculation
@@ -199,7 +219,7 @@ namespace ns3 {
       }
     m_queueDelayViolationHistory.push_front( (deadline - Simulator::Now()).GetSeconds() );
 #ifdef SVA_DEBUG
-    std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline \n";
+    std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
 #endif
 
     Update();
