@@ -49,14 +49,15 @@ public:
    */
   virtual void AddHeaderAndPad (Ptr<Packet> packet, bool last);
   /**
-   * \param packetSize size of the packet we want to insert into <i>aggregatedPacket</i>.
+   * \param peekedPacket the packet we want to insert into <i>aggregatedPacket</i>.
    * \param aggregatedPacket packet that will contain the packet of size <i>packetSize</i>, if aggregation is possible.
    * \param blockAckSize size of the piggybacked block ack request
-   * \return true if the packet of size <i>packetSize</i> can be aggregated to <i>aggregatedPacket</i>, false otherwise.
+   * \return true if the packet can be aggregated to <i>aggregatedPacket</i>, false otherwise.
    *
-   * This method is used to determine if a packet could be aggregated to an A-MPDU without exceeding the maximum packet size.
+   * This method is used to determine if a packet could be aggregated to an A-MPDU
    */
-  virtual bool CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize);
+  virtual bool CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+
   /**
    * \return padding that must be added to the end of an aggregated packet
    *
