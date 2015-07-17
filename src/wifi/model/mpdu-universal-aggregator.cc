@@ -23,6 +23,8 @@
 #include "ampdu-subframe-header.h"
 #include "mpdu-universal-aggregator.h"
 
+//sva TODO: Aggregation size should be allowed to increase to 11ac values. (I think 4MB?!)
+
 NS_LOG_COMPONENT_DEFINE ("MpduUniversalAggregator");
 
 namespace ns3 {
@@ -39,7 +41,12 @@ MpduUniversalAggregator::GetTypeId (void)
                    UintegerValue (65535),
                    MakeUintegerAccessor (&MpduUniversalAggregator::m_maxAmpduLength),
                    MakeUintegerChecker<uint32_t> ())
-  ;
+    .AddAttribute ("AggregationAlgorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
+                   EnumValue (STANDARD),
+                   MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
+                   MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
+                                    ns3::DEADLINE, "ns3::DEADLINE"))
+;
   return tid;
 }
 
@@ -60,10 +67,11 @@ MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggreg
   AmpduSubframeHeader currentHdr;
 
   uint32_t padding = CalculatePadding (aggregatedPacket);
-  uint32_t actualSize = aggregatedPacket->GetSize ();
+  //old code: uint32_t actualSize = aggregatedPacket->GetSize ();
 
   //sva: checks whether adding this packet will exceed max aggregation size
-  if ((4 + packet->GetSize () + actualSize + padding) <= m_maxAmpduLength)
+  //sva: old code was: if ((4 + packet->GetSize () + actualSize + padding) <= m_maxAmpduLength)
+  if ( MpduUniversalAggregator::CanBeAggregated(packet->GetSize (), aggregatedPacket, 0) )//0: means no block ack request bits
     {
       if (padding)
         {
@@ -105,6 +113,29 @@ MpduUniversalAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 bool
 MpduUniversalAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
 {
+  switch (m_aggregationAlgorithm)
+  {
+    case STANDARD:
+      return StandardCanBeAggregated(packetSize,aggregatedPacket,blockAckSize);
+      break;
+    case DEADLINE:
+      return false;
+      break;
+    default:
+      NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
+  }
+}
+
+uint32_t
+MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
+{
+  return (4 - (packet->GetSize () % 4 )) % 4;
+}
+
+
+bool
+MpduUniversalAggregator::StandardCanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
+{
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
   if (blockAckSize > 0)
@@ -121,10 +152,6 @@ MpduUniversalAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggre
     }
 }
 
-uint32_t
-MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
-{
-  return (4 - (packet->GetSize () % 4 )) % 4;
-}
+
 
 }  // namespace ns3

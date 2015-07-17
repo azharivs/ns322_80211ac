@@ -620,39 +620,6 @@ PerStaWifiMacQueue::GetStaHol (PacketQueueI &it, uint8_t tid, Mac48Address dest,
   return false;
 }
 
-/* Original Version
-Ptr<const Packet>
-PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
-                                     const QosBlockedDestinations *blockedPackets)
-{//TODO change to reflect queue arbitration algorithm
-  //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
-  Time now = Simulator::Now();
-  //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
-  Cleanup ();
-  Ptr<const Packet> packet = 0;
-  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
-    {
-      if (!it->hdr.IsQosData ()
-          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
-        {
-          *hdr = it->hdr;
-          timestamp = it->tstamp;
-          packet = it->packet;
-          if (m_perStaQInfo)
-            {
-              m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
-            }
-#ifdef SVA_DEBUG
-          if (it->hdr.IsData()) std::cout << "@DequeueFirstAvailable PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
-#endif
-          m_queue.erase (it);
-          m_size--;
-          return packet;
-        }
-    }
-  return packet;
-}
-*/
 
 //Modified Version with Arbitration
 Ptr<const Packet>
@@ -727,28 +694,6 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     }
   return packet;
 }
-
-/* Original Version
-Ptr<const Packet>
-PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
-                                  const QosBlockedDestinations *blockedPackets)
-{//TODO change to reflect queue arbitration algorithm
-  //std::cout << "PreStaWifiMacQueue::PeekFirstAvailable \n";
-  Cleanup ();
-  //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
-  for (PacketQueueI it = m_queue.begin (); it != m_queue.end (); it++)
-    {
-      if (!it->hdr.IsQosData ()
-          || !blockedPackets->IsBlocked (it->hdr.GetAddr1 (), it->hdr.GetQosTid ()))
-        {
-          *hdr = it->hdr;
-          timestamp = it->tstamp;
-          return it->packet;
-        }
-    }
-  return 0;
-}
-*/
 
 //sva: can be optimized
 uint32_t
