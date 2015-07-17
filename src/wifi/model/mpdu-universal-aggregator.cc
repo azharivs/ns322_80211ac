@@ -15,45 +15,45 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Ghada Badawy <gbadawy@gmail.com>
+ * Author: Seyed Vahid Azhari <azharivs@iust.ac.ir>
  */
 #include "ns3/log.h"
 #include "ns3/uinteger.h"
 
 #include "ampdu-subframe-header.h"
-#include "mpdu-standard-aggregator.h"
+#include "mpdu-universal-aggregator.h"
 
-NS_LOG_COMPONENT_DEFINE ("MpduStandardAggregator");
+NS_LOG_COMPONENT_DEFINE ("MpduUniversalAggregator");
 
 namespace ns3 {
 
-NS_OBJECT_ENSURE_REGISTERED (MpduStandardAggregator);
+NS_OBJECT_ENSURE_REGISTERED (MpduUniversalAggregator);
 
 TypeId
-MpduStandardAggregator::GetTypeId (void)
+MpduUniversalAggregator::GetTypeId (void)
 {
-  static TypeId tid = TypeId ("ns3::MpduStandardAggregator")
+  static TypeId tid = TypeId ("ns3::MpduUniversalAggregator")
     .SetParent<MpduAggregator> ()
-    .AddConstructor<MpduStandardAggregator> ()
+    .AddConstructor<MpduUniversalAggregator> ()
     .AddAttribute ("MaxAmpduSize", "Max length in bytes of an A-MPDU",
                    UintegerValue (65535),
-                   MakeUintegerAccessor (&MpduStandardAggregator::m_maxAmpduLength),
+                   MakeUintegerAccessor (&MpduUniversalAggregator::m_maxAmpduLength),
                    MakeUintegerChecker<uint32_t> ())
   ;
   return tid;
 }
 
-MpduStandardAggregator::MpduStandardAggregator ()
+MpduUniversalAggregator::MpduUniversalAggregator ()
 {
 }
 
-MpduStandardAggregator::~MpduStandardAggregator ()
+MpduUniversalAggregator::~MpduUniversalAggregator ()
 {
 }
 
 //sva: This is the function where our aggregation algorithm should be implemented
 bool
-MpduStandardAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggregatedPacket)
+MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggregatedPacket)
 {
   NS_LOG_FUNCTION (this);
   Ptr<Packet> currentPacket;
@@ -83,7 +83,7 @@ MpduStandardAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggrega
 }
 
 void
-MpduStandardAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
+MpduUniversalAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 {
   NS_LOG_FUNCTION (this);
   AmpduSubframeHeader currentHdr;
@@ -103,7 +103,7 @@ MpduStandardAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 }
 
 bool
-MpduStandardAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
+MpduUniversalAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
 {
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
@@ -122,7 +122,7 @@ MpduStandardAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggreg
 }
 
 uint32_t
-MpduStandardAggregator::CalculatePadding (Ptr<const Packet> packet)
+MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
 {
   return (4 - (packet->GetSize () % 4 )) % 4;
 }

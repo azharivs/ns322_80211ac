@@ -56,8 +56,6 @@
 // at the client side.
 // Also I am making bad use of application container for the client apps on the AP
 // Everything else seems to be working fine
-// TODO: Extract delay and delay violation probability for each traffic flow
-// TODO: Assign traffic flows to AC_VI
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
@@ -104,15 +102,15 @@ int main (int argc, char *argv[])
   wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate65MbpsBW20MHz"), "ControlMode", StringValue("OfdmRate6_5MbpsBW20MHz"));
   HtWifiMacHelper mac = HtWifiMacHelper::Default ();
 
-  Ssid ssid = Ssid ("simple-mpdu-aggregation");
+  Ssid ssid = Ssid ("universal-mpdu-aggregation");
   mac.SetType ("ns3::StaWifiMac",
                "Ssid", SsidValue (ssid),
                "ActiveProbing", BooleanValue (false));
 
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
 
-  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_BE with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
   
   NetDeviceContainer staDevice;
   staDevice = wifi.Install (phy, mac, wifiStaNode);
@@ -124,8 +122,8 @@ int main (int argc, char *argv[])
 
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
     
-  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_BE with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
 
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);

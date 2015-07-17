@@ -2658,6 +2658,9 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   WifiMacTrailer fcs;
                   newPacket->AddTrailer (fcs);
 
+                  //sva: newPacket is a copy of the input HoL packet with proper fcs and trailer added
+                  //sva: currentAggregatedPacket is yet null and the following line is just to initialize the first aggregated packet
+                  //sva: this first packet is not aggregated if the header is of type BLOCK_ACK_REQ and will be later aggregated, but WHY?
                   aggregated=m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
 
                   if (aggregated)
@@ -2668,7 +2671,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);
                     }
                 } 
-              else if (hdr.IsBlockAckReq())
+              else if (hdr.IsBlockAckReq())//sva: if not a BLOCK_ACK_REQ packet the blockAckSize will remain zero (size of a piggy backed block ack request)
                 {
                   blockAckSize = packet->GetSize() + hdr.GetSize() + WIFI_MAC_FCS_LENGTH;
                   qosPolicy = 3; //if the last subrame is block ack req then set ack policy of all frames to blockack
@@ -2693,6 +2696,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   currentSequenceNumber = peekedHdr.GetSequenceNumber(); 
                 }
 
+              //sva: now start adding more packets to the A-MPDU until stop condition reached
                while (IsInWindow (currentSequenceNumber, startingSequenceNumber, 64) && !StopAggregation (peekedPacket, peekedHdr, currentAggregatedPacket, blockAckSize))
                 {
                   //for now always send AMPDU with normal ACK
@@ -2709,6 +2713,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   else
                       peekedHdr.SetQosAckPolicy (WifiMacHeader::BLOCK_ACK);
 
+                  //sva: create a copy of next packet and prepare for aggregation
                   newPacket = peekedPacket->Copy ();
                   Ptr<Packet> aggPacket = newPacket->Copy ();
                  
@@ -2716,7 +2721,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   WifiMacTrailer fcs;
                   newPacket->AddTrailer (fcs);
                   aggregated = m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
-                  if (aggregated)
+                  if (aggregated) //sva: if aggregation successfull then put that packet in the book keeping queue as well
                     {
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);
                       if (i == 1 && hdr.IsQosData ())
@@ -2734,7 +2739,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                           queue->Remove (peekedPacket);//sva: This resolves to PreStaWifiMacQueue
                       newPacket = 0;
                     }
-                  else
+                  else //break while loop since it means end of aggregation
                       break;
                   if (retry == true)
                     {
@@ -2764,12 +2769,13 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                           currentSequenceNumber = listenerIt->second->PeekNextSequenceNumberfor (&peekedHdr);
                         }   
                     }
-                }
+                } //end of while
               if (isAmpdu)
                 {
+                  //sva: agregates the original HoL packet that was left behind before the while due to being BLOCK_ACK_REQ, but why?
                   if (hdr.IsBlockAckReq())
                     {
-                      newPacket = packet->Copy();
+                      newPacket = packet->Copy();//sva: again create a copy of the original HoL packet
                       peekedHdr = hdr;
                       Ptr<Packet> aggPacket = newPacket->Copy();
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);
