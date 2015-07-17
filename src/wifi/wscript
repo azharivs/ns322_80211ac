@@ -77,6 +77,7 @@ def build(bld):
         'helper/qos-wifi-mac-helper.cc',
         'model/per-sta-q-info.cc',
         'helper/per-sta-q-info-container.cc',
+        'model/mpdu-universal-aggregator.cc',
         ]
 
     obj_test = bld.create_ns3_module_test_library('wifi')
@@ -163,6 +164,7 @@ def build(bld):
         'helper/qos-wifi-mac-helper.h',
         'model/per-sta-q-info.h',
         'helper/per-sta-q-info-container.h',
+        'model/mpdu-universal-aggregator.h',
         ]
 
     if bld.env['ENABLE_GSL']:
