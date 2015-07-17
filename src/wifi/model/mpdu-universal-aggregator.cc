@@ -19,9 +19,14 @@
  */
 #include "ns3/log.h"
 #include "ns3/uinteger.h"
+#include "ns3/double.h"
+#include "ns3/udp-client.h" //used for TimestampTag. Should move so somewhere else TODO
+#include "ns3/simulator.h"
 
 #include "ampdu-subframe-header.h"
 #include "mpdu-universal-aggregator.h"
+#include "wifi-mac-header.h"
+#include "wifi-mac-trailer.h"
 
 //sva TODO: Aggregation size should be allowed to increase to 11ac values. (I think 4MB?!)
 
@@ -41,8 +46,12 @@ MpduUniversalAggregator::GetTypeId (void)
                    UintegerValue (65535),
                    MakeUintegerAccessor (&MpduUniversalAggregator::m_maxAmpduLength),
                    MakeUintegerChecker<uint32_t> ())
+    .AddAttribute ("ServiceInterval", "Periodicity with which queues are guaranteed to be serviced (in seconds).",
+                   DoubleValue (0.1), //sva: the default value should be later changed to beacon interval
+                   MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("AggregationAlgorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
-                   EnumValue (STANDARD),
+                   EnumValue (DEADLINE),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE"))
@@ -71,7 +80,7 @@ MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggreg
 
   //sva: checks whether adding this packet will exceed max aggregation size
   //sva: old code was: if ((4 + packet->GetSize () + actualSize + padding) <= m_maxAmpduLength)
-  if ( MpduUniversalAggregator::CanBeAggregated(packet->GetSize (), aggregatedPacket, 0) )//0: means no block ack request bits
+  if ( CanBeAggregated(packet, aggregatedPacket, 0) )//0: means no block ack request bits
     {
       if (padding)
         {
@@ -111,15 +120,15 @@ MpduUniversalAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 }
 
 bool
-MpduUniversalAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
+MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {
   switch (m_aggregationAlgorithm)
   {
     case STANDARD:
-      return StandardCanBeAggregated(packetSize,aggregatedPacket,blockAckSize);
+      return StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
     case DEADLINE:
-      return false;
+      return DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
     default:
       NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
@@ -134,10 +143,13 @@ MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
 
 
 bool
-MpduUniversalAggregator::StandardCanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
+MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {
+  WifiMacHeader peekedHdr;
+  peekedPacket->PeekHeader(peekedHdr);
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
+  uint32_t packetSize = peekedPacket->GetSize () + peekedHdr.GetSize () + WIFI_MAC_FCS_LENGTH;
   if (blockAckSize > 0)
     {
       blockAckSize = blockAckSize + 4 + padding;
@@ -150,6 +162,24 @@ MpduUniversalAggregator::StandardCanBeAggregated (uint32_t packetSize, Ptr<Packe
     {
       return false;
     }
+}
+
+
+bool
+MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+{
+  TimestampTag deadline;
+
+  NS_ASSERT_MSG(peekedPacket->FindFirstMatchingByteTag(deadline),"Did not find TimestampTag in packet!");
+  if (deadline.GetTimestamp() >= Simulator::Now()+Seconds(m_serviceInterval)) //if deadline will be violated by the next service interval then aggregate
+    {
+      return true;
+    }
+  else
+    {
+      return false;
+    }
+
 }
 
 
