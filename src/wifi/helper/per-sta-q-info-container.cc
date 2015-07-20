@@ -125,7 +125,7 @@ PerStaQInfoContainer::Arrival (Ptr<const Packet> packet, const WifiMacHeader &hd
   qInfo->Arrival(packet->GetSize(), tstamp);
 #ifdef SVA_DEBUG
   m_cnt ++;
-  std::cout << " Arrival XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
+  std::cout << " --> Arrival " << m_cnt << " <--";
   Time now = Simulator::Now();
   TimestampTag deadline;
   bool ok = packet->FindFirstMatchingByteTag(deadline);
@@ -140,7 +140,7 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
   if (!hdr.IsData()) //don't count non data packets
     {
 #ifdef SVA_DEBUG
-      std::cout << " Departure NON DATA   " << m_cnt << "   NON DATA \n";
+      std::cout << " <-- Departure NON DATA   " << m_cnt << "   NON DATA \n";
 #endif
       return ;
     }
@@ -154,7 +154,7 @@ PerStaQInfoContainer::Departure (Ptr<const Packet> packet, const WifiMacHeader &
   qInfo->Departure(packet->GetSize(), now - tstamp, deadline.GetTimestamp());
 #ifdef SVA_DEBUG
   m_cnt --;
-  std::cout << " Departure XXXXXXXXX   " << m_cnt << "   XXXXXXXXXXX \n";
+  std::cout << " <-- Departure " << m_cnt << " -->";
   std::cout << " @ "<< now.GetSeconds() << " Deadline is " << deadline.GetTimestamp().GetSeconds() << " \n";
 #endif
 }

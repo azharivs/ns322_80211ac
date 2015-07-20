@@ -23,6 +23,7 @@
 #include "ns3/simulator.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "ns3/double.h"
 
 #include "wifi-mac-queue.h"
 #include "qos-blocked-destinations.h"
@@ -369,8 +370,12 @@ PerStaWifiMacQueue::GetTypeId (void)
   static TypeId tid = TypeId ("ns3::PerStaWifiMacQueue")
     .SetParent<WifiMacQueue> ()
     .AddConstructor<PerStaWifiMacQueue> ()
+    .AddAttribute ("Service Interval", "Service interval period in seconds with which queues are served.",
+                   DoubleValue (0.5),
+                   MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (EDF),
+                   EnumValue (EDF_RR),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
@@ -683,6 +688,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       found = PeekEdf(it,blockedPackets);
       break;
     case EDF_RR:
+      found = PeekEdfRoundRobin(it,blockedPackets);
       break;
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
@@ -773,7 +779,7 @@ PerStaWifiMacQueue::PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blo
           return true;
         }
     }
-  //if no packet found based on EDF OR perStaQInfo not supported then resort to FCFS scheduling
+  //if no packet found based on EDF or perStaQInfo not supported then resort to FCFS scheduling
   //I'm not sure if (no packet found based on EDF) happens.
   //May happen when there are only non-QoS packets in the queue
   found = PeekFcfs(qiServed,blockedPackets);
@@ -784,6 +790,61 @@ PerStaWifiMacQueue::PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blo
     }
   return false;
 }
+
+
+bool
+PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{
+  PerStaQInfoContainer::Iterator sta;
+  PacketQueueI qi;
+  PacketQueueI qiServed; //the one that will eventually be served
+  Time earliestDeadline=Simulator::Now()+Seconds(100); //set to some distant future time
+  Time targetDeadline=Simulator::Now()+Seconds(m_serviceInterval); //approximate beginning of next service interval
+  TimestampTag deadline;
+  bool found=false;
+
+  if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
+    {
+      for (sta = m_perStaQInfo->Begin(); sta != m_perStaQInfo->End(); ++sta)
+        {
+          if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
+            {
+              NS_ASSERT_MSG(qi->packet->FindFirstMatchingByteTag(deadline),"Did not find TimestampTag in packet!");
+              if (deadline.GetTimestamp() < earliestDeadline)
+                { //update selected STA for service
+                  qiServed = qi;
+                  earliestDeadline = deadline.GetTimestamp();
+                  if (earliestDeadline <= targetDeadline)
+                    {
+                      found = true;
+                    }
+                }
+            }
+        }
+      if (found)
+        {
+          it = qiServed;
+#ifdef SVA_DEBUG
+          std::cout << "|=|=|=| @ " << Simulator::Now() << " PeekEdfRoundRobin: STA " << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline << "\n";
+#endif
+          return true;
+        }
+    }
+  //if perStaQInfo not supported then resort to FCFS scheduling
+  else
+    {
+      found = PeekFcfs(qiServed,blockedPackets);
+      if (found)
+        {
+          it = qiServed;
+          return true;
+        }
+    }
+  //otherwise if no packet found then don't service anything.
+  //TODO: I am not sure if this will cause a problem.
+  return false;
+}
+
 
 
 } // namespace ns3
