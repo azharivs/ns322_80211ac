@@ -27,6 +27,8 @@
 #include "ns3/log.h"
 #include "ns3/node.h"
 #include "ns3/double.h"
+#include "ns3/packet.h"
+#include "ns3/ampdu-tag.h"
 
 #include "mac-low.h"
 #include "wifi-phy.h"
@@ -654,6 +656,13 @@ MacLow::IsAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
   size = packet->GetSize () + hdr.GetSize () + fcs.GetSerializedSize ();
   Ptr<Packet> p = AggregateToAmpdu (packet, hdr);
   actualSize = p->GetSize();
+#ifdef SVA_DEBUG
+  AmpduTag ampduTag;
+  if (p->PeekPacketTag(ampduTag))
+    {
+      std::cout << "A-MPDU to " << hdr.GetAddr1() << " of " << actualSize << " bytes and " << (int) ampduTag.GetNoOfMpdus() << " packets \n";
+    }
+#endif
   if (actualSize > size)
     {
       m_currentPacket = p;
