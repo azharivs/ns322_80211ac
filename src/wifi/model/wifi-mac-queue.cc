@@ -647,6 +647,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       found = PeekEdf(it,blockedPackets);
       break;
     case EDF_RR:
+      found = PeekEdfRoundRobin(it,blockedPackets);
       break;
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
@@ -825,7 +826,8 @@ PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestina
         {
           it = qiServed;
 #ifdef SVA_DEBUG
-          std::cout << "|=|=|=| @ " << Simulator::Now() << " PeekEdfRoundRobin: STA " << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline << "\n";
+          std::cout << "|=|=|=| @ " << Simulator::Now().GetSeconds() << " PeekEdfRoundRobin: STA "
+              << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline.GetSeconds() << "\n";
 #endif
           return true;
         }
