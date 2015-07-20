@@ -23,7 +23,7 @@
 #define PER_STA_Q_INFO_H
 
 //sva: when enabled will print PerStaQInfo statistics to the stdout
-//#define SVA_DEBUG
+#define SVA_DEBUG
 
 #include <list>
 #include <deque>

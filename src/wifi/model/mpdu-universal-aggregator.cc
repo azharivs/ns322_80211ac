@@ -27,6 +27,7 @@
 #include "mpdu-universal-aggregator.h"
 #include "wifi-mac-header.h"
 #include "wifi-mac-trailer.h"
+#include "per-sta-q-info.h"
 
 //sva TODO: Aggregation size should be allowed to increase to 11ac values. (I think 4MB?!)
 
@@ -47,7 +48,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeUintegerAccessor (&MpduUniversalAggregator::m_maxAmpduLength),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("ServiceInterval", "Periodicity with which queues are guaranteed to be serviced (in seconds).",
-                   DoubleValue (0.1), //sva: the default value should be later changed to beacon interval
+                   DoubleValue (0.5), //sva: the default value should be later changed to beacon interval
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("AggregationAlgorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
@@ -170,8 +171,15 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
 {
   TimestampTag deadline;
 
-  NS_ASSERT_MSG(peekedPacket->FindFirstMatchingByteTag(deadline),"Did not find TimestampTag in packet!");
-  if (deadline.GetTimestamp() >= Simulator::Now()+Seconds(m_serviceInterval)) //if deadline will be violated by the next service interval then aggregate
+  if (!peekedPacket->FindFirstMatchingByteTag(deadline))
+    {//TODO: when there is no deadline tag then probably other type of packets such as a BLOCK_ACK_REQUEST control packet. So just let it pass.
+      //TODO: This should not cause a problem since its just like FCFS aggregation policy
+#ifdef DEBUG_SVA
+      cout << "MpduUniversalAggregator: No deadline in packet! \n";
+#endif
+      return true;
+    }
+  if (deadline.GetTimestamp() <= Simulator::Now()+Seconds(m_serviceInterval)) //if deadline will be violated by the next service interval then aggregate
     {
       return true;
     }

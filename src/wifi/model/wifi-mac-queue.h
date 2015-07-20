@@ -445,6 +445,7 @@ public:
 private:
 
   ServicePolicyType m_servicePolicy; //!< type of service policy
+  double m_serviceInterval; //<! service interval period in seconds used for EDF_RR
 
   /*
    * Called to implement the FCFS service policy
@@ -469,6 +470,24 @@ private:
    * also assigns it to the correct queue placeholder containing packet to be served
    */
   bool PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
+
+  /*
+   * Called to implement the Earliest Deadline First (EDF+RR) service policy
+   * Serves the queue with HoL packet that will earliest deadline that
+   * also exceeds its deadline by the next service interval.
+   * Could cause problems. Also at this point I have not implemented a guaranteed
+   * way so that the queue will get service periodically every m_serviceInterval.
+   * This feature is going to require modifications to MacLow as it requires the AP
+   * to coordinate access times in a round robin manner.
+   * This function is only called by DequeueFirstAvailable() and PeekFirstAvailable()
+   *
+   * \param it: reference to the queue iterator pointing to the HoL queue according to service policy
+   * \param blockedPackets: exactly passed by caller
+   *
+   * Returns true if a packet was found, false if no packet was found
+   * also assigns it to the correct queue placeholder containing packet to be served
+   */
+  bool PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
   /*
    * Return iterator pointing to queue location holding packet with
