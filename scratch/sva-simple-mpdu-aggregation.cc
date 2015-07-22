@@ -134,7 +134,7 @@ int main (int argc, char *argv[])
   //Initialize BssPhyMacStats for statistic collection on the medium
 
   std::ostringstream path;
-  path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/State";
+  path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
   Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
 
   //sva: AP and STAs initialized, time to initialize PerStaQInfo

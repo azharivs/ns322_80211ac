@@ -67,9 +67,6 @@ namespace ns3 {
     stateLoggerPath << path << "/State";
     Config::ConnectWithoutContext(stateLoggerPath.str(), MakeCallback (&BssPhyMacStats::PhyStateLoggerSink, this));
 
-    std::cout << "Matched with " << Config::LookupMatches("/NodeList/4/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/State").GetN() << "\n";
-    std::cout << "Matched with " << Config::LookupMatches("/NodeList/4/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/State").GetN() << "\n";
-
     std::ostringstream txTracePath;
     txTracePath << path << "/Tx";
     Config::ConnectWithoutContext(txTracePath.str(), MakeCallback (&BssPhyMacStats::PhyTxStartSink, this));
