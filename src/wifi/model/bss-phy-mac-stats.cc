@@ -25,172 +25,85 @@
 #include "ns3/object.h"
 #include "ns3/uinteger.h"
 //#include "wifi-mac-header.h"
-//#include "wifi-mac-queue.h"
+#include "wifi-phy-state-helper.h"
+#include "bss-phy-mac-stats.h"
 #include "per-sta-q-info.h"
 
 namespace ns3 {
 
-  NS_OBJECT_ENSURE_REGISTERED (PerStaQInfo);
+  NS_OBJECT_ENSURE_REGISTERED (BssPhyMacStats);
 
   TypeId
-  PerStaQInfo::GetTypeId (void)
+  BssPhyMacStats::GetTypeId (void)
   {
-    static TypeId tid = TypeId ("ns3::PerStaQInfo")
+    static TypeId tid = TypeId ("ns3::BssPhyMacStats")
         .SetParent<Object> ()
-        .AddConstructor<PerStaQInfo> ()
+        .AddConstructor<BssPhyMacStats> ()
         .AddAttribute ("HistorySize", "Number of Samples Kept for Calculating Statistics.",
                        UintegerValue (200),
-                       MakeUintegerAccessor (&PerStaQInfo::m_histSize),
-                       MakeUintegerChecker<uint32_t> ())
-        .AddAttribute ("TID", "Traffic Indication Map of Interest.",
-                       UintegerValue (UP_VI),
-                       MakeUintegerAccessor (&PerStaQInfo::m_tid),
+                       MakeUintegerAccessor (&BssPhyMacStats::m_histSize),
                        MakeUintegerChecker<uint32_t> ())
 
         ;
     return tid;
   }
 
-  PerStaQInfo::PerStaQInfo()
-  : m_addrs (),
-    m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
-    m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0), m_dvp (0.0)
-
+  BssPhyMacStats::BssPhyMacStats()
+  : m_idle (0), m_busy (0), m_lastBeacon (0),
+    m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0)
   {
+    Ptr<WifiPhyStateHelper> wifiPhyStateHelper;
+    bool result = ipv4L3Protocol->TraceConnectWithoutContext ("Tx", MakeCallback (&Ipv4L3ProtocolRxTxSink));
+    NS_ASSERT_MSG (result == true, "InternetStackHelper::EnablePcapIpv4Internal():  "
+                   "Unable to connect ipv4L3Protocol \"Tx\"");
+
   }
 
-  PerStaQInfo::~PerStaQInfo()
+  BssPhyMacStats::~BssPhyMacStats()
   {
-    m_queueSizeHistory.clear();
-    m_queueBytesHistory.clear();
-    m_queueWaitHistory.clear();
-    m_arrivalHistory.clear();
-    m_queueDelayViolationHistory.clear();
+    m_idleTimeHistory.clear();
+    m_busyTimeHistory.clear();
   }
 
-  PerStaQInfo::Item::Item(uint32_t bytes, Time tstamp)
-    : bytes(bytes), tstamp(tstamp)
+  Time
+  BssPhyMacStats::GetAvgIdleTimePerBeacon (void)
   {
+    return m_avgIdleTimePerBeacon;
   }
 
-  void
-  PerStaQInfo::SetMac (const Mac48Address &addrs)
+  Time
+  BssPhyMacStats::GetAvgBusyTimePerBeacon (void)
   {
-    uint8_t buff[6];
-    addrs.CopyTo(buff);
-    m_addrs.CopyFrom(buff);
-  }
-
-  void
-  PerStaQInfo::SetTid(uint8_t tid)
-  {
-    m_tid = tid;
-  }
-
-  Mac48Address&
-  PerStaQInfo::GetMac (void)
-  {
-    return m_addrs;
-  }
-
-  uint8_t
-  PerStaQInfo::GetTid (void)
-  {
-    return m_tid;
-  }
-
-  uint32_t
-  PerStaQInfo::GetSize (void)
-  {
-    return m_queueSize;
-  }
-
-  uint32_t
-  PerStaQInfo::GetSizeBytes (void)
-  {
-    return m_queueBytes;
-  }
-
-  double
-  PerStaQInfo::GetAvgSize (void)
-  {
-    return m_avgQueueSize;
-  }
-
-  double
-  PerStaQInfo::GetAvgSizeBytes (void)
-  {
-    return m_avgQueueBytes;
-  }
-
-  double
-  PerStaQInfo::GetAvgWait (void)
-  {
-    return m_avgQueueWait;
-  }
-
-  double
-  PerStaQInfo::GetAvgArrivalRate (void)
-  {
-    return m_avgArrivalRate;
-  }
-
-  double
-  PerStaQInfo::GetAvgArrivalRateBytes (void)
-  {
-    return m_avgArrivalRateBytes;
-  }
-
-  double
-  PerStaQInfo::GetDvp (void)
-  {
-    return m_dvp;
-  }
-
-  struct PerStaStatType
-  PerStaQInfo::GetAllStats (void)
-  {
-    struct PerStaStatType stats;
-    stats.avgArrival = GetAvgArrivalRate();
-    stats.avgArrivalBytes = GetAvgArrivalRateBytes();
-    stats.avgBytes = GetAvgSizeBytes();
-    stats.avgQueue = GetAvgSize();
-    stats.avgWait = GetAvgWait();
-    stats.dvp = GetDvp();
-
-    return stats;
+    return m_avgBusyTimePerBeacon;
   }
 
   void
-  PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
-  {//TODO: record time of arrival as well for avgArrival and avgWait calculation
-    m_queueSize ++;
-    m_queueBytes += bytes;
+  BssPhyMacStats::PhyStateLoggerSink (const Time start, const Time duration, const WifiPhy::State state)
+  {//TODO
 
-    if (m_queueSizeHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_queueSizeHistory.pop_back();
-      }
-    m_queueSizeHistory.push_front(m_queueSize);
-
-    if (m_queueBytesHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_queueBytesHistory.pop_back();
-      }
-    m_queueBytesHistory.push_front(m_queueBytes);
-
-    if (m_arrivalHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_arrivalHistory.pop_back();
-      }
-    m_arrivalHistory.push_front(Item(bytes,tstamp));
-
-    Update();
   }
 
   void
-  PerStaQInfo::Departure (uint32_t bytes, Time wait, Time deadline)
-  {
+  BssPhyMacStats::PhyTxStartSink (const Ptr<const Packet> packet, const WifiMode mode,
+                                  const WifiPreamble preamble, const uint8_t power)
+  {//TODO
+
+  }
+
+  void
+  BssPhyMacStats::RecordIdle (Time duration)
+  {//TODO:
+  }
+
+  void
+  BssPhyMacStats::RecordBusy (Time duration)
+  {//TODO:
+  }
+
+  void
+  BssPhyMacStats::RecordBeacon (Time tstamp)
+  {//TODO
+    /*
     m_queueSize --;
     m_queueBytes -= bytes;
 
@@ -218,36 +131,23 @@ namespace ns3 {
         m_queueDelayViolationHistory.pop_back();
       }
     m_queueDelayViolationHistory.push_front( (deadline - Simulator::Now()).GetSeconds() );
-#ifdef SVA_DEBUG
-    std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
-#endif
+
+    */
 
     Update();
   }
 
-  bool
-  PerStaQInfo::IsEmpty (void)
-  {
-    return (m_queueSize == 0);
-  }
-
   void
-  PerStaQInfo::Reset (void)
+  BssPhyMacStats::Reset (void)
   {
-    m_queueSize = 0;
-    m_queueBytes = 0;
-    m_avgQueueSize = 0;
-    m_avgQueueBytes = 0;
-    m_avgQueueWait = 0;
-    m_avgArrivalRate = 0;
-    m_avgArrivalRateBytes = 0;
-    m_dvp = 0;
+    m_idle = Seconds(0);
+    m_busy = Seconds(0);
+    m_lastBeacon = Seconds(0);
+    m_avgIdleTimePerBeacon = Seconds(0);
+    m_avgBusyTimePerBeacon = Seconds(0);
 
-    m_queueSizeHistory.clear();
-    m_queueBytesHistory.clear();
-    m_queueWaitHistory.clear();
-    m_arrivalHistory.clear();
-    m_queueDelayViolationHistory.clear();
+    m_idleTimeHistory.clear();
+    m_busyTimeHistory.clear();
 
   }
 
@@ -259,53 +159,27 @@ namespace ns3 {
    *
    */
   void
-  PerStaQInfo::Update(void)
+  BssPhyMacStats::Update(void)
   {
-    double tmp=0;
+    Time tmp(0);
 
-    for (std::deque<uint32_t>::iterator it=m_queueSizeHistory.begin(); it != m_queueSizeHistory.end(); ++it)
+    for (std::deque<Time>::iterator it=m_idleTimeHistory.begin(); it != m_idleTimeHistory.end(); ++it)
       {
         tmp += *it;
       }
-    m_avgQueueSize = tmp / (double) m_queueSizeHistory.size();
+    m_avgIdleTimePerBeacon = tmp / (double) m_idleTimeHistory.size();
 
-    tmp = 0;
-    for (std::deque<uint32_t>::iterator it=m_queueBytesHistory.begin(); it != m_queueBytesHistory.end(); ++it)
+    tmp = Seconds(0);
+    for (std::deque<Time>::iterator it=m_busyTimeHistory.begin(); it != m_busyTimeHistory.end(); ++it)
       {
         tmp += *it;
       }
-    m_avgQueueBytes = tmp / (double) m_queueBytesHistory.size();
+    m_avgBusyTimePerBeacon = tmp / (double) m_busyTimeHistory.size();
 
-    tmp = 0;
-    for (std::deque<double>::iterator dit=m_queueWaitHistory.begin(); dit != m_queueWaitHistory.end(); ++dit)
-      {
-        tmp += *dit;
-
-      }
-    m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
-
-    tmp = 0;
-    for (std::deque<Item>::iterator ait=m_arrivalHistory.begin(); ait != m_arrivalHistory.end(); ++ait)
-      {
-        tmp += (*ait).bytes;
-      }
-    double timespan = (m_arrivalHistory.begin()->tstamp - m_arrivalHistory.end()->tstamp).GetSeconds();
-    m_avgArrivalRateBytes = tmp / timespan;
-    m_avgArrivalRate = m_arrivalHistory.size() / timespan;
-
-    tmp = 0;
-    for (std::deque<double>::iterator dit=m_queueDelayViolationHistory.begin(); dit != m_queueDelayViolationHistory.end(); ++dit)
-      {
-        if (*dit < 0) tmp ++;//count number of violations
-      }
-    m_dvp = tmp / m_queueDelayViolationHistory.size();
 
 #ifdef SVA_DEBUG
-    std::cout << "@ " << GetMac() << "[TID " << (int) m_tid << "] \n" ;
-    std::cout << "Q=" << m_queueSize << " Pkts(" << (double)m_queueBytes/1000000 << " MB), " ;
-    std::cout << "avgQ=" << m_avgQueueSize << " Pkts(" << m_avgQueueBytes/1000000 << " MB); avgW=" << m_avgQueueWait*1000
-        << " msec, arrRate = " << m_avgArrivalRate << " pps(" << m_avgArrivalRateBytes*8/1000000 << " Mbps); DVP="
-        << m_dvp << "; History = " << m_queueSizeHistory.size() << "\n" ;
+    std::cout << "Idle= " << m_idle.GetSeconds()*1000 << " msec, avgIdle= " << m_avgIdleTimePerBeacon.GetSeconds()*1000
+        << " msec, Busy= " << m_busy.GetSeconds()*1000 << " msec, avgBusy= " << m_avgBusyTimePerBeacon.GetSeconds()*1000 << "\n";
 #endif
 
   }
