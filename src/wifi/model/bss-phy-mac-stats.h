@@ -103,10 +103,42 @@ private:
    */
   void Update (void);
 
+  /*
+   * Is called whenever a new idle time is detected
+   * and will update latest idle time during the current beacon interval
+   *
+   * \param [in] duration is the length of the idle period experienced
+   */
+  void RecordIdle (Time duration);
+
+
+  /*
+   * Is called whenever a new busy time is detected
+   * and will update latest busy time during the current beacon interval
+   *
+   * \param [in] duration is the length of the busy period experienced
+   */
+  void RecordBusy (Time duration);
+
+
+  /*
+   * Is called whenever a new beacon is transmitted
+   * and will mark the start of a new beacon interval
+   * it will add idle and busy times to the sample history
+   * and will call update()
+   *
+   * \param [in] tstamp is time of beacon transmission start
+   */
+  void RecordBeacon (Time tstamp);
+
+  Time m_idle; //!< Current total idle times during current beacon interval
+  Time m_busy; //!< Current total busy times during current beacon interval
+  Time m_lastBeacon; //!< Time of last beacon transmission start
   std::deque<Time> m_idleTimeHistory; //!< Array of samples of total idle times per beacon interval
   std::deque<Time> m_busyTimeHistory; //!< Array of samples of total busy times per beacon
-  double m_avgIdleTimePerBeacon; //!< Last updated average total idle time per beacon interval
-  double m_avgBusyTimePerBeacon; //!< Last updated average total busy time per beacon interval
+  Time m_avgIdleTimePerBeacon; //!< Last updated average total idle time per beacon interval
+  Time m_avgBusyTimePerBeacon; //!< Last updated average total busy time per beacon interval
+  uint32_t m_histSize; //!< Size of history buffer
 };
 
 } // namespace ns3
