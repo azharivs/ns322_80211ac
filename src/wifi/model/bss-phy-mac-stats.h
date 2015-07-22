@@ -45,6 +45,7 @@ class BssPhyMacStats : public Object
 public:
   static TypeId GetTypeId (void);
   BssPhyMacStats ();
+  BssPhyMacStats (std::string path);//path of the WifiPhyStateHelper used as trace source
   ~BssPhyMacStats ();
 
   /**
