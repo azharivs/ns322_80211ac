@@ -18,6 +18,8 @@
  * Author: Sébastien Deronne <sebastien.deronne@gmail.com>
  */
 
+#include <string>
+#include <sstream>
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/applications-module.h"
@@ -26,6 +28,7 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/internet-module.h"
 #include "ns3/per-sta-q-info-container.h"
+#include "ns3/bss-phy-mac-stats.h"
 
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
@@ -127,6 +130,12 @@ int main (int argc, char *argv[])
 
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
+
+  //Initialize BssPhyMacStats for statistic collection on the medium
+
+  std::ostringstream path;
+  path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/State";
+  Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
 
   //sva: AP and STAs initialized, time to initialize PerStaQInfo
 

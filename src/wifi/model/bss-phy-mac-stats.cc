@@ -20,12 +20,16 @@
 #include <list>
 #include <deque>
 #include <utility>
+#include <sstream>
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
 #include "ns3/uinteger.h"
-//#include "wifi-mac-header.h"
+#include "ns3/callback.h"
+#include "ns3/config.h"
 #include "wifi-phy-state-helper.h"
+#include "wifi-mac-header.h"
+#include "ns3/simulator.h"
 #include "bss-phy-mac-stats.h"
 #include "per-sta-q-info.h"
 
@@ -51,12 +55,28 @@ namespace ns3 {
   BssPhyMacStats::BssPhyMacStats()
   : m_idle (0), m_busy (0), m_lastBeacon (0),
     m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0)
+  {//TODO make trace sinks null
+  }
+
+  BssPhyMacStats::BssPhyMacStats(std::string path)
+  : m_idle (0), m_busy (0), m_lastBeacon (0),
+    m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0)
   {
     Ptr<WifiPhyStateHelper> wifiPhyStateHelper;
-    bool result = ipv4L3Protocol->TraceConnectWithoutContext ("Tx", MakeCallback (&Ipv4L3ProtocolRxTxSink));
-    NS_ASSERT_MSG (result == true, "InternetStackHelper::EnablePcapIpv4Internal():  "
-                   "Unable to connect ipv4L3Protocol \"Tx\"");
+    std::ostringstream stateLoggerPath;
+    stateLoggerPath << path << "/State";
+    Config::ConnectWithoutContext(stateLoggerPath.str(), MakeCallback (&BssPhyMacStats::PhyStateLoggerSink, this));
 
+    std::cout << "Matched with " << Config::LookupMatches("/NodeList/4/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/State").GetN() << "\n";
+    std::cout << "Matched with " << Config::LookupMatches("/NodeList/4/DeviceList/0/$ns3::WifiNetDevice/Phy/$ns3::YansWifiPhy/State").GetN() << "\n";
+
+    std::ostringstream txTracePath;
+    txTracePath << path << "/Tx";
+    Config::ConnectWithoutContext(txTracePath.str(), MakeCallback (&BssPhyMacStats::PhyTxStartSink, this));
+
+    std::cout << "  BssPhyMacStats::BssPhyMacStats(std::string path) \n";
+    std::cout << stateLoggerPath.str() << "\n";
+    std::cout << txTracePath.str() << "\n";
   }
 
   BssPhyMacStats::~BssPhyMacStats()
@@ -80,14 +100,20 @@ namespace ns3 {
   void
   BssPhyMacStats::PhyStateLoggerSink (const Time start, const Time duration, const WifiPhy::State state)
   {//TODO
-
+    std::cout << "New state is " << state << " from " << start.GetSeconds()*1000 << " for " << duration.GetSeconds()*1000 << " msec\n";
   }
 
   void
   BssPhyMacStats::PhyTxStartSink (const Ptr<const Packet> packet, const WifiMode mode,
                                   const WifiPreamble preamble, const uint8_t power)
   {//TODO
-
+    Time now = Simulator::Now();
+    WifiMacHeader hdr;
+    packet->PeekHeader(hdr);
+    if (hdr.IsBeacon())
+      {
+        std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
+      }
   }
 
   void
