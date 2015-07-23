@@ -18,6 +18,8 @@
  * Author: Sébastien Deronne <sebastien.deronne@gmail.com>
  */
 
+#include <string>
+#include <sstream>
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/applications-module.h"
@@ -26,6 +28,8 @@
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/internet-module.h"
 #include "ns3/per-sta-q-info-container.h"
+#include "ns3/bss-phy-mac-stats.h"
+#include "ns3/uinteger.h"
 
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
@@ -56,8 +60,6 @@
 // at the client side.
 // Also I am making bad use of application container for the client apps on the AP
 // Everything else seems to be working fine
-// TODO: Extract delay and delay violation probability for each traffic flow
-// TODO: Assign traffic flows to AC_VI
 using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
@@ -105,15 +107,15 @@ int main (int argc, char *argv[])
   wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel");
   HtWifiMacHelper mac = HtWifiMacHelper::Default ();
 
-  Ssid ssid = Ssid ("simple-mpdu-aggregation");
+  Ssid ssid = Ssid ("universal-mpdu-aggregation");
   mac.SetType ("ns3::StaWifiMac",
                "Ssid", SsidValue (ssid),
                "ActiveProbing", BooleanValue (false));
 
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
 
-  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_BE with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
   
   NetDeviceContainer staDevice;
   staDevice = wifi.Install (phy, mac, wifiStaNode);
@@ -125,11 +127,18 @@ int main (int argc, char *argv[])
 
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
     
-  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_BE with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+  mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
 
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
+
+  //Initialize BssPhyMacStats for statistic collection on the medium
+
+  std::ostringstream path;
+  path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
+  Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
+  bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(10)); //keep history of the last 10 beacons (i.e. two seconds)
 
   //sva: AP and STAs initialized, time to initialize PerStaQInfo
 
@@ -189,6 +198,9 @@ int main (int argc, char *argv[])
     {
 	  //sva: initialize correct remote address for next client instantiation
 	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
+	  //sva: set dealine for each stations traffic
+	  //sva: 0.5 sec, 0.7sec, 0.9sec, 1.2 sec
+	  myClient.SetAttribute("Deadline",DoubleValue(0.5+j*0.2));
 	  //sva: this is not the correct way of doing it.
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this
@@ -205,20 +217,31 @@ int main (int argc, char *argv[])
   Simulator::Stop (Seconds (simulationTime+1));
 
   Simulator::Run ();
-  Simulator::Destroy ();
 
   uint32_t totalPacketsThrough=0;
   uint32_t totalPacketsLost=0;
   double throughput=0;
   double pdr=0;
+  PerStaStatType stats;
+  Ptr<PerStaQInfo> staPtr;
   for (j = 0; j < nSta; j ++)
     {
-	  totalPacketsThrough = DynamicCast<UdpServer>(serverApp.Get (j))->GetReceived ();
-	  totalPacketsLost = DynamicCast<UdpServer>(serverApp.Get (j))->GetLost ();
-	  throughput = totalPacketsThrough*payloadSize*8/(simulationTime*1000000.0);
-	  pdr = (double) totalPacketsThrough/(double)(totalPacketsThrough+totalPacketsLost);
-      std::cout << "STA(" << j << ") Throughput: " << throughput << " Mbit/s, App layer PDR: " << pdr << '\n';
+      Ptr<NetDevice> netDevice = staDevice.Get(j);
+      Ptr<WifiNetDevice> device = netDevice->GetObject<WifiNetDevice>();
+      Ptr<RegularWifiMac> wifiMac = device->GetMac()->GetObject<RegularWifiMac>();
+      staPtr=perStaQueue.GetByMac( wifiMac->GetAddress() );
+      stats = staPtr->GetAllStats();
+	    totalPacketsThrough = DynamicCast<UdpServer>(serverApp.Get (j))->GetReceived ();
+	    totalPacketsLost = DynamicCast<UdpServer>(serverApp.Get (j))->GetLost ();
+	    throughput = totalPacketsThrough*payloadSize*8/(simulationTime*1000000.0);
+	    pdr = (double) totalPacketsThrough/(double)(totalPacketsThrough+totalPacketsLost);
+      std::cout << "STA(" << j << ") [" << staPtr->GetMac() << "] Throughput: " << throughput << " Mbps, PDR: " << pdr
+          << " Arrival Rate = " << stats.avgArrival << " pps(" << stats.avgArrivalBytes/1000000*8 << " Mbps), Average Q Size = "
+          << stats.avgQueue << " Pkts(" << stats.avgBytes/1000000 << " MBytes), Average Q Wait = "<< stats.avgWait*1000
+          << " msec, DVP = " << stats.dvp << "; \n";
     }
-    
+
+  Simulator::Destroy ();
+
   return 0;
 }
