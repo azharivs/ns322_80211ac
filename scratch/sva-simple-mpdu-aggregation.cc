@@ -211,7 +211,7 @@ int main (int argc, char *argv[])
 	  clientApp.Stop (Seconds (simulationTime+1));
     }
 
-  //testing
+
       
   Simulator::Stop (Seconds (simulationTime+1));
 
