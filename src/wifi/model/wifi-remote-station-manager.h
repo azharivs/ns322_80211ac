@@ -30,6 +30,8 @@
 #include "wifi-mode.h"
 #include "wifi-tx-vector.h"
 #include "ht-capabilities.h"
+//sf
+#define sfmacro_MarkovModel2
 
 namespace ns3 {
 
