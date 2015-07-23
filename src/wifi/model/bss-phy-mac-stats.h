@@ -57,18 +57,25 @@ public:
 
 
   /**
-   * Computes and returns average idle time during a beacon interval
+   * returns average idle time during a beacon interval
    *
    * \return the average idle time
    */
   Time GetAvgIdleTimePerBeacon (void);
 
   /**
-   * Computes and returns average busy (CCA+RX+TX) time during a beacon interval
+   * returns average busy (CCA+RX+TX) time during a beacon interval
    *
    * \return the average busy time
    */
   Time GetAvgBusyTimePerBeacon (void);
+
+  /**
+   * returns average beacon interval
+   *
+   * \return the average beacon interval
+   */
+  Time GetAvgBeaconInterval (void);
 
   /**
    * Trace sink for WifiPhyStateHelper::m_stateLogger
@@ -135,11 +142,15 @@ private:
   Time m_idle; //!< Current total idle times during current beacon interval
   Time m_busy; //!< Current total busy times during current beacon interval
   Time m_lastBeacon; //!< Time of last beacon transmission start
+  Time m_beaconInterval; //!< Last beacon interval
   std::deque<Time> m_idleTimeHistory; //!< Array of samples of total idle times per beacon interval
   std::deque<Time> m_busyTimeHistory; //!< Array of samples of total busy times per beacon
+  std::deque<Time> m_beaconIntervalHistory; //!< Array of samples of beacon interval length
   Time m_avgIdleTimePerBeacon; //!< Last updated average total idle time per beacon interval
   Time m_avgBusyTimePerBeacon; //!< Last updated average total busy time per beacon interval
+  Time m_avgBeaconInterval; //!< Average beacon interval
   uint32_t m_histSize; //!< Size of history buffer
+  uint32_t m_samples; //!< Number of samples PROCESSED since initialization. Used to discard first two samples
 };
 
 } // namespace ns3

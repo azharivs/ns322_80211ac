@@ -218,7 +218,7 @@ namespace ns3 {
         m_queueDelayViolationHistory.pop_back();
       }
     m_queueDelayViolationHistory.push_front( (deadline - Simulator::Now()).GetSeconds() );
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
     std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
 #endif
 
@@ -301,11 +301,11 @@ namespace ns3 {
     m_dvp = tmp / m_queueDelayViolationHistory.size();
 
 #ifdef SVA_DEBUG
-    std::cout << "@ " << GetMac() << "[TID " << (int) m_tid << "] \n" ;
-    std::cout << "Q=" << m_queueSize << " Pkts(" << (double)m_queueBytes/1000000 << " MB), " ;
-    std::cout << "avgQ=" << m_avgQueueSize << " Pkts(" << m_avgQueueBytes/1000000 << " MB); avgW=" << m_avgQueueWait*1000
-        << " msec, arrRate = " << m_avgArrivalRate << " pps(" << m_avgArrivalRateBytes*8/1000000 << " Mbps); DVP="
-        << m_dvp << "; History = " << m_queueSizeHistory.size() << "\n" ;
+    std::cout << Simulator::Now().GetSeconds() << " PerStaQInfo::Update " << GetMac() << " [TID " << (int) m_tid << "] " ;
+    std::cout << "Q= " << m_queueSize << " Pkts( " << (double)m_queueBytes/1000000 << " MB) " ;
+    std::cout << "avgQ= " << m_avgQueueSize << " Pkts( " << m_avgQueueBytes/1000000 << " MB) " ;
+    std::cout << "avgW= " << m_avgQueueWait*1000 << " msec arrRate= " << m_avgArrivalRate << " pps( "
+        << m_avgArrivalRateBytes*8/1000000 << " Mbps) DVP= " << m_dvp << " History= " << m_queueSizeHistory.size() << "\n" ;
 #endif
 
   }

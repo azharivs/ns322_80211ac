@@ -29,6 +29,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/bss-phy-mac-stats.h"
+#include "ns3/uinteger.h"
 
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
@@ -136,6 +137,7 @@ int main (int argc, char *argv[])
   std::ostringstream path;
   path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
   Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
+  bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(10)); //keep history of the last 10 beacons (i.e. two seconds)
 
   //sva: AP and STAs initialized, time to initialize PerStaQInfo
 

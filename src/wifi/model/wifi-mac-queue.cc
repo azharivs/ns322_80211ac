@@ -260,7 +260,7 @@ WifiMacQueue::Remove (Ptr<const Packet> packet)
     {
       if (it->packet == packet)
         {
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
           if (it->hdr.IsData()) std::cout << "@Remove ------WifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
           else std::cout << "@Remove ------WifiMacQueue = " << m_size-1 << " TID= ?\n";
 #endif
@@ -424,7 +424,7 @@ PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
     {
       m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
     }
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
   if (hdr.IsData()) std::cout << "@Enqueue PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) hdr.GetQosTid() << "\n";
 #endif
 }
@@ -454,7 +454,7 @@ PerStaWifiMacQueue::Cleanup (void)
             {
               m_perStaQInfo->Departure(i->packet,i->hdr,i->tstamp);
             }
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
           if (i->hdr.IsData()) std::cout << "@Cleanup PerStaWifiMacQueue = " << m_size-n-1 << " TID= " << (int) i->hdr.GetQosTid() << "\n";
 #endif
           i = m_queue.erase (i);
@@ -493,7 +493,7 @@ PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
         }
       m_queue.pop_front ();
       m_size--;
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
       if (i.hdr.IsData()) std::cout << "@Dequeue PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) i.hdr.GetQosTid() << "\n";
 #endif
       *hdr = i.hdr;
@@ -527,7 +527,7 @@ PerStaWifiMacQueue::DequeueByTidAndAddress (WifiMacHeader *hdr, uint8_t tid,
                     {
                       m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
                     }
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
                   if (it->hdr.IsData()) std::cout << "@DequeueByTidAndAddress PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
 #endif
                   m_queue.erase (it);
@@ -568,7 +568,7 @@ PerStaWifiMacQueue::Remove (Ptr<const Packet> packet)
             {
               m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
             }
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
           if (it->hdr.IsData()) std::cout << "@Remove PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
           else std::cout << "@Remove PerStaWifiMacQueue = " << m_size-1 << " TID= ?\n";
 #endif
@@ -596,7 +596,7 @@ PerStaWifiMacQueue::PushFront (Ptr<const Packet> packet, const WifiMacHeader &hd
     {
       m_perStaQInfo->Arrival(packet, hdr, now);//sva: deal with PerStaQInfo issues
     }
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
   if (hdr.IsData()) std::cout << "@PushFront PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) hdr.GetQosTid() << "\n";
 #endif
 }
@@ -660,7 +660,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
         {
           m_perStaQInfo->Departure(it->packet,it->hdr,it->tstamp);//sva: deal with PerStaQInfo issues
         }
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
   if (it->hdr.IsData()) std::cout << "@DequeueFirstAvailable PerStaWifiMacQueue = " << m_size-1 << " TID= " <<  (int) it->hdr.GetQosTid() << "\n";
 #endif
       m_queue.erase (it);
@@ -825,8 +825,8 @@ PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestina
       if (found)
         {
           it = qiServed;
-#ifdef SVA_DEBUG
-          std::cout << "|=|=|=| @ " << Simulator::Now().GetSeconds() << " PeekEdfRoundRobin: STA "
+#ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PeekEdfRoundRobin: STA "
               << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline.GetSeconds() << "\n";
 #endif
           return true;
