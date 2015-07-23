@@ -941,6 +941,9 @@ WifiRemoteStationManager::GetControlAnswerMode (Mac48Address address, WifiMode r
           found = true;
         }
     }
+  #ifdef sfmacro_MarkovModel2
+   //Do nothing
+  #else
   if(HasHtSupported())
       {
         if (!found)
@@ -964,6 +967,7 @@ WifiRemoteStationManager::GetControlAnswerMode (Mac48Address address, WifiMode r
               }
           }
       }
+  #endif
   // If we found a suitable rate in the BSSBasicRateSet, then we are
   // done and can return that mode.
   if (found)

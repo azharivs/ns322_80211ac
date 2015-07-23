@@ -71,8 +71,8 @@ int main (int argc, char *argv[])
 
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 2; //seconds
-  uint32_t nMpdus = 1;
-  uint32_t nSta = 1;
+  uint32_t nMpdus = 64;
+  uint32_t nSta = 4;
   bool enableRts = 0;
     
   CommandLine cmd;
