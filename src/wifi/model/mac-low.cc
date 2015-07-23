@@ -656,11 +656,11 @@ MacLow::IsAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
   size = packet->GetSize () + hdr.GetSize () + fcs.GetSerializedSize ();
   Ptr<Packet> p = AggregateToAmpdu (packet, hdr);
   actualSize = p->GetSize();
-#ifdef SVA_DEBUG
+#ifdef SVA_DEBUG_DETAIL
   AmpduTag ampduTag;
   if (p->PeekPacketTag(ampduTag))
     {
-      std::cout << "A-MPDU to " << hdr.GetAddr1() << " of " << actualSize << " bytes and " << (int) ampduTag.GetNoOfMpdus() << " packets \n";
+      std::cout << Simulator::Now().GetSeconds() << " A-MPDU to " << hdr.GetAddr1() << " of " << actualSize << " bytes and " << (int) ampduTag.GetNoOfMpdus() << " packets \n";
     }
 #endif
   if (actualSize > size)

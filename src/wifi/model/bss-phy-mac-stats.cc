@@ -53,14 +53,16 @@ namespace ns3 {
   }
 
   BssPhyMacStats::BssPhyMacStats()
-  : m_idle (0), m_busy (0), m_lastBeacon (0),
-    m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0)
+  : m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval(0),
+    m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0), m_avgBeaconInterval (0),
+    m_samples (0)
   {//TODO make trace sinks null
   }
 
   BssPhyMacStats::BssPhyMacStats(std::string path)
-  : m_idle (0), m_busy (0), m_lastBeacon (0),
-    m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0)
+  : m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval (0),
+    m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0),  m_avgBeaconInterval (0),
+    m_samples (0)
   {
     Ptr<WifiPhyStateHelper> wifiPhyStateHelper;
     std::ostringstream stateLoggerPath;
@@ -71,15 +73,13 @@ namespace ns3 {
     txTracePath << path << "/Tx";
     Config::ConnectWithoutContext(txTracePath.str(), MakeCallback (&BssPhyMacStats::PhyTxStartSink, this));
 
-    std::cout << "  BssPhyMacStats::BssPhyMacStats(std::string path) \n";
-    std::cout << stateLoggerPath.str() << "\n";
-    std::cout << txTracePath.str() << "\n";
   }
 
   BssPhyMacStats::~BssPhyMacStats()
   {
     m_idleTimeHistory.clear();
     m_busyTimeHistory.clear();
+    m_beaconIntervalHistory.clear();
   }
 
   Time
@@ -94,91 +94,121 @@ namespace ns3 {
     return m_avgBusyTimePerBeacon;
   }
 
+  Time
+  BssPhyMacStats::GetAvgBeaconInterval (void)
+  {
+    return m_avgBeaconInterval;
+  }
+
   void
   BssPhyMacStats::PhyStateLoggerSink (const Time start, const Time duration, const WifiPhy::State state)
-  {//TODO
-    std::cout << "New state is " << state << " from " << start.GetSeconds()*1000 << " for " << duration.GetSeconds()*1000 << " msec\n";
+  {
+    //std::cout << "New state is " << state << " from " << start.GetSeconds()*1000 << " for " << duration.GetSeconds()*1000 << " msec\n";
+    switch (state)
+    {
+      case WifiPhy::IDLE:
+        RecordIdle(duration);
+        break;
+      case WifiPhy::CCA_BUSY:
+        RecordBusy(duration);
+        break;
+      case WifiPhy::TX:
+        RecordBusy(duration);
+        break;
+      case WifiPhy::RX:
+        RecordBusy(duration);
+        break;
+      case WifiPhy::SWITCHING:
+        RecordBusy(duration);
+        break;
+      case WifiPhy::SLEEP:
+        RecordIdle(duration);
+        break;
+      default:
+        NS_FATAL_ERROR("Undefined WifiPhy::State " << state);
+    }
   }
 
   void
   BssPhyMacStats::PhyTxStartSink (const Ptr<const Packet> packet, const WifiMode mode,
                                   const WifiPreamble preamble, const uint8_t power)
-  {//TODO
+  {
     Time now = Simulator::Now();
     WifiMacHeader hdr;
     packet->PeekHeader(hdr);
     if (hdr.IsBeacon())
       {
-        std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
+        //std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
+        RecordBeacon(now);
       }
   }
 
   void
   BssPhyMacStats::RecordIdle (Time duration)
-  {//TODO:
+  {
+    m_idle += duration;
   }
 
   void
   BssPhyMacStats::RecordBusy (Time duration)
-  {//TODO:
+  {
+    m_busy += duration;
   }
 
   void
   BssPhyMacStats::RecordBeacon (Time tstamp)
-  {//TODO
-    /*
-    m_queueSize --;
-    m_queueBytes -= bytes;
+  {
 
-    if (m_queueSizeHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_queueSizeHistory.pop_back();
+    m_beaconInterval = tstamp - m_lastBeacon;
+    m_lastBeacon = tstamp;
+
+    if (m_samples >= 2)
+      {
+        if (m_idleTimeHistory.size() == m_histSize)
+          {//make sure old samples are discarded
+            m_idleTimeHistory.pop_back();
+          }
+        m_idleTimeHistory.push_front(m_idle);
+
+        if (m_busyTimeHistory.size() == m_histSize)
+          {//make sure old samples are discarded
+            m_busyTimeHistory.pop_back();
+          }
+        m_busyTimeHistory.push_front(m_busy);
+
+        if (m_beaconIntervalHistory.size() == m_histSize)
+          {//make sure old samples are discarded
+            m_beaconIntervalHistory.pop_back();
+          }
+        m_beaconIntervalHistory.push_front(m_beaconInterval);
+        Update();
       }
-    m_queueSizeHistory.push_front(m_queueSize);
+    //resetting these after Update() allows for proper logging
+    m_idle = Seconds(0);
+    m_busy = Seconds(0);
+    m_samples ++;
 
-    if (m_queueBytesHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_queueBytesHistory.pop_back();
-      }
-    m_queueBytesHistory.push_front(m_queueBytes);
-
-    if (m_queueWaitHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_queueWaitHistory.pop_back();
-      }
-    m_queueWaitHistory.push_front(wait.GetSeconds());
-
-
-    if (m_queueDelayViolationHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_queueDelayViolationHistory.pop_back();
-      }
-    m_queueDelayViolationHistory.push_front( (deadline - Simulator::Now()).GetSeconds() );
-
-    */
-
-    Update();
   }
 
   void
   BssPhyMacStats::Reset (void)
   {
+    m_samples = 0;
+
     m_idle = Seconds(0);
     m_busy = Seconds(0);
     m_lastBeacon = Seconds(0);
     m_avgIdleTimePerBeacon = Seconds(0);
     m_avgBusyTimePerBeacon = Seconds(0);
+    m_avgBeaconInterval = Seconds(0);
 
     m_idleTimeHistory.clear();
     m_busyTimeHistory.clear();
+    m_beaconIntervalHistory.clear();
 
   }
 
   /*
-   * TODO: still need to calculate average arrival rate. This requires to store
-   * the arrival instances in another deque. This deque will have a depth which
-   * is specified in terms of time rather than number of samples.
-   * May be the other sample histories should also be made according to a time depth??
    *
    */
   void
@@ -200,9 +230,18 @@ namespace ns3 {
     m_avgBusyTimePerBeacon = tmp / (double) m_busyTimeHistory.size();
 
 
+    tmp = Seconds(0);
+    for (std::deque<Time>::iterator it=m_beaconIntervalHistory.begin(); it != m_beaconIntervalHistory.end(); ++it)
+      {
+        tmp += *it;
+      }
+    m_avgBeaconInterval = tmp / (double) m_beaconIntervalHistory.size();
+
+
 #ifdef SVA_DEBUG
-    std::cout << "Idle= " << m_idle.GetSeconds()*1000 << " msec, avgIdle= " << m_avgIdleTimePerBeacon.GetSeconds()*1000
-        << " msec, Busy= " << m_busy.GetSeconds()*1000 << " msec, avgBusy= " << m_avgBusyTimePerBeacon.GetSeconds()*1000 << "\n";
+    std::cout << Simulator::Now().GetSeconds() << " BssPhyMacStats::Update Idle= " << m_idle.GetSeconds()*1000 << " msec, avgIdle= "
+        << m_avgIdleTimePerBeacon.GetSeconds()*1000 << " msec, Busy= " << m_busy.GetSeconds()*1000 << " msec, avgBusy= "
+        << m_avgBusyTimePerBeacon.GetSeconds()*1000 << " msec\n";
 #endif
 
   }
