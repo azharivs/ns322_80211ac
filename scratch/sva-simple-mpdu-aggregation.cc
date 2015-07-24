@@ -70,7 +70,7 @@ int main (int argc, char *argv[])
   //LogComponentEnable ("UdpServer", LOG_LEVEL_DEBUG);
 
   uint32_t payloadSize = 1472; //bytes
-  uint64_t simulationTime = 2; //seconds
+  uint64_t simulationTime = 8; //seconds
   uint32_t nMpdus = 64;
   uint32_t nSta = 4;
   bool enableRts = 0;
@@ -188,7 +188,7 @@ int main (int argc, char *argv[])
   //sva: pre-initialize all clients to pick the first station as their remote server
   UdpClientHelper myClient (StaInterface.GetAddress (0), 9);
   myClient.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
-  myClient.SetAttribute ("Interval", TimeValue (Time ("0.0002"))); //packets/s
+  myClient.SetAttribute ("Interval", TimeValue (Time ("0.002"))); //packets/s
   myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
 
   ApplicationContainer clientApp;//sva: my empty application container for UDP clients

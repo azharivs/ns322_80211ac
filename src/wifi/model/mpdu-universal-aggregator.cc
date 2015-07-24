@@ -48,7 +48,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeUintegerAccessor (&MpduUniversalAggregator::m_maxAmpduLength),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("ServiceInterval", "Periodicity with which queues are guaranteed to be serviced (in seconds).",
-                   DoubleValue (0.5), //sva: the default value should be later changed to beacon interval
+                   DoubleValue (0.1), //sva: the default value should be later changed to beacon interval
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("AggregationAlgorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
@@ -174,7 +174,7 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
   if (!peekedPacket->FindFirstMatchingByteTag(deadline))
     {//TODO: when there is no deadline tag then probably other type of packets such as a BLOCK_ACK_REQUEST control packet. So just let it pass.
       //TODO: This should not cause a problem since its just like FCFS aggregation policy
-#ifdef DEBUG_SVA
+#ifdef DEBUG_SVA_DETAIL
       cout << "MpduUniversalAggregator: No deadline in packet! \n";
 #endif
       return true;
