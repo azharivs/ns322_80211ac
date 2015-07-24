@@ -656,13 +656,6 @@ MacLow::IsAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
   size = packet->GetSize () + hdr.GetSize () + fcs.GetSerializedSize ();
   Ptr<Packet> p = AggregateToAmpdu (packet, hdr);
   actualSize = p->GetSize();
-#ifdef SVA_DEBUG_DETAIL
-  AmpduTag ampduTag;
-  if (p->PeekPacketTag(ampduTag))
-    {
-      std::cout << Simulator::Now().GetSeconds() << " A-MPDU to " << hdr.GetAddr1() << " of " << actualSize << " bytes and " << (int) ampduTag.GetNoOfMpdus() << " packets \n";
-    }
-#endif
   if (actualSize > size)
     {
       m_currentPacket = p;
@@ -1527,6 +1520,17 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
             delay = delay + m_phy->CalculateTxDuration (GetSize (newPacket, &newHdr), txVector, preamble, m_phy->GetFrequency(), packetType, 0);
           preamble = WIFI_PREAMBLE_NONE;
         }
+#ifdef SVA_DEBUG
+      AmpduTag ampduTag;
+      if (packet->PeekPacketTag(ampduTag))
+        {
+          std::cout << Simulator::Now().GetSeconds() << " MacLow::ForwardDown A-MPDU to " << hdr->GetAddr1()
+              << " of " << packet->GetSize() << " bytes and "
+              << (int) ampduTag.GetNoOfMpdus() << " packets at "
+              << (double)txVector.GetMode().GetDataRate()/1000000 << " Mbps, taking "
+              << delay.GetSeconds()*1000 << " msec \n";
+        }
+#endif
     }
 }
 

@@ -174,7 +174,7 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
   if (!peekedPacket->FindFirstMatchingByteTag(deadline))
     {//TODO: when there is no deadline tag then probably other type of packets such as a BLOCK_ACK_REQUEST control packet. So just let it pass.
       //TODO: This should not cause a problem since its just like FCFS aggregation policy
-#ifdef DEBUG_SVA
+#ifdef DEBUG_SVA_DETAIL
       cout << "MpduUniversalAggregator: No deadline in packet! \n";
 #endif
       return true;
