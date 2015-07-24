@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel.4';
+baseLogName = 'logfiles/log_mimo_channel_edf.002';
 pattern = {'k-','r-','g-','m-','b-','y-'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
@@ -76,21 +76,18 @@ for i=1:nSta
     subplot(3,3,5);
     plot(times,aggPkts,pattern{i});
     hold on;
-    legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Size of A-MPDU (packets)');
     grid on;
     subplot(3,3,6);
     plot(times,aggTxTime,pattern{i});
     hold on;
-    legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Tx Time of A-MPDU (msec)');
     grid on;
     subplot(3,3,7);
     plot(times,dataRate,pattern{i});
     hold on;
-    legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Data Rate (Mb/s)');
     grid on;    
@@ -156,16 +153,21 @@ for i=1:nSta
     subplot(2,2,2);
     plot(times,aggTxTime,pattern{i});
     hold on;
-    legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Tx Time of A-MPDU (msec)');
     grid on;
     subplot(2,2,3);
     plot(times,dataRate,pattern{i});
     hold on;
-    legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Data Rate (Mb/s)');
-    grid on;    
+    grid on;
+    subplot(2,2,4);
+    plot(times,aggPkts*1472*8./dataRate/1000 - aggTxTime,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Computed Tx Time - Logged Tx Time (msec)');
+    grid on;
 end
+
 
