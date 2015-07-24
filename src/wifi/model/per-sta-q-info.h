@@ -60,6 +60,7 @@ namespace ns3 {
       double avgArrival; //!< average packet arrival rate in pps
       double avgArrivalBytes; //!< average arrival rate in Bytes per second
       double dvp; //!< Delay violation probability measured right before transmission
+      double prEmpty; //!< Probability of the queue being empty
   };
 
 
@@ -152,11 +153,18 @@ public:
   double GetAvgArrivalRateBytes (void);
 
   /**
-   * Computes and returns delay violation probability
+   * returns delay violation probability
    *
    * \return the DVP in fractions
    */
   double GetDvp (void);
+
+  /**
+   * returns probability of empty queue
+   *
+   * \return probability of empty queue
+   */
+  double GetPrEmpty (void);
 
   /**
    * Computes and returns all statistics
@@ -245,7 +253,7 @@ private:
    */
   void Update (void);
 
-  std::deque<uint32_t> m_queueSizeHistory; //!< Array of samples of queue length in packets
+  std::deque<Item> m_queueSizeHistory; //!< Array of samples of queue length in packets along with time stamp
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
   std::deque<Item> m_arrivalHistory; //!< Array of samples of packet arrival times
@@ -262,6 +270,7 @@ private:
   double m_avgArrivalRate; //!< Last updated average packet arrival rate in pps
   double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
   double m_dvp; //!< Delay violation probability measured right before transmission
+  double m_prEmpty; //!< Probability of the queue being empty
 };
 
 } // namespace ns3
