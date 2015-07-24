@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_edf.002';
+baseLogName = 'logfiles/log_mimo_channel_edf.tmp';
 pattern = {'k-','r-','g-','m-','b-','y-'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
@@ -35,10 +35,12 @@ for i=1:nSta
     %Sta Q Info
     data = load(staQInfoLogName{i});
     times = data(:,1);
+    qPkt = data(:,2);
     avgQPkt = data(:,4);
     avgQWait = data(:,6);
     avgQArrivalMbps = data(:,8);
     avgQDvp = data(:,9);
+    probEmpty = data(:,10);
     clear data;
     subplot(3,3,1);
     plot(times,avgQPkt,pattern{i});
@@ -46,6 +48,12 @@ for i=1:nSta
     legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Avg. Queue Length (pkt)');
+    grid on;
+    subplot(3,3,9);
+    plot(times,qPkt,pattern{i});
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Instantaneous Queue Length (pkt)');
     grid on;
     subplot(3,3,2);
     plot(times,avgQWait,pattern{i});
@@ -65,6 +73,12 @@ for i=1:nSta
     xlabel('Time (seconds)');
     ylabel('Delay Violation Prob.');
     grid on;
+    subplot(3,3,5);
+    plot(times,probEmpty,pattern{i});
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Prob. of Empty Queue');
+    grid on;
     
     %Aggregation info
     data = load(staAggLogName{i});
@@ -73,19 +87,19 @@ for i=1:nSta
     dataRate = data(:,4);
     aggTxTime = data(:,5);
     clear data;
-    subplot(3,3,5);
+    subplot(3,3,6);
     plot(times,aggPkts,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Size of A-MPDU (packets)');
     grid on;
-    subplot(3,3,6);
+    subplot(3,3,7);
     plot(times,aggTxTime,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Tx Time of A-MPDU (msec)');
     grid on;
-    subplot(3,3,7);
+    subplot(3,3,8);
     plot(times,dataRate,pattern{i});
     hold on;
     xlabel('Time (seconds)');
