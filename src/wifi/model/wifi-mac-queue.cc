@@ -371,7 +371,7 @@ PerStaWifiMacQueue::GetTypeId (void)
     .SetParent<WifiMacQueue> ()
     .AddConstructor<PerStaWifiMacQueue> ()
     .AddAttribute ("Service Interval", "Service interval period in seconds with which queues are served.",
-                   DoubleValue (0.5),
+                   DoubleValue (0.1),
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
