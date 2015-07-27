@@ -131,6 +131,9 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Pa
     case DEADLINE:
       return DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
+    case TIME_ALLOWANCE:
+      return TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      break;
     default:
       NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
   }
@@ -142,6 +145,11 @@ MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
   return (4 - (packet->GetSize () % 4 )) % 4;
 }
 
+void
+MpduUniversalAggregator::BeginServiceInterval(void)
+{//TODO
+  return;
+}
 
 bool
 MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
@@ -191,5 +199,34 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
 }
 
 
+bool
+MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+{//TODO needs implementation
+  TimestampTag deadline;
+
+  if (!peekedPacket->FindFirstMatchingByteTag(deadline))
+    {//TODO: when there is no deadline tag then probably other type of packets such as a BLOCK_ACK_REQUEST control packet. So just let it pass.
+      //TODO: This should not cause a problem since its just like FCFS aggregation policy
+#ifdef DEBUG_SVA_DETAIL
+      cout << "MpduUniversalAggregator: No deadline in packet! \n";
+#endif
+      return true;
+    }
+  if (deadline.GetTimestamp() <= Simulator::Now()+Seconds(m_serviceInterval)) //if deadline will be violated by the next service interval then aggregate
+    {
+      return true;
+    }
+  else
+    {
+      return false;
+    }
+
+}
+
+void
+MpduUniversalAggregator::UpdateTimeAllowance(void)
+{//TODO
+  return;
+}
 
 }  // namespace ns3

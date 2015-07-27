@@ -291,13 +291,25 @@ protected:
  * to verify whether or not it should be dropped. If
  * dot11EDCATableMSDULifetime has elapsed, it is dropped.
  * Otherwise, it is returned to the caller.
+ *
+ *  _______________________________________________________________
+ *  _____________________ Design Approach _________________________
+ * |                                                               |
+ * | For each arbitration algorithm there will be a new private    |
+ * | method for PerStaWifiMacQueue. These methods are then called  |
+ * | by DequeueFirstAvailable() and PeekFirstAvailable() that will |
+ * | then return the proper packet to be served. The appropriate   |
+ * | arbitration algorithm is selected/configured through a new    |
+ * | Attribute that is introduced into PerStaMacifiQueue class.    |
+ * |_______________________________________________________________|
  */
 
 typedef enum
 {
   FCFS,
   EDF,
-  EDF_RR
+  EDF_RR,
+  MAX_REMAINING_TIME_ALLOWANCE//to be used in conjunction with TIME_ALLOWANCE aggregation algorithm
 } ServicePolicyType;
 
 class PerStaWifiMacQueue : public WifiMacQueue
@@ -445,7 +457,7 @@ public:
 private:
 
   ServicePolicyType m_servicePolicy; //!< type of service policy
-  double m_serviceInterval; //<! service interval period in seconds used for EDF_RR
+  double m_serviceInterval; //<! service interval period in seconds used for EDF_RR and MAX_REMAINING_TIME_ALLOWANCE
 
   /*
    * Called to implement the FCFS service policy
@@ -488,6 +500,24 @@ private:
    * also assigns it to the correct queue placeholder containing packet to be served
    */
   bool PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
+
+  /*
+   * Called to implement the Maximum Remaining Time Allowance service policy
+   * Serves the queue which has largest amount of remaining time allowance
+   * for the current service interval.
+   * At this point I have not implemented a guaranteed
+   * way so that the queue will get service periodically every m_serviceInterval.
+   * This feature is going to require modifications to MacLow as it requires the AP
+   * to coordinate access times in a round robin manner.
+   * This function is only called by DequeueFirstAvailable() and PeekFirstAvailable()
+   *
+   * \param it: reference to the queue iterator pointing to the HoL queue according to service policy
+   * \param blockedPackets: exactly passed by caller
+   *
+   * Returns true if a packet was found, false if no packet was found
+   * also assigns it to the correct queue placeholder containing packet to be served
+   */
+  bool PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
   /*
    * Return iterator pointing to queue location holding packet with
