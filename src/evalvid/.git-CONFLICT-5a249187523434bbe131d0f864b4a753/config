@@ -1,0 +1,8 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = https://ferasat@bitbucket.org/ns3bnrl/ns-3.22
+	fetch = +refs/heads/*:refs/remotes/origin/*
