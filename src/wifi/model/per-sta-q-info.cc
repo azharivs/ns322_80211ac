@@ -169,6 +169,37 @@ namespace ns3 {
     return stats;
   }
 
+  Time
+  PerStaQInfo::GetTimeAllowance(void)
+  {
+    return m_timeAllowance;
+  }
+
+  Time
+  PerStaQInfo::GetRemainingTimeAllowance(void)
+  {
+    return m_remainingTimeAllowance;
+  }
+
+  void
+  PerStaQInfo::SetTimeAllowance(Time allowance)
+  {
+    m_timeAllowance = allowance;
+  }
+
+  void
+  PerStaQInfo::ResetTimeAllowance(Time allowance)
+  {
+    m_timeAllowance = allowance;
+    m_remainingTimeAllowance = m_timeAllowance;
+  }
+
+  void
+  PerStaQInfo::ResetTimeAllowance(void)
+  {
+    m_remainingTimeAllowance = m_timeAllowance;
+  }
+
   void
   PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
   {//TODO: record time of arrival as well for avgArrival and avgWait calculation

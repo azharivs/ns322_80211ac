@@ -649,6 +649,9 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case EDF_RR:
       found = PeekEdfRoundRobin(it,blockedPackets);
       break;
+    case MAX_REMAINING_TIME_ALLOWANCE:
+      found = PeekMaxRemainingTimeAllowance(it,blockedPackets);
+      break;
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
   if (found)
@@ -690,6 +693,9 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       break;
     case EDF_RR:
       found = PeekEdfRoundRobin(it,blockedPackets);
+      break;
+    case MAX_REMAINING_TIME_ALLOWANCE:
+      found = PeekMaxRemainingTimeAllowance(it,blockedPackets);
       break;
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
@@ -847,6 +853,59 @@ PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestina
   return false;
 }
 
+bool
+PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{//TODO needs implementation
+  PerStaQInfoContainer::Iterator sta;
+  PacketQueueI qi;
+  PacketQueueI qiServed; //the one that will eventually be served
+  Time earliestDeadline=Simulator::Now()+Seconds(100); //set to some distant future time
+  Time targetDeadline=Simulator::Now()+Seconds(m_serviceInterval); //approximate beginning of next service interval
+  TimestampTag deadline;
+  bool found=false;
+
+  if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
+    {
+      for (sta = m_perStaQInfo->Begin(); sta != m_perStaQInfo->End(); ++sta)
+        {
+          if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
+            {
+              NS_ASSERT_MSG(qi->packet->FindFirstMatchingByteTag(deadline),"Did not find TimestampTag in packet!");
+              if (deadline.GetTimestamp() < earliestDeadline)
+                { //update selected STA for service
+                  qiServed = qi;
+                  earliestDeadline = deadline.GetTimestamp();
+                  if (earliestDeadline <= targetDeadline)
+                    {
+                      found = true;
+                    }
+                }
+            }
+        }
+      if (found)
+        {
+          it = qiServed;
+#ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PeekMaxRemainingTimeAllowance: STA "
+              << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline.GetSeconds() << "\n";
+#endif
+          return true;
+        }
+    }
+  //if perStaQInfo not supported then resort to FCFS scheduling
+  else
+    {
+      found = PeekFcfs(qiServed,blockedPackets);
+      if (found)
+        {
+          it = qiServed;
+          return true;
+        }
+    }
+  //otherwise if no packet found then don't service anything.
+  //TODO: I am not sure if this will cause a problem.
+  return false;
+}
 
 
 } // namespace ns3

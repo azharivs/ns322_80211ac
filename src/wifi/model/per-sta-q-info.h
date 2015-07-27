@@ -173,6 +173,34 @@ public:
    */
   struct PerStaStatType GetAllStats (void);
 
+  /*
+   * returns the actual amount of time allowance for this service interval
+   */
+  Time GetTimeAllowance(void);
+
+  /*
+   * returns the remaining time allowance for this service interval
+   */
+  Time GetRemainingTimeAllowance(void);
+
+  /*
+   * set time allowance and do not touch remaining time allowance
+   */
+  void SetTimeAllowance(Time allowance);
+
+  /*
+   * re-initializes the amount of remaining time allowance to m_timeAllowance
+   * This is called at the beginning of a new service interval
+   */
+  void ResetTimeAllowance();
+
+  /*
+   * Sets m_timeAllowance to the provided parameter and
+   * re-initializes the amount of remaining time allowance to m_timeAllowance
+   * This is called at the beginning of a new service interval
+   */
+  void ResetTimeAllowance(Time allowance);
+
   /**
    * A new packet has arrived: collect statistics and update
    * If successful, should call private member Update() before returning
@@ -271,6 +299,9 @@ private:
   double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
   double m_dvp; //!< Delay violation probability measured right before transmission
   double m_prEmpty; //!< Probability of the queue being empty
+
+  Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
+  Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
 };
 
 } // namespace ns3
