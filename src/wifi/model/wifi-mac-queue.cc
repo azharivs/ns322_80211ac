@@ -855,13 +855,12 @@ PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestina
 
 bool
 PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
-{//TODO needs implementation
+{
   PerStaQInfoContainer::Iterator sta;
   PacketQueueI qi;
   PacketQueueI qiServed; //the one that will eventually be served
-  Time earliestDeadline=Simulator::Now()+Seconds(100); //set to some distant future time
-  Time targetDeadline=Simulator::Now()+Seconds(m_serviceInterval); //approximate beginning of next service interval
-  TimestampTag deadline;
+  Time maxRta = Seconds(100); //Max Remaining Time Allowance, set to some large value
+  Time rta;
   bool found=false;
 
   if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
@@ -870,15 +869,12 @@ PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBl
         {
           if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
             {
-              NS_ASSERT_MSG(qi->packet->FindFirstMatchingByteTag(deadline),"Did not find TimestampTag in packet!");
-              if (deadline.GetTimestamp() < earliestDeadline)
+              rta = (*sta)->GetRemainingTimeAllowance();
+              if (rta > maxRta)
                 { //update selected STA for service
                   qiServed = qi;
-                  earliestDeadline = deadline.GetTimestamp();
-                  if (earliestDeadline <= targetDeadline)
-                    {
-                      found = true;
-                    }
+                  maxRta = rta;
+                  found = true;
                 }
             }
         }
@@ -887,7 +883,7 @@ PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBl
           it = qiServed;
 #ifdef SVA_DEBUG_DETAIL
           std::cout << Simulator::Now().GetSeconds() << " PeekMaxRemainingTimeAllowance: STA "
-              << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline.GetSeconds() << "\n";
+              << it->hdr.GetAddr1() << " selected with RTA " << maxRta.GetSeconds()*1000 << " msec \n";
 #endif
           return true;
         }
