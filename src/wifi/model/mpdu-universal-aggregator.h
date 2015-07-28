@@ -24,6 +24,10 @@
 #include "aggregation-controllers.h"
 #include "ns3/enum.h"
 #include "ns3/nstime.h"
+#include "wifi-mac-queue.h"
+#include "ns3/per-sta-q-info-container.h"
+#include "mac-low.h"
+#include "wifi-phy.h"
 
 
 namespace ns3 {
@@ -63,6 +67,12 @@ public:
   static TypeId GetTypeId (void);
   MpduUniversalAggregator ();
   ~MpduUniversalAggregator ();
+
+  /*
+   * Enables access to container by initializing member pointer
+   */
+  bool EnablePerStaQInfo(PerStaQInfoContainer &c, Ptr<MacLow> low, Ptr<WifiPhy> phy);
+
   /**
    * \param packet packet we have to insert into <i>aggregatedPacket</i>.
    * \param aggregatedPacket packet that will contain <i>packet</i>, if aggregation is possible.
@@ -143,6 +153,10 @@ private:
   double m_serviceInterval; //!< Interval in seconds with which packet queues are guaranteed to be served at least once. (used for DEADLINE)
   Time m_currentServiceIntervalStart; //!< starting time of current service interval
   Ptr<AggregationController> m_controller; //!< Pointer to aggregation controller class
+  //Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation algorithm is applied (NOT USED!!)
+  PerStaQInfoContainer *m_perStaQInfo; //!< Pointer to PerStaQInfoContainer, needed for cross layer operation
+  Ptr<MacLow> m_low; //!< Pointer to MacLow, needed for cross layer operation
+  Ptr<WifiPhy> m_phy; //!< Pointer to WifiPhy, needed for cross layer operation
 };
 
 }  // namespace ns3

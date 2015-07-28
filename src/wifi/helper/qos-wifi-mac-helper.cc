@@ -129,6 +129,7 @@ QosWifiMacHelper::SetBlockAckInactivityTimeoutForAc (enum AcIndex ac, uint16_t t
   m_bAckInactivityTimeouts[ac] = timeout;
 }
 
+//sva: this is where MpduAggregator is initialized
 void
 QosWifiMacHelper::Setup (Ptr<WifiMac> mac, enum AcIndex ac, std::string dcaAttrName) const
 {
