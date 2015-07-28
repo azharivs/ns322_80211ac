@@ -23,6 +23,7 @@
 #include "mpdu-aggregator.h"
 #include "mpdu-universal-aggregator.h"
 #include "ns3/enum.h"
+#include "wifi-mac-queue.h"
 
 
 namespace ns3 {
@@ -88,6 +89,8 @@ private:
   //controller parameters
   ControllerType m_controller; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
+
+  Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied (as aggregated object)
 };
 
 }  // namespace ns3

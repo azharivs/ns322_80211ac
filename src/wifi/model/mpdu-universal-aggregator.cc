@@ -62,10 +62,25 @@ MpduUniversalAggregator::GetTypeId (void)
 
 MpduUniversalAggregator::MpduUniversalAggregator ()
 {
+  m_perStaQInfo = NULL; //should be initialized later if required
 }
 
 MpduUniversalAggregator::~MpduUniversalAggregator ()
 {
+}
+
+bool
+MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<MacLow> low, Ptr<WifiPhy> phy)
+{
+  if (c.IsEmpty())
+    {
+      NS_ASSERT_MSG(true,"Initializing with Empty Container !!");
+      return false;
+    }
+  m_perStaQInfo = &c;
+  m_low = low;
+  m_phy = phy;
+  return true;
 }
 
 //sva: This is the function where our aggregation algorithm should be implemented
@@ -210,10 +225,23 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
 bool
 MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {//TODO needs implementation
-  //PerStaQInfo *sta;
-  //WifiMacHeader hdr;
-  //peekedPacket->PeekHeader(hdr);
-  //sta = hdr.GetAddr1();
+  WifiMacHeader peekedHdr;
+  peekedPacket->PeekHeader(peekedHdr);
+  WifiPreamble preamble;
+  WifiTxVector dataTxVector = m_low->GetDataTxVector (peekedPacket, &peekedHdr);
+  if (m_phy->GetGreenfield () && m_low->m_stationManager->GetGreenfieldSupported (peekedHdr.GetAddr1 ()))
+    {
+      preamble = WIFI_PREAMBLE_HT_GF;
+    }
+  else
+    {
+      preamble = WIFI_PREAMBLE_HT_MF;
+    }
+
+  Time duration = m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0);
+
+  Ptr<PerStaQInfo> staQInfo;
+  staQInfo = m_perStaQInfo->GetByMac(peekedHdr.GetAddr1());
 
   TimestampTag deadline;
 
