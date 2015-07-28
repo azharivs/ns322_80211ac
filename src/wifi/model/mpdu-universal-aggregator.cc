@@ -147,8 +147,16 @@ MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
 
 void
 MpduUniversalAggregator::BeginServiceInterval(void)
-{//TODO
-  return;
+{
+  switch (m_aggregationAlgorithm)
+  {
+    case TIME_ALLOWANCE:
+      DoUpdate ();
+      break;
+    default:  break;//do nothing
+  }
+  m_currentServiceIntervalStart = Simulator::Now();
+  //NOTE: scheduling of next event is done when all queues are served
 }
 
 bool
@@ -202,6 +210,11 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
 bool
 MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {//TODO needs implementation
+  //PerStaQInfo *sta;
+  //WifiMacHeader hdr;
+  //peekedPacket->PeekHeader(hdr);
+  //sta = hdr.GetAddr1();
+
   TimestampTag deadline;
 
   if (!peekedPacket->FindFirstMatchingByteTag(deadline))
@@ -224,9 +237,9 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
 }
 
 void
-MpduUniversalAggregator::UpdateTimeAllowance(void)
-{//TODO
-  return;
+MpduUniversalAggregator::DoUpdate(void)
+{
+  m_controller->Update();
 }
 
 }  // namespace ns3

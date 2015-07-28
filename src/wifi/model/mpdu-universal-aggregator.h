@@ -21,10 +21,14 @@
 #define MPDU_UNIVERSAL_AGGREGATOR_H
 
 #include "mpdu-aggregator.h"
+#include "aggregation-controllers.h"
 #include "ns3/enum.h"
+#include "ns3/nstime.h"
 
 
 namespace ns3 {
+
+class AggregationController;
 
 /**
  * \ingroup wifi
@@ -85,7 +89,7 @@ public:
    * \return padding that must be added to the end of an aggregated packet
    *
    * Calculates how much padding must be added to the end of an aggregated packet, after that a new packet is added.
-   * Each A-MPDU subframe is padded so that its length is multiple of 4 octets.
+   * Each A-MPDU sub-frame is padded so that its length is multiple of 4 octets.
    */
   virtual uint32_t CalculatePadding (Ptr<const Packet> packet);
 
@@ -132,13 +136,13 @@ private:
    * element to be used in the current service interval.
    * Called by BeginServiceInterval()
    */
-  void UpdateTimeAllowance ();
+  void DoUpdate ();
 
   AggregationType m_aggregationAlgorithm; //!< Type of aggregation algorithm: STANDARD, DEADLINE, ...
   uint32_t m_maxAmpduLength; //!< Maximum length in bytes of A-MPDUs (used for STANDARD)
   double m_serviceInterval; //!< Interval in seconds with which packet queues are guaranteed to be served at least once. (used for DEADLINE)
   Time m_currentServiceIntervalStart; //!< starting time of current service interval
-
+  Ptr<AggregationController> m_controller; //!< Pointer to aggregation controller class
 };
 
 }  // namespace ns3
