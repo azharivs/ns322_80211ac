@@ -689,11 +689,16 @@ ApWifiMac::SetPerStaQInfo(PerStaQInfoContainer &c, uint8_t ac)
   Ptr<EdcaTxopN> edca = m_edca.find ((ns3::AcIndex) ac)->second;
   Ptr<PerStaWifiMacQueue> perStaQueue = edca->GetEdcaQueue()->GetObject<PerStaWifiMacQueue>();
   perStaQueue->EnablePerStaQInfo(c); //simply initializes a member pointer to point to this container
-  Ptr<MpduUniversalAggregator> agg = edca->GetObject<MpduUniversalAggregator>();
+  Ptr<MpduUniversalAggregator> agg = edca->Low()->GetMpduAggregator()->GetObject<MpduUniversalAggregator>();
   if (agg)
     {
+      std::cout << "ApWifiMac::SetPerStaQInfo Enabled for AC " << (int) ac << "\n";
       perStaQueue->SetMpduAggregator(agg); //set pointer to aggregator
       agg->EnablePerStaQInfo(c,perStaQueue,m_low,m_phy); //simply initializes a member pointer to point to this container
+    }
+  else
+    {
+      std::cout << "ApWifiMac::SetPerStaQInfo Disabled for AC " << (int) ac << "\n";
     }
   return true;
 }

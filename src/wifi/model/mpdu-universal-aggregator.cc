@@ -67,6 +67,7 @@ MpduUniversalAggregator::GetTypeId (void)
 MpduUniversalAggregator::MpduUniversalAggregator ()
 {
   m_perStaQInfo = NULL; //should be initialized later if required
+  m_controller = CreateObject<TimeAllowanceAggregationController>();//should be generalized
 }
 
 MpduUniversalAggregator::~MpduUniversalAggregator ()
@@ -146,7 +147,7 @@ bool
 MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {
   bool result = false;
-  if (m_perStaQInfo)//if supposed to support aggregation on per queue bases
+  if (m_perStaQInfo)//if supposed to support aggregation on per queue basis
     {
       switch (m_aggregationAlgorithm)
       {
@@ -171,6 +172,12 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Pa
   else//no support for per queue aggregation then just perform the standard version
     {
       result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+#ifdef SVA_DEBUG_DETAIL
+      WifiMacHeader hdr;
+      peekedPacket->PeekHeader(hdr);
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::CanBeAggregated m_perStaQInfo not supported at "
+          << hdr.GetAddr2() << " \n";
+#endif
     }
 
   if (m_pendingServiceInterval)
@@ -178,6 +185,9 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Pa
       if (!result)
         {
           Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, this); //make sure current line of execution is finished
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::CanBeAggregated pending service interval, result = false \n";
+#endif
         }
     }
   return result;
@@ -196,11 +206,18 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
   Time allowance;
   bool flag = true;
 
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance: \n";
+#endif
+
   for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it )
     {
       if ( !(*it)->IsInsufficientTimeAllowanceEncountered() && !(*it)->IsEmpty())
         {
           flag = false;
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << (*it)->GetMac() << "\n";
+#endif
         }
     }
   return flag;
@@ -225,6 +242,10 @@ MpduUniversalAggregator::PendingServiceInterval(void)
       ready = true;
       break;//do nothing
   }
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::PendingServiceInterval pending service interval "
+          << ready << "\n";
+#endif
   if (ready)
     {
       BeginServiceInterval();
@@ -367,6 +388,7 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
     }
   else
     {
+      staQInfo->SetInsufficientTimeAllowanceEncountered();
       return false;
     }
 
