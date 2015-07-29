@@ -184,6 +184,16 @@ public:
   Time GetRemainingTimeAllowance(void);
 
   /*
+   * deduct input parameter from remaining time allowance to new value
+   */
+  Time DeductTimeAllowance(Time allowance);
+
+  /*
+   * set remaining time allowance to new value
+   */
+  void SetRemainingTimeAllowance(Time allowance);
+
+  /*
    * set time allowance and do not touch remaining time allowance
    */
   void SetTimeAllowance(Time allowance);

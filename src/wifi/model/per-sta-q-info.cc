@@ -181,6 +181,19 @@ namespace ns3 {
     return m_remainingTimeAllowance;
   }
 
+  Time
+  PerStaQInfo::DeductTimeAllowance(Time allowance)
+  {
+    m_remainingTimeAllowance -= allowance;
+    return m_remainingTimeAllowance;
+  }
+
+  void
+  PerStaQInfo::SetRemainingTimeAllowance(Time allowance)
+  {
+    m_remainingTimeAllowance = allowance;
+  }
+
   void
   PerStaQInfo::SetTimeAllowance(Time allowance)
   {

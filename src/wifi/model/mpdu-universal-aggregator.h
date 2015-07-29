@@ -33,6 +33,8 @@
 namespace ns3 {
 
 class AggregationController;
+class MacLow;
+class WifiPhy;
 
 /**
  * \ingroup wifi
