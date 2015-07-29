@@ -152,7 +152,7 @@ namespace ns3 {
         //std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
         RecordBeacon(now);
       }
-    else if (hdr.IsData() || hdr.IsQosData()) //update time allowance for that station's queue
+    else if ((hdr.IsData() || hdr.IsQosData()) && !hdr.GetAddr1().IsBroadcast() ) //update time allowance for that station's queue
       {
         m_recordTx = true;
       }
@@ -173,9 +173,17 @@ namespace ns3 {
   void
   BssPhyMacStats::RecordTx (Time duration)
   {
+    if (!m_perStaQInfo)//return if no PerStaQInfo capability is defined (probably a station)
+      {
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << "BssPhyMacStats::RecordTx No PerStaQInfo Capability Defined \n";
+#endif
+        return ;
+      }
     WifiMacHeader hdr;
     m_curPacket->PeekHeader(hdr);
     Ptr<PerStaQInfo> staQInfo = m_perStaQInfo->GetByMac(hdr.GetAddr1());
+    NS_ASSERT_MSG(staQInfo, "BssPhyMacStats::RecordTx, No station found by that MAC address" << hdr.GetAddr1());
     Time leftOver = staQInfo->DeductTimeAllowance(duration);
 #ifdef SVA_DEBUG_DETAIL
     if (leftOver < 0)

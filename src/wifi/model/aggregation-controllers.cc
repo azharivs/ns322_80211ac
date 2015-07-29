@@ -61,6 +61,14 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    DoubleValue (1.0), //sva: the default value should be later changed to beacon interval
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_maxDelay),
                    MakeDoubleChecker<double> ())
+    .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
+                   EnumValue (NO_CONTROL),
+                   MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
+                   MakeEnumChecker (ns3::NO_CONTROL, "ns3::NO_CONTROL",
+                                    /*sva-design: add for new aggregation controller AGG_CRTL
+                                    ns3::AGG_CTRL, "ns3::AGG_CRTL",
+                                    sva-design*/
+                                    ns3::PID, "ns3::PID"))
 ;
   return tid;
 }
@@ -75,7 +83,20 @@ TimeAllowanceAggregationController::~TimeAllowanceAggregationController ()
 
 void
 TimeAllowanceAggregationController::Update (void)
-{//TODO
+{
+  switch (m_type)
+  {
+    case NO_CONTROL:
+      break;
+    case PID:
+      break;
+      /*sva-design: add for new aggregation controller AGG_CTRL
+    case AGG_CTRL:
+      break;
+      sva-design*/
+    default:
+      NS_FATAL_ERROR("Unspecified Aggregation Controller" << m_type);
+  }
   return ;
 }
 

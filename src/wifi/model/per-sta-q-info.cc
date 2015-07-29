@@ -55,7 +55,8 @@ namespace ns3 {
   : m_addrs (),
     m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
     m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
-    m_dvp (0.0), m_prEmpty (0)
+    m_dvp (0.0), m_prEmpty (0),
+    m_insufficientTimeAllowance (false)
 
   {
   }
@@ -181,6 +182,19 @@ namespace ns3 {
     return m_remainingTimeAllowance;
   }
 
+  bool
+  PerStaQInfo::IsInsufficientTimeAllowanceEncountered (void)
+  {
+    return m_insufficientTimeAllowance;
+  }
+
+
+  void
+  PerStaQInfo::SetInsufficientTimeAllowanceEncountered (void)
+  {
+    m_insufficientTimeAllowance = true;
+  }
+
   Time
   PerStaQInfo::DeductTimeAllowance(Time allowance)
   {
@@ -204,13 +218,27 @@ namespace ns3 {
   PerStaQInfo::ResetTimeAllowance(Time allowance)
   {
     m_timeAllowance = allowance;
+    //in this version we carry the unused part of the time allowance to the next service interval
+    //this is only if it was unused due to small size
+    if (IsInsufficientTimeAllowanceEncountered() && m_remainingTimeAllowance > 0)
+      {
+        m_timeAllowance += m_remainingTimeAllowance;
+      }
     m_remainingTimeAllowance = m_timeAllowance;
+    m_insufficientTimeAllowance = false;
   }
 
   void
   PerStaQInfo::ResetTimeAllowance(void)
   {
+    //in this version we carry the unused part of the time allowance to the next service interval
+    //this is only if it was unused due to small size
+    if (IsInsufficientTimeAllowanceEncountered() && m_remainingTimeAllowance > 0)
+      {
+        m_timeAllowance += m_remainingTimeAllowance;
+      }
     m_remainingTimeAllowance = m_timeAllowance;
+    m_insufficientTimeAllowance = false;
   }
 
   void
@@ -295,6 +323,7 @@ namespace ns3 {
     m_avgArrivalRateBytes = 0;
     m_dvp = 0;
     m_prEmpty = 0;
+    m_insufficientTimeAllowance = false;
 
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();

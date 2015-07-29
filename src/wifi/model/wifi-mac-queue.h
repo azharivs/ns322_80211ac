@@ -30,9 +30,11 @@
 #include "wifi-mac-header.h"
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/enum.h"
+#include "mpdu-universal-aggregator.h"
 
 namespace ns3 {
 class QosBlockedDestinations;
+class MpduUniversalAggregator;
 //sva: added support for multiple q per station. Currently not using call backs
 //sva: how do I get a pointer to PerStaQInfoContainer initialized?
 //sva: May be I can add a new method to WifiMacQueue to do this and if not called

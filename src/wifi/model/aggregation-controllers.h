@@ -24,10 +24,12 @@
 #include "mpdu-universal-aggregator.h"
 #include "ns3/enum.h"
 #include "wifi-mac-queue.h"
+#include "ns3/per-sta-q-info-container.h"
 
 
 namespace ns3 {
 
+class PerStaWifiMacQueue;
 /**
  * \ingroup wifi
  * Aggregation Controllers
@@ -37,6 +39,7 @@ namespace ns3 {
 
 typedef enum
 {
+  NO_CONTROL,
   PID
 } ControllerType;
 
@@ -87,7 +90,7 @@ private:
   double m_serviceInterval; //!< service interval in seconds
 
   //controller parameters
-  ControllerType m_controller; //!< Type of controller, PID, etc.
+  ControllerType m_type; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
 
   Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
