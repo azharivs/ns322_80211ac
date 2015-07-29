@@ -224,6 +224,10 @@ namespace ns3 {
       {
         m_timeAllowance += m_remainingTimeAllowance;
       }
+#ifdef SVA_DEBUG_DETAIL
+    std::cout << Simulator::Now().GetSeconds() << " " << this->GetMac() << " PerStaQInfo::ResetTimeAllowance last remaining " <<
+        m_remainingTimeAllowance.GetSeconds()*1000 << " msec, Reset to " << m_timeAllowance.GetSeconds()*1000 << " msec \n";
+#endif
     m_remainingTimeAllowance = m_timeAllowance;
     m_insufficientTimeAllowance = false;
   }
@@ -237,6 +241,10 @@ namespace ns3 {
       {
         m_timeAllowance += m_remainingTimeAllowance;
       }
+#ifdef SVA_DEBUG_DETAIL
+    std::cout << Simulator::Now().GetSeconds() << " " << this->GetMac() << " PerStaQInfo::ResetTimeAllowance last remaining " <<
+        m_remainingTimeAllowance.GetSeconds()*1000 << " msec, Reset to " << m_timeAllowance.GetSeconds()*1000 << " msec \n";
+#endif
     m_remainingTimeAllowance = m_timeAllowance;
     m_insufficientTimeAllowance = false;
   }

@@ -2526,6 +2526,12 @@ MacLow::SetMpduAggregator (Ptr<MpduAggregator> aggregator)
   m_mpduAggregator = aggregator;
 }
 
+Ptr<MpduAggregator>
+MacLow::GetMpduAggregator (void)
+{
+  return m_mpduAggregator;
+}
+
 void
 MacLow::DeaggregateAmpduAndReceive (Ptr<Packet> aggregatedPacket, double rxSnr, WifiMode txMode, WifiPreamble preamble)
 {
