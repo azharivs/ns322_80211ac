@@ -20,6 +20,7 @@
 #include "aggregation-controllers.h"
 #include "ns3/enum.h"
 #include "ns3/double.h"
+#include "ns3/nstime.h"
 
 namespace ns3 {
 
@@ -33,6 +34,19 @@ AggregationController::GetTypeId (void)
     .AddConstructor<AggregationController> ()
 ;
   return tid;
+}
+
+void
+AggregationController::SetQueue(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c)
+{
+  m_queue = queue;
+  m_perStaQInfo = &c;
+}
+
+void
+AggregationController::SetAggregator(Ptr<MpduUniversalAggregator> agg)
+{
+  m_aggregator = agg;
 }
 
 void
@@ -61,6 +75,10 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    DoubleValue (1.0), //sva: the default value should be later changed to beacon interval
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_maxDelay),
                    MakeDoubleChecker<double> ())
+    .AddAttribute ("TimeAllowance", "Fixed Time Allowance (in sec) when NO_CONTROL controller is selected",
+                   TimeValue (MilliSeconds (1.0) ), //sva: the default value should be later changed to beacon interval
+                   MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
+                   MakeTimeChecker ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
                    EnumValue (NO_CONTROL),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
@@ -74,11 +92,11 @@ TimeAllowanceAggregationController::GetTypeId (void)
 }
 
 TimeAllowanceAggregationController::TimeAllowanceAggregationController ()
-{//TODO
+{
 }
 
 TimeAllowanceAggregationController::~TimeAllowanceAggregationController ()
-{//TODO
+{
 }
 
 void
@@ -87,6 +105,7 @@ TimeAllowanceAggregationController::Update (void)
   switch (m_type)
   {
     case NO_CONTROL:
+      NoControlUpdate();
       break;
     case PID:
       break;
@@ -99,6 +118,21 @@ TimeAllowanceAggregationController::Update (void)
   }
   return ;
 }
+
+void
+TimeAllowanceAggregationController::NoControlUpdate (void)
+{
+  if (!m_perStaQInfo)//not supported
+    {
+      return ;
+    }
+  PerStaQInfoContainer::Iterator it;
+  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      (*it)->SetTimeAllowance(m_timeAllowance);
+    }
+}
+
 
 }  // namespace ns3
 
