@@ -355,7 +355,7 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 
 /**
  * PerStaWifiMacQueue implementation starts here
- * For now service descipline is determined by changing the default value in
+ * For now service discipline is determined by changing the default value in
  * the .AddAttribute line below.
  * TODO: do this by calling a method in the main()
  *

@@ -30,6 +30,7 @@
 namespace ns3 {
 
 class PerStaWifiMacQueue;
+class MpduUniversalAggregator;
 /**
  * \ingroup wifi
  * Aggregation Controllers
@@ -60,9 +61,15 @@ public:
 
   virtual void Update (void) ;
 
-private:
+  void SetQueue(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c);
 
-  //Ptr<MpduUniversalAggregator> m_aggregator; //!< Pointer to MpduUniversalAggregator
+  void SetAggregator(Ptr<MpduUniversalAggregator> agg);
+
+protected:
+
+  Ptr<MpduUniversalAggregator> m_aggregator; //!< Pointer to MpduUniversalAggregator
+  Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to PerStaWifiMacQueue
+  PerStaQInfoContainer *m_perStaQInfo; //!< Pointer to PerStaQInfoContainer
 };
 
 typedef struct{
@@ -84,12 +91,17 @@ public:
   virtual void Update (void);
 
 private:
+
+  void NoControlUpdate (void);
+
+
   //service parameters
   double m_targetDvp; //!< Target delay violation probability
   double m_maxDelay; //!< maximum delay requirement in seconds
   double m_serviceInterval; //!< service interval in seconds
 
   //controller parameters
+  Time m_timeAllowance; //!< Fixed time allowance used for NO_CONTROL
   ControllerType m_type; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
 

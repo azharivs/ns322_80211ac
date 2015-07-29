@@ -52,7 +52,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Algorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
-                   EnumValue (DEADLINE),
+                   EnumValue (TIME_ALLOWANCE),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE",
@@ -85,6 +85,8 @@ MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<PerStaW
   m_queue = queue;
   m_low = low;
   m_phy = phy;
+  m_controller->SetQueue(m_queue, c);
+  m_controller->SetAggregator(this);
   return true;
 }
 
@@ -144,25 +146,33 @@ bool
 MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {
   bool result = false;
-  switch (m_aggregationAlgorithm)
-  {
-    case STANDARD:
-      result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
-      break;
-    case DEADLINE:
-      result = DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
-      break;
-    case TIME_ALLOWANCE:
-      result = TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
-      break;
-      /*sva-design: add for new aggregation algorithm AGG_ALG
+  if (m_perStaQInfo)//if supposed to support aggregation on per queue bases
+    {
+      switch (m_aggregationAlgorithm)
+      {
+        case STANDARD:
+          result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+          break;
+        case DEADLINE:
+          result = DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+          break;
+        case TIME_ALLOWANCE:
+          result = TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+          break;
+          /*sva-design: add for new aggregation algorithm AGG_ALG
     case AGG_ALG:
       result = XxxCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
       sva-design*/
-    default:
-      NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
-  }
+        default:
+          NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
+      }
+    }
+  else//no support for per queue aggregation then just perform the standard version
+    {
+      result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+    }
+
   if (m_pendingServiceInterval)
     {//if in pending state then keep checking every time CanBeAggregated is called since things may have changed
       if (!result)
