@@ -55,7 +55,8 @@ MpduUniversalAggregator::GetTypeId (void)
                    EnumValue (DEADLINE),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
-                                    ns3::DEADLINE, "ns3::DEADLINE"))
+                                    ns3::DEADLINE, "ns3::DEADLINE",
+                                    ns3::TIME_ALLOWANCE, "ns3::TIME_ALLOWANCE"))
 ;
   return tid;
 }
@@ -224,7 +225,7 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
 
 bool
 MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
-{//TODO needs implementation
+{
   WifiMacHeader peekedHdr;
   peekedPacket->PeekHeader(peekedHdr);
   WifiPreamble preamble;
@@ -253,7 +254,7 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
 #endif
       return true;
     }
-  if (deadline.GetTimestamp() <= Simulator::Now()+Seconds(m_serviceInterval)) //if deadline will be violated by the next service interval then aggregate
+  if (duration <= staQInfo->GetRemainingTimeAllowance()) //if there is still time allowance then aggregate. time allowance will be updated once actually transmitted
     {
       return true;
     }

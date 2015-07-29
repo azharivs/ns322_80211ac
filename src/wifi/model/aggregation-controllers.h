@@ -90,7 +90,7 @@ private:
   ControllerType m_controller; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
 
-  Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied (as aggregated object)
+  Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
 };
 
 }  // namespace ns3

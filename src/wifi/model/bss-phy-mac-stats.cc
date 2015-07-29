@@ -53,17 +53,22 @@ namespace ns3 {
   }
 
   BssPhyMacStats::BssPhyMacStats()
-  : m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval(0),
+  : m_recordTx (false),
+    m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval(0),
     m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0), m_avgBeaconInterval (0),
     m_samples (0)
   {//TODO make trace sinks null
+    m_perStaQInfo = NULL;
   }
 
   BssPhyMacStats::BssPhyMacStats(std::string path)
-  : m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval (0),
+  : m_recordTx (false),
+    m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval (0),
     m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0),  m_avgBeaconInterval (0),
     m_samples (0)
   {
+    m_perStaQInfo = NULL;
+
     Ptr<WifiPhyStateHelper> wifiPhyStateHelper;
     std::ostringstream stateLoggerPath;
     stateLoggerPath << path << "/State";
@@ -114,6 +119,11 @@ namespace ns3 {
         break;
       case WifiPhy::TX:
         RecordBusy(duration);
+        if (m_recordTx)
+          {
+            m_recordTx = false;
+            RecordTx(duration);
+          }
         break;
       case WifiPhy::RX:
         RecordBusy(duration);
@@ -134,12 +144,17 @@ namespace ns3 {
                                   const WifiPreamble preamble, const uint8_t power)
   {
     Time now = Simulator::Now();
+    m_curPacket = packet;
     WifiMacHeader hdr;
     packet->PeekHeader(hdr);
     if (hdr.IsBeacon())
       {
         //std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
         RecordBeacon(now);
+      }
+    else if (hdr.IsData() || hdr.IsQosData()) //update time allowance for that station's queue
+      {
+        m_recordTx = true;
       }
   }
 
@@ -153,6 +168,21 @@ namespace ns3 {
   BssPhyMacStats::RecordBusy (Time duration)
   {
     m_busy += duration;
+  }
+
+  void
+  BssPhyMacStats::RecordTx (Time duration)
+  {
+    WifiMacHeader hdr;
+    m_curPacket->PeekHeader(hdr);
+    Ptr<PerStaQInfo> staQInfo = m_perStaQInfo->GetByMac(hdr.GetAddr1());
+    Time leftOver = staQInfo->DeductTimeAllowance(duration);
+#ifdef SVA_DEBUG_DETAIL
+    if (leftOver < 0)
+      {
+        std::cout << "BssPhyMacStats::RecordTx Negative Time Allowance Left Over \n";
+      }
+#endif
   }
 
   void
