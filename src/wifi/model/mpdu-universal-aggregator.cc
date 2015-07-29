@@ -56,6 +56,9 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE",
+                                    /*sva-design: add for new aggregation algorithm AGG_ALG
+                                    ns3::AGG_ALG, "ns3::AGG_ALG",
+                                    sva-design*/
                                     ns3::TIME_ALLOWANCE, "ns3::TIME_ALLOWANCE"))
 ;
   return tid;
@@ -150,6 +153,11 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Pa
     case TIME_ALLOWANCE:
       return TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
+      /*sva-design: add for new aggregation algorithm AGG_ALG
+    case AGG_ALG:
+      return XxxCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      break;
+      sva-design*/
     default:
       NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
   }
@@ -164,16 +172,48 @@ MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
 void
 MpduUniversalAggregator::BeginServiceInterval(void)
 {
+  //run the appropriate aggregator controller algorithm
+  //that updates all aggregation parameters to their new values
+  DoUpdate ();
+  //now perform appropriate book keeping
+  //depending on the type of aggregation algorithm
+  //These are initializations required at the start of a service interval
   switch (m_aggregationAlgorithm)
   {
     case TIME_ALLOWANCE:
-      DoUpdate ();
+      ResetTimeAllowance();
       break;
-    default:  break;//do nothing
+      /*sva-design: add for new algorithm AGG_ALG
+    case AGG_ALG:
+      ResetXxx();
+      break;
+      sva-design*/
+    default:
+      break;//do nothing
   }
   m_currentServiceIntervalStart = Simulator::Now();
-  //NOTE: scheduling of next event is done when all queues are served
+  //NOTE: scheduling of next event is done when all queues are served at PerStaWifiMacQueue::BeginServiceInterval()
 }
+
+void
+MpduUniversalAggregator::ResetTimeAllowance (void)
+{
+  NS_ASSERT_MSG(!m_perStaQInfo,"MpduUniversalAggregator::ResetTimeAllowance, m_perStaQInfo = NULL! \n");
+
+  for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      (*it)->ResetTimeAllowance();
+    }
+}
+
+/*sva-design: add for new aggregation algorithm AGG_ALG
+void
+MpduUniversalAggregator::ResetXxx (void)
+{
+  NS_ASSERT_MSG(!m_perStaQInfo,"MpduUniversalAggregator::ResetXxx, m_perStaQInfo = NULL! \n");
+
+}
+sva-design*/
 
 bool
 MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
@@ -264,6 +304,13 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
     }
 
 }
+
+/*sva-design: add for new aggregation algorithm AGG_ALG
+bool
+MpduUniversalAggregator::XxxCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+{
+}
+sva-design*/
 
 void
 MpduUniversalAggregator::DoUpdate(void)

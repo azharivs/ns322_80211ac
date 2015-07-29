@@ -448,11 +448,27 @@ public:
 
  /**
    * Initialize pointer to PerStaQInfoContainer if support is required
-   *
+   * TODO: combine EnablePerStaQInfo and SetMpduAggregator
    * \param c: Pointer to the container
    * \returns TRUE if successful and FALSE if container was NULL
    */
   bool EnablePerStaQInfo (PerStaQInfoContainer &c);
+
+  /*
+   * Sets pointer to MpduUniversalAggregator
+   */
+  bool SetMpduAggregator (Ptr<MpduUniversalAggregator> agg);
+
+  /*
+   * Event handler that is called at the beginning of a service interval
+   */
+  void PendingServiceInterval (void);
+
+  /*
+   * called by MpduUniversalAggregator whenever new service interval is
+   * actually started
+   */
+  void BeginServiceInterval (void);
 
 private:
 
@@ -544,6 +560,10 @@ private:
    */
   //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
   PerStaQInfoContainer *m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
+  Ptr<MpduUniversalAggregator> m_mpduAggregator; //!< Pointer to aggregator operating on this queue
+  Time m_currentServiceIntervalStart; //!< Actual beginning of current service interval
+  Time m_pendingServiceIntervalStart; //!< Pending beginning of current service interval
+  bool m_serviceIntervalPending; //!< flag that shows the status of current service interval as pending or actually started. m_currentServiceInterval will be valid only if this flag is false.
 };
 
 

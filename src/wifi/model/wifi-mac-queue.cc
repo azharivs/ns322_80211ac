@@ -400,13 +400,22 @@ PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
 {
   if (c.IsEmpty())
     {
-      NS_ASSERT_MSG(true,"Initializing with Empty Container !!");
+      NS_ASSERT_MSG(true,"Initializing with Empty Container !!"); //TODO: this is useless!
       return false;
     }
   m_perStaQInfo = &c;
+  Simulator::Schedule(NanoSeconds(1), &PendingServiceInterval);
+
   return true;
 }
 
+bool
+PerStaWifiMacQueue::SetMpduAggregator(Ptr<MpduUniversalAggregator> agg)
+{
+  NS_ASSERT_MSG(agg,"Initializing with NULL Aggregator !!");
+  m_mpduAggregator = agg;
+  return true;
+}
 
 void
 PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
@@ -652,6 +661,11 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case MAX_REMAINING_TIME_ALLOWANCE:
       found = PeekMaxRemainingTimeAllowance(it,blockedPackets);
       break;
+      /*sva-design: add for appropriate service policy ?
+    case ?:
+      found = Peek?(it,blockedPackets);
+      break;
+      sva-design*/
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
   if (found)
@@ -697,6 +711,11 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case MAX_REMAINING_TIME_ALLOWANCE:
       found = PeekMaxRemainingTimeAllowance(it,blockedPackets);
       break;
+      /*sva-design: add for appropriate service policy ?
+    case ?:
+      found = Peek?(it,blockedPackets);
+      break;
+      sva-design*/
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
   if (found)
@@ -737,6 +756,25 @@ PerStaWifiMacQueue::IsEmpty (void)
 {
   Cleanup ();
   return m_queue.empty ();
+}
+
+void
+PerStaWifiMacQueue::PendingServiceInterval (void)
+{
+  m_pendingServiceIntervalStart = Simulator::Now();
+  m_serviceIntervalPending = true;
+  m_mpduAggregator->BeginServiceInterval();
+}
+
+void
+PerStaWifiMacQueue::BeginServiceInterval (void)
+{
+  m_currentServiceIntervalStart = Simulator::Now();
+  m_serviceIntervalPending = false;
+  Simulator::Schedule(Seconds(m_serviceInterval), &PendingServiceInterval );
+#ifdef SVA_DEBUG
+  std::cout <<
+#endif
 }
 
 bool

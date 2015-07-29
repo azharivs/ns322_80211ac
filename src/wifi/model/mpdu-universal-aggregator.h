@@ -46,6 +46,9 @@ typedef enum
 {
   STANDARD,
   DEADLINE,
+  /*sva-design: add for new aggregation algorithm AGG_ALG
+  AGG_ALG,
+  sva-design*/
   TIME_ALLOWANCE //to be used with PerStaWifiMacQueue::ServicePolicyType MAX_REMAINING_TIME_ALLOWANCE
 } AggregationType;
 
@@ -110,7 +113,7 @@ public:
    * Calls any update procedure that is required for aggregation parameters
    *
    */
-  void BeginServiceInterval ();
+  void BeginServiceInterval (void);
 
 private:
   /**
@@ -143,12 +146,36 @@ private:
    */
   bool TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
 
+  /*sva-design: add for new aggregation algorithm AGG_ALG
+   * Called for AGG_ALG aggregation algorithm
+   * It is called by CanBeAggregated() to deal with aggregation when
+   * m_aggregationAlgorithm is set to AGG_ALG
+   *
+  bool XxxCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+   *
+  sva-design*/
+
   /*
    * Updates the amount of time allowance for each PerStaQInfo
    * element to be used in the current service interval.
    * Called by BeginServiceInterval()
    */
-  void DoUpdate ();
+  void DoUpdate (void);
+
+  /*
+   * Called for TIME_ALLOWANCE aggregation algorithm
+   * Resets all time allowances in the entire PerStaQInfoContainer
+   *
+   */
+  void ResetTimeAllowance (void);
+
+  /*sva-design: add for new aggregation algorithm AGG_ALG
+   * Called for AGG_ALG aggregation algorithm
+   * Does book keeping/etc. at beginning of new service interval
+   *
+  void ResetXxx (void);
+   *
+  sva-design*/
 
   AggregationType m_aggregationAlgorithm; //!< Type of aggregation algorithm: STANDARD, DEADLINE, ...
   uint32_t m_maxAmpduLength; //!< Maximum length in bytes of A-MPDUs (used for STANDARD)
