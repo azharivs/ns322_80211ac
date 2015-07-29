@@ -404,7 +404,7 @@ PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
       return false;
     }
   m_perStaQInfo = &c;
-  Simulator::Schedule(NanoSeconds(1), &PendingServiceInterval);
+  Simulator::Schedule(NanoSeconds(1), &PerStaWifiMacQueue::PendingServiceInterval, this);
 
   return true;
 }
@@ -763,7 +763,10 @@ PerStaWifiMacQueue::PendingServiceInterval (void)
 {
   m_pendingServiceIntervalStart = Simulator::Now();
   m_serviceIntervalPending = true;
-  m_mpduAggregator->BeginServiceInterval();
+  if (m_mpduAggregator)//if an aggregator is initialized (for stations there isn't one currently)
+    {
+      m_mpduAggregator->PendingServiceInterval();
+    }
 }
 
 void
@@ -771,9 +774,10 @@ PerStaWifiMacQueue::BeginServiceInterval (void)
 {
   m_currentServiceIntervalStart = Simulator::Now();
   m_serviceIntervalPending = false;
-  Simulator::Schedule(Seconds(m_serviceInterval), &PendingServiceInterval );
+  Simulator::Schedule(Seconds(m_serviceInterval), &PerStaWifiMacQueue::PendingServiceInterval, this);
 #ifdef SVA_DEBUG
-  std::cout <<
+  std::cout << Simulator::Now().GetSeconds()*1000 << " PerStaWifiMacQueue::BeginServiceInterval was pending since "
+      << m_pendingServiceIntervalStart.GetSeconds()*1000 << "\n";
 #endif
 }
 

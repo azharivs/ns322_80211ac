@@ -693,7 +693,7 @@ ApWifiMac::SetPerStaQInfo(PerStaQInfoContainer &c, uint8_t ac)
   if (agg)
     {
       perStaQueue->SetMpduAggregator(agg); //set pointer to aggregator
-      agg->EnablePerStaQInfo(c,m_low,m_phy); //simply initializes a member pointer to point to this container
+      agg->EnablePerStaQInfo(c,perStaQueue,m_low,m_phy); //simply initializes a member pointer to point to this container
     }
   return true;
 }

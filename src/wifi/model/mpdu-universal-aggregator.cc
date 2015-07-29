@@ -51,7 +51,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    DoubleValue (0.1), //sva: the default value should be later changed to beacon interval
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
-    .AddAttribute ("AggregationAlgorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
+    .AddAttribute ("Algorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
                    EnumValue (DEADLINE),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
@@ -74,7 +74,7 @@ MpduUniversalAggregator::~MpduUniversalAggregator ()
 }
 
 bool
-MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<MacLow> low, Ptr<WifiPhy> phy)
+MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<PerStaWifiMacQueue> queue, Ptr<MacLow> low, Ptr<WifiPhy> phy)
 {
   if (c.IsEmpty())
     {
@@ -82,6 +82,7 @@ MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<MacLow>
       return false;
     }
   m_perStaQInfo = &c;
+  m_queue = queue;
   m_low = low;
   m_phy = phy;
   return true;
@@ -142,25 +143,34 @@ MpduUniversalAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 bool
 MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
 {
+  bool result = false;
   switch (m_aggregationAlgorithm)
   {
     case STANDARD:
-      return StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
     case DEADLINE:
-      return DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      result = DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
     case TIME_ALLOWANCE:
-      return TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      result = TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
       /*sva-design: add for new aggregation algorithm AGG_ALG
     case AGG_ALG:
-      return XxxCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      result = XxxCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
       break;
       sva-design*/
     default:
       NS_FATAL_ERROR("Unspecified Aggregation Algorithm" << m_aggregationAlgorithm);
   }
+  if (m_pendingServiceInterval)
+    {//if in pending state then keep checking every time CanBeAggregated is called since things may have changed
+      if (!result)
+        {
+          Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, this); //make sure current line of execution is finished
+        }
+    }
+  return result;
 }
 
 uint32_t
@@ -169,9 +179,55 @@ MpduUniversalAggregator::CalculatePadding (Ptr<const Packet> packet)
   return (4 - (packet->GetSize () % 4 )) % 4;
 }
 
+bool
+MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
+{
+  PerStaQInfoContainer::Iterator it;
+  Time allowance;
+  bool flag = true;
+
+  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it )
+    {
+      if ( !(*it)->IsInsufficientTimeAllowanceEncountered() && !(*it)->IsEmpty())
+        {
+          flag = false;
+        }
+    }
+  return flag;
+}
+
+void
+MpduUniversalAggregator::PendingServiceInterval(void)
+{
+  m_pendingServiceInterval = true;
+  bool ready=false;
+  switch (m_aggregationAlgorithm)
+  {
+    case TIME_ALLOWANCE:
+      ready = IsReadyForNextServiceIntervalTimeAllowance();
+      break;
+      /*sva-design: add for new algorithm AGG_ALG
+    case AGG_ALG:
+      ResetXxx();
+      break;
+      sva-design*/
+    default:
+      ready = true;
+      break;//do nothing
+  }
+  if (ready)
+    {
+      BeginServiceInterval();
+    }
+
+  //if still in pending state then it will be handled by future calls to CanBeAggregated()
+
+}
+
 void
 MpduUniversalAggregator::BeginServiceInterval(void)
 {
+  m_pendingServiceInterval = false;
   //run the appropriate aggregator controller algorithm
   //that updates all aggregation parameters to their new values
   DoUpdate ();
@@ -193,6 +249,7 @@ MpduUniversalAggregator::BeginServiceInterval(void)
   }
   m_currentServiceIntervalStart = Simulator::Now();
   //NOTE: scheduling of next event is done when all queues are served at PerStaWifiMacQueue::BeginServiceInterval()
+  m_queue->BeginServiceInterval();
 }
 
 void

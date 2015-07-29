@@ -76,7 +76,7 @@ public:
   /*
    * Enables access to container by initializing member pointer
    */
-  bool EnablePerStaQInfo(PerStaQInfoContainer &c, Ptr<MacLow> low, Ptr<WifiPhy> phy);
+  bool EnablePerStaQInfo(PerStaQInfoContainer &c, Ptr<PerStaWifiMacQueue> queue, Ptr<MacLow> low, Ptr<WifiPhy> phy);
 
   /**
    * \param packet packet we have to insert into <i>aggregatedPacket</i>.
@@ -109,7 +109,14 @@ public:
   virtual uint32_t CalculatePadding (Ptr<const Packet> packet);
 
   /*
-   * Event handler called at the beginning of a new service interval
+   * Called at the beginning of a new pending service interval
+   * Calls any update procedure that is required for aggregation parameters
+   *
+   */
+  void PendingServiceInterval (void);
+
+  /*
+   * Called at the actual beginning of a new service interval
    * Calls any update procedure that is required for aggregation parameters
    *
    */
@@ -177,12 +184,26 @@ private:
    *
   sva-design*/
 
+  /*
+   * Returns true if the aggregator is finished serving all queues
+   * and is ready to proceed to the next service interval.
+   * Called by PendingServiceInterval()
+   */
+  bool IsReadyForNextServiceIntervalTimeAllowance (void);
+
+  /*sva-design: add for new aggregation algorithm ???
+   *
+  bool IsReadyForNextServiceInterval??? (void);
+   *
+  sva-design*/
+
   AggregationType m_aggregationAlgorithm; //!< Type of aggregation algorithm: STANDARD, DEADLINE, ...
   uint32_t m_maxAmpduLength; //!< Maximum length in bytes of A-MPDUs (used for STANDARD)
   double m_serviceInterval; //!< Interval in seconds with which packet queues are guaranteed to be served at least once. (used for DEADLINE)
+  bool m_pendingServiceInterval; //!< Flag marking whether a new service interval is pending
   Time m_currentServiceIntervalStart; //!< starting time of current service interval
   Ptr<AggregationController> m_controller; //!< Pointer to aggregation controller class
-  //Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation algorithm is applied (NOT USED!!)
+  Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation algorithm is applied (NOT USED!!)
   PerStaQInfoContainer *m_perStaQInfo; //!< Pointer to PerStaQInfoContainer, needed for cross layer operation
   Ptr<MacLow> m_low; //!< Pointer to MacLow, needed for cross layer operation
   Ptr<WifiPhy> m_phy; //!< Pointer to WifiPhy, needed for cross layer operation

@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_edf.tmp';
+baseLogName = 'logfiles/log_mimo_channel_edf.tmp1';
 pattern = {'k-','r-','g-','m-','b-','y-'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta

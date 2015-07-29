@@ -184,6 +184,16 @@ public:
   Time GetRemainingTimeAllowance(void);
 
   /*
+   *
+   */
+  bool IsInsufficientTimeAllowanceEncountered (void);
+
+  /*
+   *
+   */
+  void SetInsufficientTimeAllowanceEncountered (void);
+
+  /*
    * deduct input parameter from remaining time allowance to new value
    */
   Time DeductTimeAllowance(Time allowance);
@@ -228,6 +238,7 @@ public:
    * \param deadline: absolute time of deadline of the packet
    */
   void Departure (uint32_t bytes, Time wait, Time deadline);
+
   /**
    * Return if the queue is empty.
    *
@@ -312,6 +323,7 @@ private:
 
   Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
+  bool m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access
 };
 
 } // namespace ns3
