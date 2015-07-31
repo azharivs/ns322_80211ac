@@ -90,6 +90,10 @@ int main (int argc, char *argv[])
   //sva: disable fragmentation
   Config::SetDefault ("ns3::WifiRemoteStationManager::FragmentationThreshold", StringValue ("990000"));
 
+#ifdef SVA_DEBUG_DETAIL
+  Packet::EnablePrinting ();
+#endif
+
   NodeContainer wifiStaNode;
   wifiStaNode.Create (nSta);
   NodeContainer wifiApNode;

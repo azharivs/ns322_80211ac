@@ -375,10 +375,11 @@ PerStaWifiMacQueue::GetTypeId (void)
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (EDF_RR),
+                   EnumValue (EDF),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
+                                    ns3::MAX_REMAINING_TIME_ALLOWANCE, "ns3::MAX_REMAINING_TIME_ALLOWANCE",
                                     ns3::EDF_RR, "ns3::EDF_RR"))
   ;
   return tid;
@@ -776,8 +777,8 @@ PerStaWifiMacQueue::BeginServiceInterval (void)
   m_serviceIntervalPending = false;
   Simulator::Schedule(Seconds(m_serviceInterval), &PerStaWifiMacQueue::PendingServiceInterval, this);
 #ifdef SVA_DEBUG
-  std::cout << Simulator::Now().GetSeconds()*1000 << " PerStaWifiMacQueue::BeginServiceInterval was pending since "
-      << m_pendingServiceIntervalStart.GetSeconds()*1000 << "\n";
+  std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::BeginServiceInterval was pending since "
+      << m_pendingServiceIntervalStart.GetSeconds() << "\n";
 #endif
 }
 

@@ -99,12 +99,27 @@ MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggreg
   Ptr<Packet> currentPacket;
   AmpduSubframeHeader currentHdr;
 
+  WifiMacHeader peekedHdr;
+  packet->PeekHeader(peekedHdr);
+
   uint32_t padding = CalculatePadding (aggregatedPacket);
   //old code: uint32_t actualSize = aggregatedPacket->GetSize ();
 
   //sva: checks whether adding this packet will exceed max aggregation size
   //sva: old code was: if ((4 + packet->GetSize () + actualSize + padding) <= m_maxAmpduLength)
-  if ( CanBeAggregated(packet, aggregatedPacket, 0) )//0: means no block ack request bits
+#ifdef SVA_DEBUG_DETAIL
+  std::cout << "MpduUniversalAggregator::Aggregate Packet: " << packet->ToString();// << " Aggregated Packet: " << aggregatedPacket->ToString();
+  std::ostringstream os;
+  peekedHdr.Print(os);
+  std::cout << " Header : " << os.str() << "\n";
+#endif
+
+  if ( CanBeAggregated(packet, peekedHdr, aggregatedPacket, 0, Seconds(0)) )//0: means no block ack request bits, 0: means duration is zero (could cause a bug!)
+    //sva bug: the duration field is not known at this point and only a size check is performed
+    //however, this is after StopAggregation() is called which calls CanBeAggregated() with the right duration field
+    //so shouldn't be a problem. Nevertheless there is one independent call to this function for the first packet in an A-MPDU
+    //Hopefully this does not require duration check.
+    //TODO: Leaving it as is for now
     {
       if (padding)
         {
@@ -144,25 +159,31 @@ MpduUniversalAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 }
 
 bool
-MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
 {
   bool result = false;
+  //only perform specialized aggregation for QoS_DATA packets, the rest just use conventional method of aggregation
+  if (!peekedHeader.IsQosData())
+    {
+      result = StandardCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
+      return result;
+    }
   if (m_perStaQInfo)//if supposed to support aggregation on per queue basis
     {
       switch (m_aggregationAlgorithm)
       {
         case STANDARD:
-          result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+          result = StandardCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
           break;
         case DEADLINE:
-          result = DeadlineCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+          result = DeadlineCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
           break;
         case TIME_ALLOWANCE:
-          result = TimeAllowanceCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+          result = TimeAllowanceCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
           break;
           /*sva-design: add for new aggregation algorithm AGG_ALG
     case AGG_ALG:
-      result = XxxCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      result = XxxCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
       break;
       sva-design*/
         default:
@@ -171,12 +192,10 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Pa
     }
   else//no support for per queue aggregation then just perform the standard version
     {
-      result = StandardCanBeAggregated(peekedPacket, aggregatedPacket, blockAckSize);
+      result = StandardCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
 #ifdef SVA_DEBUG_DETAIL
-      WifiMacHeader hdr;
-      peekedPacket->PeekHeader(hdr);
       std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::CanBeAggregated m_perStaQInfo not supported at "
-          << hdr.GetAddr2() << " \n";
+          << peekedHeader.GetAddr2() << " \n";
 #endif
     }
 
@@ -207,8 +226,23 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
   bool flag = true;
 
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance: \n";
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance: ";
 #endif
+
+  if (!m_perStaQInfo)
+    {//does not support per station queues
+#ifdef SVA_DEBUG_DETAIL
+      if (m_low)
+        {
+          std::cout << "m_perStaQInfo not initialized on "<< m_low->GetAddress() << " ";
+        }
+      else
+        {
+          std::cout << "m_perStaQInfo not initialized on "<< "UNKNOWN-MAC" << " ";
+        }
+#endif
+      return flag;
+    }
 
   for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it )
     {
@@ -216,10 +250,11 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
         {
           flag = false;
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << (*it)->GetMac() << "\n";
+      std::cout << "time allowance not used up at non-empty queue of " << (*it)->GetMac() << " ";
 #endif
         }
     }
+  std::cout << "\n";
   return flag;
 }
 
@@ -286,7 +321,22 @@ MpduUniversalAggregator::BeginServiceInterval(void)
 void
 MpduUniversalAggregator::ResetTimeAllowance (void)
 {
-  NS_ASSERT_MSG(!m_perStaQInfo,"MpduUniversalAggregator::ResetTimeAllowance, m_perStaQInfo = NULL! \n");
+  if(!m_perStaQInfo)
+    {
+#ifdef SVA_DEBUG_DETAIL
+      if (m_low)
+        {
+          std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::ResetTimeAllowance on "
+              << m_low->GetAddress() << " m_perStaQInfo not initialized\n";
+        }
+      else
+        {
+          std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::ResetTimeAllowance on "
+              << "UNKNOWN-MAC" << " m_perStaQInfo not initialized\n";
+        }
+#endif
+      return ;
+    }
 
   for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
     {
@@ -304,13 +354,11 @@ MpduUniversalAggregator::ResetXxx (void)
 sva-design*/
 
 bool
-MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
 {
-  WifiMacHeader peekedHdr;
-  peekedPacket->PeekHeader(peekedHdr);
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
-  uint32_t packetSize = peekedPacket->GetSize () + peekedHdr.GetSize () + WIFI_MAC_FCS_LENGTH;
+  uint32_t packetSize = peekedPacket->GetSize () + peekedHeader.GetSize () + WIFI_MAC_FCS_LENGTH;
   if (blockAckSize > 0)
     {
       blockAckSize = blockAckSize + 4 + padding;
@@ -327,7 +375,7 @@ MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket
 
 
 bool
-MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
 {
   TimestampTag deadline;
 
@@ -352,36 +400,44 @@ MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket
 
 
 bool
-MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
 {
-  WifiMacHeader peekedHdr;
-  peekedPacket->PeekHeader(peekedHdr);
-  WifiPreamble preamble;
-  WifiTxVector dataTxVector = m_low->GetDataTxVector (peekedPacket, &peekedHdr);
-  if (m_phy->GetGreenfield () && m_low->m_stationManager->GetGreenfieldSupported (peekedHdr.GetAddr1 ()))
-    {
-      preamble = WIFI_PREAMBLE_HT_GF;
-    }
-  else
-    {
-      preamble = WIFI_PREAMBLE_HT_MF;
-    }
-
-  Time duration = m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0);
-
-  Ptr<PerStaQInfo> staQInfo;
-  staQInfo = m_perStaQInfo->GetByMac(peekedHdr.GetAddr1());
-
   TimestampTag deadline;
 
   if (!peekedPacket->FindFirstMatchingByteTag(deadline))
-    {//TODO: when there is no deadline tag then probably other type of packets such as a BLOCK_ACK_REQUEST control packet. So just let it pass.
-      //TODO: This should not cause a problem since its just like FCFS aggregation policy
+    {//TODO: BLOCK_ACK_REQUEST
+      //TODO: Bug! a QOSDATA_CFPOLL packet with no deadline and invalid MAC addresses ends up here!!
 #ifdef DEBUG_SVA_DETAIL
       cout << "MpduUniversalAggregator: No deadline in packet! \n";
 #endif
       return true;
     }
+
+  Ptr<PerStaQInfo> staQInfo;
+  staQInfo = m_perStaQInfo->GetByMac(peekedHeader.GetAddr1());
+#ifdef SVA_DEBUG_DETAIL
+//  if (!staQInfo)
+//    {
+      std::cout << "MpduUniversalAggregator::TimeAllowanceCanBeAggregated "
+          << "Deadline is " << deadline.GetTimestamp().GetSeconds() << " "
+          << peekedPacket->ToString() << " ";
+      std::ostringstream os;
+      peekedHeader.Print(os);
+      std::cout << "Header : " << os.str() << " ";
+//    }
+#endif
+  //NS_ASSERT_MSG(staQInfo,"MpduUniversalAggregator::TimeAllowanceCanBeAggregated no matching station queue found for packet!\n");
+  if (!staQInfo)
+    {//sva for debug only must be removed!
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << "\n";
+#endif
+      return true;
+    }
+
+#ifdef SVA_DEBUG_DETAIL
+  std::cout << "duration= " << duration.GetSeconds()*1000 << " RTA= " << staQInfo->GetRemainingTimeAllowance().GetSeconds()*1000 << "\n";
+#endif
   if (duration <= staQInfo->GetRemainingTimeAllowance()) //if there is still time allowance then aggregate. time allowance will be updated once actually transmitted
     {
       return true;
@@ -396,7 +452,7 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
 
 /*sva-design: add for new aggregation algorithm AGG_ALG
 bool
-MpduUniversalAggregator::XxxCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize)
+MpduUniversalAggregator::XxxCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
 {
 }
 sva-design*/
