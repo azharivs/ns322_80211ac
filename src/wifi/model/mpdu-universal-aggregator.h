@@ -93,13 +93,17 @@ public:
   virtual void AddHeaderAndPad (Ptr<Packet> packet, bool last);
   /**
    * \param peekedPacket the packet we want to insert into <i>aggregatedPacket</i>.
+   * \param peekedHeader the header that will eventually be added to this packet. Can not be obtained from packet because it is probably not AddHeader()'ed yet
    * \param aggregatedPacket packet that will contain the packet of size <i>packetSize</i>, if aggregation is possible.
    * \param blockAckSize size of the piggybacked block ack request
+   * \param duration is the duration of the transmission. This has to be provided as input to prevent
+   *        additional call to WifiPhy::CalculateTsDuration() as it will cause state inconsistency
+   *        TODO: find a better remedy in the future
    * \return true if the packet can be aggregated to <i>aggregatedPacket</i>, false otherwise.
    *
    * This method is used to determine if a packet could be aggregated to an A-MPDU
    */
-  virtual bool CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+  virtual bool CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
   /**
    * \return padding that must be added to the end of an aggregated packet
    *
@@ -125,14 +129,18 @@ public:
 private:
   /**
    * \param peekedPacket the packet we want to insert into <i>aggregatedPacket</i>.
+   * \param peekedHeader packet header that will eventually be added when aggregation is approved
    * \param aggregatedPacket packet that will contain the packet of size <i>packetSize</i>, if aggregation is possible.
    * \param blockAckSize size of the piggybacked block ack request
+   * \param duration is the duration of the transmission. This has to be provided as input to prevent
+   *        additional call to WifiPhy::CalculateTsDuration() as it will cause state inconsistency
+   *        TODO: find a better remedy in the future
    * \return true if the packet can be aggregated to <i>aggregatedPacket</i>, false otherwise.
    *
    * This method is used to determine if a packet could be aggregated to an A-MPDU such that length does not exceed m_maxAmpduLenth.
    * it is called by CanBeAggregated() to deal with aggregation when m_aggregationAlgorithm is set to STANDARD
    */
-  bool StandardCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+  bool StandardCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
 
   /**
    * This method is used to determine if a packet could be aggregated to an A-MPDU
@@ -141,7 +149,7 @@ private:
    * It is called by CanBeAggregated() to deal with aggregation when
    * m_aggregationAlgorithm is set to DEADLINE
    */
-  bool DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+  bool DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
 
 
   /**
@@ -151,14 +159,14 @@ private:
    * It is called by CanBeAggregated() to deal with aggregation when
    * m_aggregationAlgorithm is set to TIME_ALLOWANCE
    */
-  bool TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+  bool TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
 
   /*sva-design: add for new aggregation algorithm AGG_ALG
    * Called for AGG_ALG aggregation algorithm
    * It is called by CanBeAggregated() to deal with aggregation when
    * m_aggregationAlgorithm is set to AGG_ALG
    *
-  bool XxxCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+  bool XxxCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
    *
   sva-design*/
 
