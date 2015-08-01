@@ -56,6 +56,7 @@ public:
    */
   //void SetHistorySize (uint32_t histSize);
 
+  bool SetPerStaQInfo (PerStaQInfoContainer *c);
 
   /**
    * returns average idle time during a beacon interval

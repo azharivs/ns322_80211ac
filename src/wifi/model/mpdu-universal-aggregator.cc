@@ -115,10 +115,12 @@ MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggreg
 #endif
 
   if ( CanBeAggregated(packet, peekedHdr, aggregatedPacket, 0, Seconds(0)) )//0: means no block ack request bits, 0: means duration is zero (could cause a bug!)
-    //sva bug: the duration field is not known at this point and only a size check is performed
+    //sva note:the duration field is not known at this point and only a size check is performed
     //however, this is after StopAggregation() is called which calls CanBeAggregated() with the right duration field
     //so shouldn't be a problem. Nevertheless there is one independent call to this function for the first packet in an A-MPDU
     //Hopefully this does not require duration check.
+    //sva bug: but it does!
+    //sva bug: when supplying this with zero duration, it will cause failure of TimeAllowanceCanBeAggregate
     //TODO: Leaving it as is for now
     {
       if (padding)
@@ -205,7 +207,7 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMa
         {
           Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, this); //make sure current line of execution is finished
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::CanBeAggregated pending service interval, result = false \n";
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::CanBeAggregated pending service interval, CAN NOT BE AGGREGATED so re-schedule PendingServiceInterval \n";
 #endif
         }
     }
@@ -226,7 +228,7 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
   bool flag = true;
 
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance: ";
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance: service interval ";
 #endif
 
   if (!m_perStaQInfo)
@@ -250,7 +252,8 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
         {
           flag = false;
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << "time allowance not used up at non-empty queue of " << (*it)->GetMac() << " ";
+      std::cout << "time allowance (" << (*it)->GetRemainingTimeAllowance().GetSeconds()*1000
+          << ") msec not used up at non-empty queue of " << (*it)->GetMac() << " ";
 #endif
         }
     }
@@ -278,7 +281,7 @@ MpduUniversalAggregator::PendingServiceInterval(void)
       break;//do nothing
   }
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::PendingServiceInterval pending service interval "
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::PendingServiceInterval pending service interval, ready for begin is = "
           << ready << "\n";
 #endif
   if (ready)
@@ -408,7 +411,7 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
     {//TODO: BLOCK_ACK_REQUEST
       //TODO: Bug! a QOSDATA_CFPOLL packet with no deadline and invalid MAC addresses ends up here!!
 #ifdef DEBUG_SVA_DETAIL
-      cout << "MpduUniversalAggregator: No deadline in packet! \n";
+      cout << "MpduUniversalAggregator::TimeAllowanceCanBeAggregated No deadline in packet! return true;\n";
 #endif
       return true;
     }
@@ -418,7 +421,7 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
 #ifdef SVA_DEBUG_DETAIL
 //  if (!staQInfo)
 //    {
-      std::cout << "MpduUniversalAggregator::TimeAllowanceCanBeAggregated "
+      std::cout << Simulator::Now().GetSeconds() << " RTA MpduUniversalAggregator::TimeAllowanceCanBeAggregated "
           << "Deadline is " << deadline.GetTimestamp().GetSeconds() << " "
           << peekedPacket->ToString() << " ";
       std::ostringstream os;
@@ -430,7 +433,7 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
   if (!staQInfo)
     {//sva for debug only must be removed!
 #ifdef SVA_DEBUG_DETAIL
-      std::cout << "\n";
+      std::cout << "--------------- no StaQInfo !!! return true;\n";
 #endif
       return true;
     }

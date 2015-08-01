@@ -777,7 +777,7 @@ PerStaWifiMacQueue::BeginServiceInterval (void)
   m_serviceIntervalPending = false;
   Simulator::Schedule(Seconds(m_serviceInterval), &PerStaWifiMacQueue::PendingServiceInterval, this);
 #ifdef SVA_DEBUG
-  std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::BeginServiceInterval was pending since "
+  std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::BeginServiceInterval service interval was pending since "
       << m_pendingServiceIntervalStart.GetSeconds() << "\n";
 #endif
 }

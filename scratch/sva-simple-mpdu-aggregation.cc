@@ -137,18 +137,19 @@ int main (int argc, char *argv[])
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
+  //sva: AP and STAs initialized, time to initialize PerStaQInfo
+
+  PerStaQInfoContainer perStaQueue = wifi.InitPerStaQInfo(staDevice, AC_VI);
+  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
+      SetPerStaQInfo(perStaQueue,AC_VI);
+
   //Initialize BssPhyMacStats for statistic collection on the medium
 
   std::ostringstream path;
   path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
   Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
   bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(10)); //keep history of the last 10 beacons (i.e. two seconds)
-
-  //sva: AP and STAs initialized, time to initialize PerStaQInfo
-
-  PerStaQInfoContainer perStaQueue = wifi.InitPerStaQInfo(staDevice, AC_VI);
-  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
-      SetPerStaQInfo(perStaQueue,AC_VI);
+  NS_ASSERT(bssPhyMacStats->SetPerStaQInfo(&perStaQueue));
 
   /* Setting mobility model */
   MobilityHelper mobility;
