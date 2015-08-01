@@ -87,6 +87,17 @@ namespace ns3 {
     m_beaconIntervalHistory.clear();
   }
 
+  bool
+  BssPhyMacStats::SetPerStaQInfo (PerStaQInfoContainer *c)
+  {
+    if (!c)
+      {
+        return false;
+      }
+    m_perStaQInfo = c;
+    return true;
+  }
+
   Time
   BssPhyMacStats::GetAvgIdleTimePerBeacon (void)
   {
@@ -143,6 +154,7 @@ namespace ns3 {
   BssPhyMacStats::PhyTxStartSink (const Ptr<const Packet> packet, const WifiMode mode,
                                   const WifiPreamble preamble, const uint8_t power)
   {
+    m_recordTx = false;
     Time now = Simulator::Now();
     m_curPacket = packet;
     WifiMacHeader hdr;
@@ -156,6 +168,18 @@ namespace ns3 {
       {
         m_recordTx = true;
       }
+    else
+      {
+#ifdef SVA_DEBUG_DETAIL
+        WifiMacHeader hdr;
+        packet->PeekHeader(hdr);
+        std::ostringstream os;
+        hdr.Print(os);
+        std::cout << Simulator::Now().GetSeconds() << " RTA BssPhyMacStats::PhyTxStartSink m_recordTx=false "
+            << "PACKET: " << packet->ToString()
+            << "Header : " << os.str() << "\n";
+#endif
+    }
   }
 
   void
@@ -182,10 +206,17 @@ namespace ns3 {
       }
     WifiMacHeader hdr;
     m_curPacket->PeekHeader(hdr);
+    std::ostringstream os;
+    hdr.Print(os);
     Ptr<PerStaQInfo> staQInfo = m_perStaQInfo->GetByMac(hdr.GetAddr1());
-    NS_ASSERT_MSG(staQInfo, "BssPhyMacStats::RecordTx, No station found by that MAC address" << hdr.GetAddr1());
+    NS_ASSERT_MSG(staQInfo, "BssPhyMacStats::RecordTx, No station found by that MAC address "
+                  << hdr.GetAddr1() << " PACKET: " << m_curPacket->ToString()
+                  << " HEADER: " << os.str());
     Time leftOver = staQInfo->DeductTimeAllowance(duration);
 #ifdef SVA_DEBUG_DETAIL
+    std::cout << Simulator::Now().GetSeconds() << " RTA BssPhyMacStats::RecordTx Tx-duration= "
+        << duration.GetSeconds()*1000 << " msec leftover= "
+        << leftOver.GetSeconds()*1000 << " msec\n";
     if (leftOver < 0)
       {
         std::cout << "BssPhyMacStats::RecordTx Negative Time Allowance Left Over \n";
