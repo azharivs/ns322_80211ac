@@ -35,7 +35,7 @@
 #include "evalvid-server.h"
 #include "ns3/rtp-protocol.h"
 #include "ns3/tcp-socket.h"
-#include <stdio.h>
+
 
 
 
@@ -56,6 +56,11 @@ EvalvidServer::GetTypeId (void)
                    "Sender Dump Filename",
                    StringValue(""),
                    MakeStringAccessor(&EvalvidServer::m_senderTraceFileName),
+                   MakeStringChecker())
+    .AddAttribute ("SendSizeFileName",
+                   "Send Size Filename",
+                   StringValue(""),
+                   MakeStringAccessor(&EvalvidServer:: m_sendsizeFilename),
                    MakeStringChecker())
     .AddAttribute ("SenderTraceFilename",
                    "Sender trace Filename",
@@ -82,6 +87,10 @@ EvalvidServer::GetTypeId (void)
                    TypeIdValue (TcpSocketFactory::GetTypeId ()),
                    MakeTypeIdAccessor (&EvalvidServer::m_tid),
                    MakeTypeIdChecker ())
+    /*.AddAttribute ("FlowId", "The Flow's Id",
+                   UintegerValue (1),
+                   MakeUintegerAccessor (&EvalvidServer::m_flowId),
+                   MakeUintegerChecker<uint32_t> (1))*/
     .AddTraceSource ("Tx", "A new packet is created and is sent",
                      MakeTraceSourceAccessor (&EvalvidServer::m_txTrace),
                      "ns3::Packet::TracedCallback")
@@ -203,6 +212,7 @@ EvalvidServer::Connect()
 
 }
 
+
 void
 EvalvidServer::Setup()
 {
@@ -251,8 +261,7 @@ EvalvidServer::Setup()
         return;
     }
  
-    string m_sendsizeFilename = "send_size";
-    //m_sendsizeFilename = m_sendsizeFilename + (string)InetSocketAddress::ConvertFrom (m_peer).GetIpv4 ();
+  
     m_sendsizeFile.open(m_sendsizeFilename.c_str(), ios::out);
     if (m_sendsizeFile.fail())
     {
