@@ -155,6 +155,7 @@ private:
      ifstream    m_sendFile;                    // !< Open above file for input 
                                                 
      uint32_t    m_packetId;
+     string      m_sendsizeFilename;
  
 
 

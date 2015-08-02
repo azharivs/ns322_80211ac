@@ -63,6 +63,11 @@ EvalvidClient::GetTypeId (void)
                    StringValue(""),
                    MakeStringAccessor(&EvalvidClient::receiverDumpFileName),
                    MakeStringChecker())
+    .AddAttribute ("SendSizeFileName",
+                   "Send_Size Filename",
+                   StringValue(""),
+                   MakeStringAccessor(&EvalvidClient::m_sendSizeFileName),
+                   MakeStringChecker())
     .AddAttribute ("Local",
                    "The Address on which to Bind the rx socket.",
                    AddressValue (),
@@ -87,7 +92,6 @@ EvalvidClient::EvalvidClient ()
     NS_LOG_FUNCTION (this);
     m_socket = 0;
     m_totalRx = 0;
-   // flag = 0;
     isfragment = false;
     m_received = 0;
 }
@@ -296,11 +300,10 @@ void EvalvidClient::HandleAccept (Ptr<Socket> s, const Address& from)
     m_socketList.push_back (s);
  
     //open packet sizes file
-    string sendsizeName= "send_size";
-    sendsizeFile.open(sendsizeName.c_str(), ios::in);
+    sendsizeFile.open(m_sendSizeFileName.c_str(), ios::in);
     if (sendsizeFile.fail())
     {
-        NS_FATAL_ERROR(">> EvalvidServer: Error while opening video sendsize file: " << sendsizeName.c_str());
+        NS_FATAL_ERROR(">> EvalvidServer: Error while opening video sendsize file: " << m_sendSizeFileName.c_str());
         return;
     }
 }
