@@ -20,6 +20,13 @@
  *
  */
 
+/******************************************************/
+/********     By Narges Ferasat Manesh  ***************/
+/********         11 Mordad 94          ***************/
+/********         Evalvid server        ***************/
+/******************************************************/
+
+
 #ifndef __EVALVID_SERVER_H__
 #define __EVALVID_SERVER_H__
 
@@ -155,7 +162,7 @@ private:
      ifstream    m_sendFile;                    // !< Open above file for input 
                                                 
      uint32_t    m_packetId;
-     string      m_sendsizeFilename;
+     string      m_sendsizeFilename;  //NFM: the file including size of each packet ...
  
 
 
