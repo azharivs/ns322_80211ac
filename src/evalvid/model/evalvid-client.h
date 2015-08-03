@@ -138,7 +138,7 @@ class EvalvidClient : public Application
      bool        isfragment;             //!< if sink receive an incomplete packet isfragment=true else isfragment=false
      uint32_t    fragment;               //!< The number of packets not received
      uint32_t    m_received;             //!< total packets received
-     // uint32_t    flag;
+     string      m_sendSizeFileName;
  
 };
 
