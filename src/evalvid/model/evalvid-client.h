@@ -19,6 +19,12 @@
  *         Saulo da Mata <damata.saulo@gmail.com>
  */
 
+/******************************************************/
+/********     By Narges Ferasat Manesh  ***************/
+/********         11 Mordad 94          ***************/
+/********         Evalvid Client        ***************/
+/******************************************************/
+
 #ifndef __EVALVID_CLIENT_H__
 #define __EVALVID_CLIENT_H__
 
