@@ -173,7 +173,7 @@ UdpClient::Send (void)
   seqTs.SetSeq (m_sent);
   Ptr<Packet> p = Create<Packet> (m_size-(8+4)); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);
-  //sva: added QoS header to make it treated as AC_VI
+  //sva: added QoS tag to have it treated as AC_VI
   class QosTag tag(UP_VI);
   p->AddPacketTag(tag);
   //sva: add deadline as absolute timestamp
