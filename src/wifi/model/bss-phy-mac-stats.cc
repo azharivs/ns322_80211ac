@@ -32,6 +32,8 @@
 #include "ns3/simulator.h"
 #include "bss-phy-mac-stats.h"
 #include "per-sta-q-info.h"
+#include "ampdu-tag.h"
+#include "ampdu-subframe-header.h"
 
 namespace ns3 {
 
@@ -158,7 +160,25 @@ namespace ns3 {
     Time now = Simulator::Now();
     m_curPacket = packet;
     WifiMacHeader hdr;
-    packet->PeekHeader(hdr);
+    AmpduTag ampduTag;
+    uint32_t start = 0;
+    if (packet->PeekPacketTag(ampduTag))
+      {
+        if (ampduTag.GetAmpdu())
+          {//TODO extract WifiMacHeader
+            AmpduSubframeHeader ampduHdr;
+            start = packet->PeekHeader(ampduHdr);
+          }
+      }
+    packet->PeekHeader(hdr,start);
+
+#ifdef SVA_PACKET_TRACE
+    std::ostringstream os;
+    hdr.Print(os);
+    std::cout << Simulator::Now().GetSeconds() << " sva_packet_trace::PhyTxStartSink "
+        << "---PACKET---> " << packet->ToString()
+        << "---HEADER---> " << os.str() << "\n";
+#endif
     if (hdr.IsBeacon())
       {
         //std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
@@ -171,8 +191,6 @@ namespace ns3 {
     else
       {
 #ifdef SVA_DEBUG_DETAIL
-        WifiMacHeader hdr;
-        packet->PeekHeader(hdr);
         std::ostringstream os;
         hdr.Print(os);
         std::cout << Simulator::Now().GetSeconds() << " RTA BssPhyMacStats::PhyTxStartSink m_recordTx=false "
@@ -205,7 +223,18 @@ namespace ns3 {
         return ;
       }
     WifiMacHeader hdr;
-    m_curPacket->PeekHeader(hdr);
+    AmpduTag ampduTag;
+    uint32_t start = 0;
+    if (m_curPacket->PeekPacketTag(ampduTag))
+      {
+        if (ampduTag.GetAmpdu())
+          {//TODO extract WifiMacHeader
+            AmpduSubframeHeader ampduHdr;
+            start = m_curPacket->PeekHeader(ampduHdr);
+          }
+      }
+    m_curPacket->PeekHeader(hdr,start);
+
     std::ostringstream os;
     hdr.Print(os);
     Ptr<PerStaQInfo> staQInfo = m_perStaQInfo->GetByMac(hdr.GetAddr1());

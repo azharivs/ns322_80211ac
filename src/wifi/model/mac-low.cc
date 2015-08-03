@@ -1478,7 +1478,7 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
       m_phy->SendPacket (packet, txVector, preamble, 0);
     }
   else
-    {
+    {//sva: procedure for sending an A-MPDU or RTS. A-MPDUs are sent by scheduling successive MacLow::SendPacket for MPDUs.
       Ptr<Packet> newPacket;
       Ptr <const Packet> dequeuedPacket;
       WifiMacHeader newHdr;
@@ -1490,6 +1490,7 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
       AmpduTag ampdutag;
       ampdutag.SetAmpdu (true);
       Time delay = Seconds (0);
+      //sva: here, the WifiMacHeader header gets added to each MPDU
       for ( ; queueSize > 0; queueSize--)
         {
           dequeuedPacket = m_aggregateQueue->Dequeue (&newHdr);
@@ -1502,6 +1503,7 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
               last = true;
               packetType = 2;
             }
+          //sva: this adds AMPDU subheader and padd to each MPDU
           m_mpduAggregator->AddHeaderAndPad (newPacket, last);
 
           ampdutag.SetNoOfMpdus(queueSize);
@@ -1832,6 +1834,7 @@ MacLow::SendDataPacket (void)
     }
   m_currentHdr.SetDuration (duration);
 
+  //sva: so why isn't the header added for an A-MPDU?
   if (!m_ampdu)
     {
       m_currentPacket->AddHeader (m_currentHdr);
@@ -2638,6 +2641,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
   bool isAmpdu = false;
   Ptr<Packet> newPacket;
   WifiMacHeader peekedHdr;
+  //newPacket is a copy of the original packet
   newPacket = packet->Copy();
   //missing hdr.IsAck() since we have no means of knowing the Tid of the Ack yet
   if (hdr.IsQosData() || hdr.IsBlockAck()|| hdr.IsBlockAckReq())
@@ -2667,6 +2671,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
               uint16_t blockAckSize = 0;
               bool aggregated = false;
               int i = 0;
+              //aggPacket and the peekedHdr go in the aggregation queue separately
               Ptr<Packet> aggPacket = newPacket->Copy ();
 
               if (!hdr.IsBlockAckReq())
@@ -2677,6 +2682,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                        peekedHdr.SetQosAckPolicy (WifiMacHeader::NORMAL_ACK);
                     }
                   currentSequenceNumber = peekedHdr.GetSequenceNumber();
+                  //header is added to newPacket after aggPacket is enqueued but before call to Aggregate() function
                   newPacket->AddHeader (peekedHdr);
                   WifiMacTrailer fcs;
                   newPacket->AddTrailer (fcs);
@@ -2685,6 +2691,8 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   //sva: currentAggregatedPacket is yet null and the following line is just to initialize the first aggregated packet
                   //sva: this first packet is not aggregated if the header is of type BLOCK_ACK_REQ and will be later aggregated, but WHY?
                   aggregated=m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
+                  //currentAggregatedPacket will contain the correct packet with its header added to the end.
+                  //However no call to AddHeader is made for currentAggregatedPacket!
 
                   if (aggregated)
                     {
@@ -2697,7 +2705,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
               else if (hdr.IsBlockAckReq())//sva: if not a BLOCK_ACK_REQ packet the blockAckSize will remain zero (size of a piggy backed block ack request)
                 {
                   blockAckSize = packet->GetSize() + hdr.GetSize() + WIFI_MAC_FCS_LENGTH;
-                  qosPolicy = 3; //if the last subrame is block ack req then set ack policy of all frames to blockack
+                  qosPolicy = 3; //if the last sub-frame is block ack req then set ack policy of all frames to blockack
                   CtrlBAckRequestHeader blockAckReq;
                   packet->PeekHeader (blockAckReq);
                   startingSequenceNumber = blockAckReq.GetStartingSequence ();

@@ -100,6 +100,7 @@ MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggreg
   AmpduSubframeHeader currentHdr;
 
   WifiMacHeader peekedHdr;
+  //the packet has correct header installed before this function is called --> ok
   packet->PeekHeader(peekedHdr);
 
   uint32_t padding = CalculatePadding (aggregatedPacket);
@@ -145,8 +146,8 @@ MpduUniversalAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 {
   NS_LOG_FUNCTION (this);
   AmpduSubframeHeader currentHdr;
-  //This is called to prepare packets from the aggregte queue to be sent so no need to check total size since it has already been
-  //done before when deciding how many packets to add to the queue
+  //This is called to prepare packets from the aggregate queue to be sent so no need to check total size since it has already been
+  //done before, when deciding how many packets to add to the queue
   currentHdr.SetCrc (1);
   currentHdr.SetSig ();
   currentHdr.SetLength (packet->GetSize ());
