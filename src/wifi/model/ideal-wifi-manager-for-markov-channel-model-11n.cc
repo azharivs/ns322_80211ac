@@ -273,7 +273,7 @@ IdealWifiManagerForMarkovChannelModel11n::DoGetDataTxVector (WifiRemoteStation *
 
   // because  m_deviceRateSet have OfdmRate6Mbps,OfdmRate12Mbps, and OfdmRate24Mbps by default, we must add mcs index with 3.
   uint32_t i = SpatialMultiplexing(station) + 3;
-  i = rand()% (GetNSupported (station));
+  //i = rand()% (GetNSupported (station));
   //sf I added below "if" because at first mcs was not added to Supported rates
   if (i>=(GetNSupported (station)))
 	  i= 0;
