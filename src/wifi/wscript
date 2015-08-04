@@ -80,6 +80,7 @@ def build(bld):
         'model/mpdu-universal-aggregator.cc',
         'model/bss-phy-mac-stats.cc',
         'model/ideal-wifi-manager-for-markov-channel-model.cc',
+        'model/ideal-wifi-manager-for-markov-channel-model-11n.cc',
         'model/aggregation-controllers.cc',
         ]
 
@@ -170,6 +171,7 @@ def build(bld):
         'model/mpdu-universal-aggregator.h',
         'model/bss-phy-mac-stats.h',
         'model/ideal-wifi-manager-for-markov-channel-model.h',
+        'model/ideal-wifi-manager-for-markov-channel-model-11n.h',
         'model/aggregation-controllers.h',
         ]
 
