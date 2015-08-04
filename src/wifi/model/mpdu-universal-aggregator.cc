@@ -410,7 +410,6 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
 
   if (!peekedPacket->FindFirstMatchingByteTag(deadline))
     {//TODO: BLOCK_ACK_REQUEST
-      //TODO: Bug! a QOSDATA_CFPOLL packet with no deadline and invalid MAC addresses ends up here!!
 #ifdef DEBUG_SVA_DETAIL
       cout << "MpduUniversalAggregator::TimeAllowanceCanBeAggregated No deadline in packet! return true;\n";
 #endif
@@ -420,24 +419,14 @@ MpduUniversalAggregator::TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedP
   Ptr<PerStaQInfo> staQInfo;
   staQInfo = m_perStaQInfo->GetByMac(peekedHeader.GetAddr1());
 #ifdef SVA_DEBUG_DETAIL
-//  if (!staQInfo)
-//    {
       std::cout << Simulator::Now().GetSeconds() << " RTA MpduUniversalAggregator::TimeAllowanceCanBeAggregated "
           << "Deadline is " << deadline.GetTimestamp().GetSeconds() << " "
           << peekedPacket->ToString() << " ";
       std::ostringstream os;
       peekedHeader.Print(os);
       std::cout << "Header : " << os.str() << " ";
-//    }
 #endif
-  //NS_ASSERT_MSG(staQInfo,"MpduUniversalAggregator::TimeAllowanceCanBeAggregated no matching station queue found for packet!\n");
-  if (!staQInfo)
-    {//sva for debug only must be removed!
-#ifdef SVA_DEBUG_DETAIL
-      std::cout << "--------------- no StaQInfo !!! return true;\n";
-#endif
-      return true;
-    }
+  NS_ASSERT_MSG(staQInfo,"MpduUniversalAggregator::TimeAllowanceCanBeAggregated no matching station queue found for packet!\n");
 
 #ifdef SVA_DEBUG_DETAIL
   std::cout << "duration= " << duration.GetSeconds()*1000 << " RTA= " << staQInfo->GetRemainingTimeAllowance().GetSeconds()*1000 << "\n";

@@ -375,7 +375,7 @@ PerStaWifiMacQueue::GetTypeId (void)
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (EDF),
+                   EnumValue (MAX_REMAINING_TIME_ALLOWANCE),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
@@ -640,8 +640,7 @@ PerStaWifiMacQueue::GetStaHol (PacketQueueI &it, uint8_t tid, Mac48Address dest,
 Ptr<const Packet>
 PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                            const QosBlockedDestinations *blockedPackets)
-{//TODO change to reflect queue arbitration algorithm
-  //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
+{
   Time now = Simulator::Now();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
@@ -691,8 +690,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 Ptr<const Packet>
 PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                   const QosBlockedDestinations *blockedPackets)
-{//TODO change to reflect queue arbitration algorithm
-  //std::cout << "PreStaWifiMacQueue::PeekFirstAvailable \n";
+{
   Cleanup ();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Ptr<const Packet> packet = 0;
@@ -728,7 +726,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
   return packet;
 }
 
-//sva: can be optimized
+//TODO sva: can be optimized
 uint32_t
 PerStaWifiMacQueue::GetNPacketsByTidAndAddress (uint8_t tid, WifiMacHeader::AddressType type,
                                           Mac48Address addr)
@@ -759,6 +757,7 @@ PerStaWifiMacQueue::IsEmpty (void)
   return m_queue.empty ();
 }
 
+//TODO sva: what is the justification for handling service interval scheduling at the WifiMacQueue? Can't it be done at the Aggregator?
 void
 PerStaWifiMacQueue::PendingServiceInterval (void)
 {
@@ -766,6 +765,7 @@ PerStaWifiMacQueue::PendingServiceInterval (void)
   m_serviceIntervalPending = true;
   if (m_mpduAggregator)//if an aggregator is initialized (for stations there isn't one currently)
     {
+      //check if aggregator has finished serving the current service interval's quota
       m_mpduAggregator->PendingServiceInterval();
     }
 }
@@ -902,7 +902,7 @@ PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBl
   PerStaQInfoContainer::Iterator sta;
   PacketQueueI qi;
   PacketQueueI qiServed; //the one that will eventually be served
-  Time maxRta = Seconds(100); //Max Remaining Time Allowance, set to some large value
+  Time maxRta = Seconds(0); //Max Remaining Time Allowance
   Time rta;
   bool found=false;
 
