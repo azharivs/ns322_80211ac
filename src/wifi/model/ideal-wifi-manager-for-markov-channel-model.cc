@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 /*
- * Copyright (c) 2006 INRIA
+ * Copyright (c) 2015, Saleh Fakhrali
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
@@ -15,7 +15,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+ * Author: Saleh Fakhrali <fakhrali@iust.ac.ir> and <s.fakhrali@gmail.com>
  */
 #include "ideal-wifi-manager-for-markov-channel-model.h"
 #include "wifi-phy.h"
@@ -23,6 +23,7 @@
 #include "ns3/double.h"
 #include <cmath>
 #include "ns3/wifi-mac.h"
+#include "ns3/simulator.h"
 
 #define Min(a,b) ((a < b) ? a : b)
 
@@ -67,10 +68,14 @@ IdealWifiManagerForMarkovChannelModel::IdealWifiManagerForMarkovChannelModel ()
   ConvertMacToStationNumber.insert(std::pair<Mac48Address,int>(Mac48Address("00:00:00:00:00:09"),8));
   ConvertMacToStationNumber.insert(std::pair<Mac48Address,int>(Mac48Address("00:00:00:00:00:0A"),9));
   pi=3.1415926;
+  IsInitializationAntennasState=true;
+  InitializeState = 0;
+  SymbolDuration = 4 ; // unit is microsecond
+
   //variables for reading and writing
   char comment[255];
-  std::ifstream fin("/home/azhari/app/ns-3-allinone/ns-3.22/scratch/input.txt");
-  std::ofstream fout("/home/azhari/app/ns-3-allinone/ns-3.22/scratch/output.txt");
+  std::ifstream fin("InputParametersForMarkovModel.txt");
+  std::ofstream fout("SomeOutputsForMarkovModel.txt");
 
   //*********     Reading from input file   *****************
   fin.getline(comment,255);
@@ -85,7 +90,18 @@ IdealWifiManagerForMarkovChannelModel::IdealWifiManagerForMarkovChannelModel ()
   	CurrentStateOfEachAntennaInEcachStation[i]=new int [ NumberOfantennas];
   for (int i=0; i<NumberOfStations; i++)
     for (int j=0; j<NumberOfantennas; j++)
-  	 CurrentStateOfEachAntennaInEcachStation[i][j]=0;
+  	 CurrentStateOfEachAntennaInEcachStation[i][j]=InitializeState ;
+  CounterForTrackingAntennasState=0;
+  StateFrequency = new uint64_t **[NumberOfStations] ;
+  for (int i=0; i<NumberOfStations; i++)
+	  StateFrequency[i]=new uint64_t *[NumberOfantennas];
+  for (int i=0; i<NumberOfStations; i++)
+    for( int j=0; j<NumberOfantennas;j++)
+      StateFrequency[i][j]= new uint64_t [k];
+  for (int i=0; i<NumberOfStations; i++)
+    for( int j=0; j<NumberOfantennas;j++)
+	  for( int l=0; l< k;l++)
+		  StateFrequency[i][j][l]= 0;
   p= new double *[NumberOfAllSourceDestinationPairs];
   for (int i=0; i<NumberOfAllSourceDestinationPairs; i++)
   p[i]=new double [k];
@@ -271,7 +287,22 @@ IdealWifiManagerForMarkovChannelModel::DoGetDataTxVector (WifiRemoteStation *st,
   IdealWifiRemoteStationForMarkovChannelModel *station = (IdealWifiRemoteStationForMarkovChannelModel *)st;
 
   int DestinationStationIndex=ConvertMacToStationNumber.find(station->m_state->m_address)->second;
-  CalculateTheStatesOfEachAntenna (DestinationStationIndex);
+  Ptr<WifiMac> WifiMacOfThisWifiRemoteStationManager = GetMac() ;
+  Mac48Address MacAddressOfThisWifiRemoteStationManager= WifiMacOfThisWifiRemoteStationManager->GetAddress();
+  int SourceStationIndex = ConvertMacToStationNumber.find(MacAddressOfThisWifiRemoteStationManager)->second;
+
+  #ifdef sfmacro_SimulationWithSteadyStateProbability
+  CalculateTheStatesOfEachAntenna (DestinationStationIndex,SourceStationIndex);
+  #else
+  // We want to initialize all antennas state  not the antennas in destination 0 that has index 0
+  //When a Source want to send to a Destination then all markov chains in all destination will be simulated.
+  if(IsInitializationAntennasState) {
+	  //Debug
+	  //std::cout<< "Source Number = " << SourceStationIndex<<" Destination Number = "<<DestinationStationIndex<<std::endl;
+	  ChangeTheStateOfAntennas (0, SourceStationIndex, 0,InitializeState, true);
+  	  IsInitializationAntennasState=false;
+  }
+  #endif
 
   // because  m_deviceRateSet have OfdmRate6Mbps,OfdmRate12Mbps, and OfdmRate24Mbps by default, we must add mcs index with 3.
   uint32_t i = SpatialMultiplexing(DestinationStationIndex) + 3;
@@ -287,13 +318,19 @@ IdealWifiManagerForMarkovChannelModel::DoGetRtsTxVector (WifiRemoteStation *st)
   IdealWifiRemoteStationForMarkovChannelModel *station = (IdealWifiRemoteStationForMarkovChannelModel *)st;
 
   int DestinationStationIndex=ConvertMacToStationNumber.find(station->m_state->m_address)->second;
-  CalculateTheStatesOfEachAntenna (DestinationStationIndex);
+
+  #ifdef sfmacro_SimulationWithSteadyStateProbability
+  Ptr<WifiMac> WifiMacOfThisWifiRemoteStationManager = GetMac() ;
+  Mac48Address MacAddressOfThisWifiRemoteStationManager= WifiMacOfThisWifiRemoteStationManager->GetAddress();
+  int SourceStationIndex = ConvertMacToStationNumber.find(MacAddressOfThisWifiRemoteStationManager)->second;
+  CalculateTheStatesOfEachAntenna (DestinationStationIndex,SourceStationIndex);
+  #endif
 
   // because  m_deviceRateSet have OfdmRate6Mbps,OfdmRate12Mbps, and OfdmRate24Mbps by default, we must add mcs index with 3.
   uint32_t i = SpatialMultiplexing(DestinationStationIndex) + 3;
   //sf I added below "if" because at first mcs was not added to Supported rates
   if (i>=(GetNSupported (station)))
-	  i= 0;
+  	  i= 0;
   WifiMode maxMode =  GetSupported (station, i);
   return WifiTxVector (maxMode, GetDefaultTxPowerLevel (), GetShortRetryCount (station), GetShortGuardInterval (station), Min (GetNumberOfReceiveAntennas (station),GetNumberOfTransmitAntennas()), GetNess (station), GetStbc (station));
 }
@@ -302,34 +339,6 @@ bool
 IdealWifiManagerForMarkovChannelModel::IsLowLatency (void) const
 {
   return true;
-}
-
-void IdealWifiManagerForMarkovChannelModel::CalculateTheStatesOfEachAntenna (int DestinationStationNumber)
-{
-  Ptr<WifiMac> WifiMacOfThisWifiRemoteStationManager = GetMac() ;
-  Mac48Address MacAddressOfThisWifiRemoteStationManager= WifiMacOfThisWifiRemoteStationManager->GetAddress();
-  int SourceStationNumber = ConvertMacToStationNumber.find(MacAddressOfThisWifiRemoteStationManager)->second;
-  for (int i=0; i<NumberOfantennas; i++){
-	double random_probability = 0, mm=10000,
-		   SumOfP=0; //we use this to determine in which states the antenna is
-		   random_probability= ( rand() % 10000)/mm;
-	for ( int j =0; j < k; j++) {
-	  if (j!=k-1){
-	    if( (SumOfP <= random_probability) && (random_probability < (SumOfP + p[(DestinationStationNumber) + (NumberOfStations*SourceStationNumber)][j])) ){
-	      CurrentStateOfEachAntennaInEcachStation[DestinationStationNumber][i]= j;
-	      //sf debug
-	      //std::cout<< " j is " << j <<std::endl;
-	    }
-	  } else{
-		if( (SumOfP <= random_probability) && (random_probability < 1) ) {
-		  CurrentStateOfEachAntennaInEcachStation[DestinationStationNumber][i]= j;
-		  //sf debug
-		  //std::cout<< " j is " << j <<std::endl;
-		}
-	  }
-      SumOfP += p[(DestinationStationNumber) + (NumberOfStations*SourceStationNumber)][j];
-	}
-  }
 }
 
 uint32_t IdealWifiManagerForMarkovChannelModel::SpatialMultiplexing (int DestinationStationNumber)
@@ -416,4 +425,146 @@ uint32_t IdealWifiManagerForMarkovChannelModel::SpatialMultiplexing (int Destina
 
  return McsIndexWithDof;
 }
+
+void IdealWifiManagerForMarkovChannelModel::ChangeTheStateOfAntennas ( int DestinationStationNumber, int SourceStationNumber, int AntennaNumber ,int NextState,bool IsInitialization)
+{
+  double RandomProbability,UniformRandomVariableBetween0and1,
+         ProbabilityOfRemainingInThisState,
+		 NumberOfClocksItTakesToExit; //It is geometric distributed random variable and take 0,1,2, 3, ...
+                                     //  0 means that the antenna exist from current state at the next clock
+                                     // we use the way that described in "Lewis, P. W. A., and Ed McKenzie. Simulation methodology for statisticians, operations analysts, and engineers. Vol. 1. CRC press, 1988" for generating geometrically distributed random variable.
+  int  NextStateOfCurrentNextState;
+  Ptr<UniformRandomVariable>  RandomVariable =   CreateObject<UniformRandomVariable> ();
+
+  if(IsInitialization){
+	  // If you want to Track all antennas State then you can remove the // in the next line
+	  //TrackAntennasState(SourceStationNumber);
+
+	 // Initialize all antennas in all destinations
+     for (int i=0; i<NumberOfStations; i++){
+ 	  for (int j=0; j<NumberOfantennas; j++){
+ 		if(i!=SourceStationNumber){ //It is not necessary to simulate source chain!
+ 		  CurrentStateOfEachAntennaInEcachStation[i][j]= NextState;
+ 		  //calculate the next state that will be schedule
+ 		  RandomProbability = (RandomVariable->GetValue(0,1));
+ 		  ProbabilityOfRemainingInThisState = T [i+(NumberOfStations*SourceStationNumber)] [NextState][NextState];
+ 		  if (NextState ==0) {
+ 			  NextStateOfCurrentNextState = NextState+1;
+ 		  }else if (NextState ==(k-1)){
+ 		      NextStateOfCurrentNextState = NextState -1;
+ 	      }else{
+ 			  if(RandomProbability <= ((T [i+(NumberOfStations*SourceStationNumber)] [NextState][NextState -1])/(1-ProbabilityOfRemainingInThisState)))
+ 				  NextStateOfCurrentNextState = NextState -1;
+ 			  else
+ 				  NextStateOfCurrentNextState = NextState +1;
+ 		  }
+ 		  //Schedule the next transition
+ 		  UniformRandomVariableBetween0and1 = RandomVariable->GetValue(0,1);
+ 		  NumberOfClocksItTakesToExit = static_cast<uint64_t> (floor ((log(1 - UniformRandomVariableBetween0and1))/(log (ProbabilityOfRemainingInThisState))));
+ 		  //sf Debug
+ 		  //std::cout<<NextStateOfCurrentNextState << "   " << NumberOfClocksItTakesToExit<<std::endl;
+ 		  //We Add 1 with NumberOfClocksItTakesToExit because for example 0 means that at the Next Clock Transition must happens.
+ 		  Simulator::Schedule (MilliSeconds((NumberOfClocksItTakesToExit+1)*SymbolDuration),
+ 				               &IdealWifiManagerForMarkovChannelModel::ChangeTheStateOfAntennas, this,
+ 		                       i,
+							   SourceStationNumber,
+ 		                       j,
+							   NextStateOfCurrentNextState,
+ 		                       false);
+       }
+ 	  }
+ 	}
+   }else{
+	 //Debug
+	 //std::cout<< "After Initialization in ChangeTheStateOfAntennas :Source Number = " << SourceStationNumber<<" Destination Number = "<<DestinationStationNumber<<std::endl;
+	 // It is not initialization, so we must change the desired antenna state
+     CurrentStateOfEachAntennaInEcachStation[DestinationStationNumber][AntennaNumber]= NextState;
+     //calculate the next state that will be schedule
+	 RandomProbability = (RandomVariable->GetValue(0,1));
+     ProbabilityOfRemainingInThisState = T [DestinationStationNumber+(NumberOfStations*SourceStationNumber)] [NextState][NextState];
+	 if (NextState ==0) {
+	 	NextStateOfCurrentNextState = NextState+1;
+	 }else if (NextState ==(k-1)){
+	 	NextStateOfCurrentNextState = NextState -1;
+	 }else{
+	 	if(RandomProbability <= ((T [DestinationStationNumber+(NumberOfStations*SourceStationNumber)] [NextState][NextState -1])/(1-ProbabilityOfRemainingInThisState)))
+	 		NextStateOfCurrentNextState = NextState -1;
+	 	else
+	 		NextStateOfCurrentNextState = NextState +1;
+	 }
+	 //Schedule the next transition
+	 UniformRandomVariableBetween0and1 = RandomVariable->GetValue(0,1);
+	 NumberOfClocksItTakesToExit = static_cast<uint64_t> (floor ((log(1 - UniformRandomVariableBetween0and1))/(log (ProbabilityOfRemainingInThisState))));
+	 //sf Debug
+	 //std::cout<<NextStateOfCurrentNextState << "   " << NumberOfClocksItTakesToExit<<std::endl;
+	 //We Add 1 with NumberOfClocksItTakesToExit because for example 0 means that at the Next Clock Transition must happens.
+	 Simulator::Schedule (MilliSeconds((NumberOfClocksItTakesToExit+1)*SymbolDuration),
+	 		              &IdealWifiManagerForMarkovChannelModel::ChangeTheStateOfAntennas, this,
+						  DestinationStationNumber,
+						  SourceStationNumber,
+						  AntennaNumber,
+	 					  NextStateOfCurrentNextState,
+	                      false);
+   }
+}
+
+#ifdef sfmacro_SimulationWithSteadyStateProbability
+void IdealWifiManagerForMarkovChannelModel::CalculateTheStatesOfEachAntenna (int DestinationStationNumber, int SourceStationNumber)
+{
+  for (int i=0; i<NumberOfantennas; i++){
+	double random_probability = 0, mm=10000,
+		   SumOfP=0; //we use this to determine in which states the antenna is
+		   random_probability= ( rand() % 10000)/mm;
+	for ( int j =0; j < k; j++) {
+	  if (j!=k-1){
+	    if( (SumOfP <= random_probability) && (random_probability < (SumOfP + p[(DestinationStationNumber) + (NumberOfStations*SourceStationNumber)][j])) ){
+	      CurrentStateOfEachAntennaInEcachStation[DestinationStationNumber][i]= j;
+	      //sf debug
+	      //std::cout<< " j is " << j <<std::endl;
+	    }
+	  } else{
+		if( (SumOfP <= random_probability) && (random_probability < 1) ) {
+		  CurrentStateOfEachAntennaInEcachStation[DestinationStationNumber][i]= j;
+		  //sf debug
+		  //std::cout<< " j is " << j <<std::endl;
+		}
+	  }
+      SumOfP += p[(DestinationStationNumber) + (NumberOfStations*SourceStationNumber)][j];
+	}
+  }
+}
+#endif
+/*
+void IdealWifiManagerForMarkovChannelModel::TrackAntennasState(int SourceStationNumber)
+{
+  CounterForTrackingAntennasState++;
+  for (int i=0; i<NumberOfStations; i++)
+	for (int j=0; j<NumberOfantennas; j++)
+		StateFrequency[i][j][CurrentStateOfEachAntennaInEcachStation[i][j]]++;
+
+  //Validating the Markov chain viewed by Source Station with index 0 i.e. AP
+  //Note that You can Validate all source and destination pairs.
+  if( (CounterForTrackingAntennasState==50000) && (SourceStationNumber==0)){
+	  std::ofstream fout("ValidationOfChannelSimulation.txt");
+	  fout<<"*******   Validating the markov chain viewed by  AP   ******* " <<std::endl;
+	  fout<<"We compare steady state probability of each State to the probability that comes from the Channel Simulation. " <<std::endl;
+	  fout<<"These two Probabilities must be almost equal." <<std::endl<<std::endl;
+	  for (int i=0; i<NumberOfStations; i++)
+		  if(i!=SourceStationNumber){
+			  fout << std::endl<<"*** Validating for Destination with index " << i << "  ***"<<std::endl;
+			  for( int j=0; j<NumberOfantennas;j++)
+				  for( int l=0; l< k;l++)
+					  fout<< "Probability Of being The Antenna "<< j << "in State "<<l << " is "
+	  	    		   << (static_cast<double>(StateFrequency[i][j][l])/ CounterForTrackingAntennasState) <<std::endl
+	  	    		   << " and steady state Probability of This State is  "
+					   << p[(i) + (NumberOfStations*SourceStationNumber)][l]<<std::endl;
+
+
+		  }
+  }else{
+	  Simulator::Schedule(MicroSeconds(SymbolDuration),&IdealWifiManagerForMarkovChannelModel::TrackAntennasState,this, SourceStationNumber);
+  }
+}*/
+
 } // namespace ns3
+

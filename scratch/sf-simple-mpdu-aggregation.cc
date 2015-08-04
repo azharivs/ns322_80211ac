@@ -92,8 +92,11 @@ int main (int argc, char *argv[])
   //For standard MTU of 1500 bytes, the maximum data size is 1472 bytes
   //(MTU minus 20 bytes IP header and 8 bytes for the ICMP header)
 
-  uint64_t simulationTime =5; //seconds
+  uint64_t simulationTime =1; //seconds
   uint32_t nSta = 3;
+  uint32_t    Ideal11n = 1; // 1 means true
+  uint32_t   nApp=3; //number of application ; maximum of 3 application
+  uint32_t  StaToAp = 0; //if it is 1 then we have one application , sta send to ap
   //uint32_t nMpdus = 1;
   bool enableRts = 0;// 0 is false
 
@@ -141,13 +144,16 @@ int main (int argc, char *argv[])
     pdrA->Add2dDataset(ss.str(),ss2.str());
 
 	// this 'for' is used to see how some parameters such as throughput change by increasing the size of Mpdu aggregation
-    for (int nMpdus =7; nMpdus <= 7; nMpdus += 1) {
+    for (int nMpdus =7; nMpdus <=7 ; nMpdus += 1) {
 	  CommandLine cmd;
 	  cmd.AddValue("nSta", "Number of stations", nSta); //sva: number of stations specified by the user
 	  //cmd.AddValue("nMpdus", "Number of aggregated MPDUs", nMpdus); //number of aggregated MPDUs specified by the user
 	  cmd.AddValue("payloadSize", "Payload size in bytes", payloadSize);
 	  cmd.AddValue("enableRts", "Enable RTS/CTS", enableRts);
 	  cmd.AddValue("simulationTime", "Simulation time in seconds", simulationTime);
+	  cmd.AddValue("IsIdeal", "Is Ideal WifiManager For MarkovChannel Model", Ideal11n);
+	  cmd.AddValue("nApp", "Number of application", nApp);
+	  cmd.AddValue("StaToAp", "If it is 1 then sta 0 sends to Ap", StaToAp);
 	  cmd.Parse (argc, argv);
 
 	  if(!enableRts)
@@ -171,7 +177,10 @@ int main (int argc, char *argv[])
 	  WifiHelper wifi = WifiHelper::Default ();
       wifi.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
 	  //wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate65MbpsBW20MHz"), "ControlMode", StringValue("OfdmRate6_5MbpsBW20MHz"));
-      wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel");
+      if(Ideal11n==1)
+          wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel11n");
+      else
+    	  wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel");
 	  HtWifiMacHelper mac = HtWifiMacHelper::Default ();
 
 	  Ssid ssid = Ssid ("simple-mpdu-aggregation");
@@ -236,6 +245,7 @@ int main (int argc, char *argv[])
 	  Ipv4InterfaceContainer StaInterface;
 	  StaInterface = address.Assign (staDevice);//sva: allocates addresses in an increasing order
 
+
 	  //AP sends to STAs
 	  // Setting applications
 	  //client sends to server : in this AP sends to a Sta
@@ -254,6 +264,7 @@ int main (int argc, char *argv[])
 	  clientApp.Start (Seconds (1.0));
 	  clientApp.Stop (Seconds (simulationTime+1));
 
+	  if(nApp>=2){
 	  //Second application
 	  UdpServerHelper myServer2 (10);
 	  ApplicationContainer serverApp2 = myServer2.Install (wifiStaNode.Get(1));
@@ -268,6 +279,9 @@ int main (int argc, char *argv[])
 	  ApplicationContainer clientApp2 = myClient2.Install (wifiApNode.Get (0));
 	  clientApp2.Start (Seconds (1.0));
 	  clientApp2.Stop (Seconds (simulationTime+1));
+	  }
+
+	  if(nApp>=3){
 
 	  //Third application
 	  UdpServerHelper myServer3 (11);
@@ -283,25 +297,27 @@ int main (int argc, char *argv[])
 	  ApplicationContainer clientApp3 = myClient3.Install (wifiApNode.Get (0));
 	  clientApp3.Start (Seconds (1.0));
 	  clientApp3.Stop (Seconds (simulationTime+1));
+	  }
 
-	  /*
+	  if(StaToAp==1){
 	  // STAs send to AP
 	  //first application
-	  UdpServerHelper myServer (9);
-	  ApplicationContainer serverApp = myServer.Install (wifiApNode.Get(0));
-	  serverApp.Start (Seconds (0.0));
-	  serverApp.Stop (Seconds (simulationTime+1));
+	  UdpServerHelper myServer4 (12);
+	  ApplicationContainer serverApp4 = myServer4.Install (wifiApNode.Get(0));
+	  serverApp4.Start (Seconds (0.0));
+	  serverApp4.Stop (Seconds (simulationTime+1));
 
-	  UdpClientHelper myClient (ApInterface.GetAddress (0), 9);
-	  myClient.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
-	  //myClient.SetAttribute ("Interval",TimeValue(Time("0.005"))); //packets/s
-	  myClient.SetAttribute ("Interval", TimeValue(Time(ss3.str()))); //packets/s
-	  myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
+	  UdpClientHelper myClient4 (ApInterface.GetAddress (0), 12);
+	  myClient4.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
+	  //myClient4.SetAttribute ("Interval",TimeValue(Time("0.005"))); //packets/s
+	  myClient4.SetAttribute ("Interval", TimeValue(Time(ss3.str()))); //packets/s
+	  myClient4.SetAttribute ("PacketSize", UintegerValue (payloadSize));
 
-	  ApplicationContainer clientApp = myClient.Install (wifiStaNode.Get (0));
-	  clientApp.Start (Seconds (1.0));
-	  clientApp.Stop (Seconds (simulationTime+1));
-
+	  ApplicationContainer clientApp4 = myClient4.Install (wifiStaNode.Get (0));
+	  clientApp4.Start (Seconds (1.0));
+	  clientApp4.Stop (Seconds (simulationTime+1));
+	  }
+       /*
 	  //second aplication
 	  UdpServerHelper myServer2 (10);
 	  ApplicationContainer serverApp2 = myServer2.Install (wifiApNode.Get(0));
