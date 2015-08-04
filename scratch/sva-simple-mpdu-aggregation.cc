@@ -108,7 +108,8 @@ int main (int argc, char *argv[])
   //wifi.EnableLogComponents();//sva: added
   wifi.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
   //wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate65MbpsBW20MHz"), "ControlMode", StringValue("OfdmRate6_5MbpsBW20MHz"));
-  wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel");
+  wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel11n");
+  //wifi.SetRemoteStationManager ("ns3::IdealWifiManager");
   HtWifiMacHelper mac = HtWifiMacHelper::Default ();
 
   Ssid ssid = Ssid ("universal-mpdu-aggregation");

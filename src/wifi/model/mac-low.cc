@@ -2611,18 +2611,21 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
 {
     WifiPreamble preamble;
     WifiTxVector dataTxVector = GetDataTxVector (m_currentPacket, &m_currentHdr);
+
     if (m_phy->GetGreenfield () && m_stationManager->GetGreenfieldSupported (m_currentHdr.GetAddr1 ()))
         preamble = WIFI_PREAMBLE_HT_GF;
     else
         preamble = WIFI_PREAMBLE_HT_MF;
-    
+
     if (peekedPacket == 0)
         return true;
     
     //An HT STA shall not transmit a PPDU that has a duration that is greater than aPPDUMaxTime (10 milliseconds)
     Time duration = m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0);
+    //Time duration = Seconds((aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH)
+    //    / (double)dataTxVector.GetMode().GetDataRate() );
 #ifdef SVA_DEBUG_DETAIL
-    std::cout << Simulator::Now().GetSeconds() << " MacLow::StopAggregation "
+    std::cout << Simulator::Now() << " MacLow::StopAggregation "
         << "---PEEKED PACKET---> " << peekedPacket->ToString()
         << "---AGGERGATED PACKET---> " << aggregatedPacket->ToString()
         << (double)dataTxVector.GetMode().GetDataRate()/1000000 << " Mbps "
