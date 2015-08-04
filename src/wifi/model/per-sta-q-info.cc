@@ -199,6 +199,10 @@ namespace ns3 {
   PerStaQInfo::DeductTimeAllowance(Time allowance)
   {
     m_remainingTimeAllowance -= allowance;
+    if (m_remainingTimeAllowance <= 0)
+      {
+        SetInsufficientTimeAllowanceEncountered();
+      }
     return m_remainingTimeAllowance;
   }
 
@@ -237,15 +241,16 @@ namespace ns3 {
   {
     //in this version we carry the unused part of the time allowance to the next service interval
     //this is only if it was unused due to small size
+    Time leftOver(Seconds(0));
     if (IsInsufficientTimeAllowanceEncountered() && m_remainingTimeAllowance > 0)
       {
-        m_timeAllowance += m_remainingTimeAllowance;
+        leftOver = m_remainingTimeAllowance;
       }
 #ifdef SVA_DEBUG_DETAIL
     std::cout << Simulator::Now().GetSeconds() << " " << this->GetMac() << " PerStaQInfo::ResetTimeAllowance last remaining " <<
-        m_remainingTimeAllowance.GetSeconds()*1000 << " msec, Reset to " << m_timeAllowance.GetSeconds()*1000 << " msec \n";
+        m_remainingTimeAllowance.GetSeconds()*1000 << " msec, Reset to " << (m_timeAllowance + leftOver).GetSeconds()*1000 << " msec \n";
 #endif
-    m_remainingTimeAllowance = m_timeAllowance;
+    m_remainingTimeAllowance = m_timeAllowance + leftOver;
     m_insufficientTimeAllowance = false;
   }
 
