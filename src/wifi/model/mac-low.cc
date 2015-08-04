@@ -2622,8 +2622,6 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
     
     //An HT STA shall not transmit a PPDU that has a duration that is greater than aPPDUMaxTime (10 milliseconds)
     Time duration = m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0);
-    //Time duration = Seconds((aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH)
-    //    / (double)dataTxVector.GetMode().GetDataRate() );
 #ifdef SVA_DEBUG_DETAIL
     std::cout << Simulator::Now() << " MacLow::StopAggregation "
         << "---PEEKED PACKET---> " << peekedPacket->ToString()
