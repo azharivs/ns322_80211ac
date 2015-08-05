@@ -1523,14 +1523,17 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
           preamble = WIFI_PREAMBLE_NONE;
         }
 #ifdef SVA_DEBUG
+      //only execute the first time after all MPDUs have been scheduled
+      //include tx time for last packet
+      delay = delay + m_phy->CalculateTxDuration (GetSize (newPacket, &newHdr), txVector, preamble, m_phy->GetFrequency(), packetType, 0);
       AmpduTag ampduTag;
       if (packet->PeekPacketTag(ampduTag))
         {
           std::cout << Simulator::Now().GetSeconds() << " MacLow::ForwardDown A-MPDU to " << hdr->GetAddr1()
-              << " of " << packet->GetSize() << " bytes and "
-              << (int) ampduTag.GetNoOfMpdus() << " packets at "
-              << (double)txVector.GetMode().GetDataRate()/1000000 << " Mbps, taking "
-              << delay.GetSeconds()*1000 << " msec \n";
+                      << " of " << packet->GetSize() << " bytes and "
+                      << (int) ampduTag.GetNoOfMpdus() << " packets at "
+                      << (double)txVector.GetMode().GetDataRate()/1000000 << " Mbps, taking "
+                      << delay.GetSeconds()*1000 << " msec \n";
         }
 #endif
     }
@@ -2623,7 +2626,7 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
     //An HT STA shall not transmit a PPDU that has a duration that is greater than aPPDUMaxTime (10 milliseconds)
     Time duration = m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0);
 #ifdef SVA_DEBUG_DETAIL
-    std::cout << Simulator::Now() << " MacLow::StopAggregation "
+    std::cout << Simulator::Now().GetSeconds() << " MacLow::StopAggregation "
         << "---PEEKED PACKET---> " << peekedPacket->ToString()
         << "---AGGERGATED PACKET---> " << aggregatedPacket->ToString()
         << (double)dataTxVector.GetMode().GetDataRate()/1000000 << " Mbps "
