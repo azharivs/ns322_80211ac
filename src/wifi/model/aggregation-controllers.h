@@ -20,12 +20,13 @@
 #ifndef AGGREGATION_CONTROLLERS_H
 #define AGGREGATION_CONTROLLERS_H
 
+#include <math.h>
+#include <algorithm>
 #include "mpdu-aggregator.h"
 #include "mpdu-universal-aggregator.h"
 #include "ns3/enum.h"
 #include "wifi-mac-queue.h"
 #include "ns3/per-sta-q-info-container.h"
-
 
 namespace ns3 {
 
@@ -93,6 +94,7 @@ public:
 private:
 
   void NoControlUpdate (void);
+  void PidControlUpdate (void);
 
 
   //service parameters
@@ -104,6 +106,10 @@ private:
   Time m_timeAllowance; //!< Fixed time allowance used for NO_CONTROL
   ControllerType m_type; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
+  //redundant: is there a way to group these together in the attribute system?
+  double kp;
+  double ki;
+  double kd;
 
   Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
 };

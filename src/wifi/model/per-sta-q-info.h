@@ -30,7 +30,7 @@
 #define SVA_PACKET_TRACE
 //sva: Also produce non detailed output when detailed debug is enabled
 #ifdef SVA_DEBUG_DETAIL
-#define SVA_DEBUG
+  #define SVA_DEBUG
 #endif
 
 #include <list>
@@ -167,6 +167,14 @@ public:
    */
   double GetPrEmpty (void);
 
+  uint32_t GetServedPackets(void);
+
+  double GetAvgServedPackets(void);
+
+  uint32_t GetServedBytes(void);
+
+  double GetAvgServedBytes(void);
+
   /**
    * Computes and returns all statistics
    *
@@ -222,6 +230,19 @@ public:
    */
   void ResetTimeAllowance(Time allowance);
 
+  /*
+   * updates the number of packets sent during a service interval
+   * with information provided by the input parameter
+   * \param packet: the packet which is being sent
+   */
+  //void UpdateServedPackets(Ptr<Packet> packet);
+
+  /*
+   * resets the number of served packets to zero at the
+   * beginning of a new service interval
+   */
+  void ResetServedPackets(void);
+
   /**
    * A new packet has arrived: collect statistics and update
    * If successful, should call private member Update() before returning
@@ -252,8 +273,6 @@ public:
    * call chain initiated by PerStaWifiMacQueue::Flush()
    */
   void Reset (void);
-
-private:
 
   /**
    * A struct that holds information about a packet arrival event for putting
@@ -303,16 +322,22 @@ private:
    */
   void Update (void);
 
+private:
+
   std::deque<Item> m_queueSizeHistory; //!< Array of samples of queue length in packets along with time stamp
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
   std::deque<Item> m_arrivalHistory; //!< Array of samples of packet arrival times
   std::deque<double> m_queueDelayViolationHistory; //!< Array of samples of queue deadline violations in seconds (pos. value means no violation)
+  std::deque<uint32_t> m_servedBytesHistory; //!<Array of samples of served bytes during a service interval
+  std::deque<uint32_t> m_servedPacketsHistory; //!<Array of samples of served packets during a service interval
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
   uint32_t m_queueSize; //!< Current queue size in packets
   uint32_t m_queueBytes; //!< Current queue size in bytes
+  uint32_t m_servedBytes; //!<Number of served bytes from the beginning of current service interval
+  uint32_t m_servedPackets; //!<Number of served packets from the beginning of current service interval
   uint32_t m_histSize; //!< Sample history size
   double m_avgQueueSize; //!< Last updated average queue size in packets
   double m_avgQueueBytes; //!< Last updated average queue size in bytes
@@ -321,6 +346,8 @@ private:
   double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
   double m_dvp; //!< Delay violation probability measured right before transmission
   double m_prEmpty; //!< Probability of the queue being empty
+  double m_avgServedBytes; //!<Average number of served bytes during a service interval
+  double m_avgServedPackets; //!<Average number of served packets during a service interval
 
   Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.

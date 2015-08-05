@@ -79,8 +79,20 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    TimeValue (MilliSeconds (7.0) ), //sva: the default value should be later changed to beacon interval
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
+    .AddAttribute ("KP", "Proportional coefficient used with the PID controller",
+                   DoubleValue (1.0),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::kp),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("KI", "Integral coefficient used with the PID controller",
+                   DoubleValue (1.0),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::ki),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("KD", "Derivative coefficient used with the PID controller",
+                   DoubleValue (1.0),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::kd),
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
-                   EnumValue (NO_CONTROL),
+                   EnumValue (PID),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
                    MakeEnumChecker (ns3::NO_CONTROL, "ns3::NO_CONTROL",
                                     /*sva-design: add for new aggregation controller AGG_CRTL
@@ -108,6 +120,7 @@ TimeAllowanceAggregationController::Update (void)
       NoControlUpdate();
       break;
     case PID:
+      PidControlUpdate();
       break;
       /*sva-design: add for new aggregation controller AGG_CTRL
     case AGG_CTRL:
@@ -133,6 +146,37 @@ TimeAllowanceAggregationController::NoControlUpdate (void)
     }
 }
 
+
+void
+TimeAllowanceAggregationController::PidControlUpdate (void)
+{//TODO: define perSta targetDVP and Dmax
+  if (!m_perStaQInfo)//not supported
+    {
+      return ;
+    }
+  double err = 0;
+  double ctrlSignal = 0;
+  double totalTimeAllowance = 0;
+  double tmpTimeAllowance = 0;
+  PerStaQInfoContainer::Iterator it;
+  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      err = (*it)->GetAvgServedPackets() + log(m_targetDvp)*m_serviceInterval * (*it)->GetAvgSize()/m_maxDelay/(1-(*it)->GetPrEmpty());
+      ctrlSignal = -kp*err; //TODO: for now just proportional controller
+      tmpTimeAllowance = std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      (*it)->SetTimeAllowance(Seconds(tmpTimeAllowance));
+      totalTimeAllowance += tmpTimeAllowance;
+    }
+  //adjust time allowance to not exceed service interval
+  if (totalTimeAllowance > m_serviceInterval)
+    {
+      totalTimeAllowance = totalTimeAllowance / m_serviceInterval;
+      for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+        {
+          (*it)->SetTimeAllowance((*it)->GetTimeAllowance()/totalTimeAllowance);
+        }
+    }
+}
 
 }  // namespace ns3
 

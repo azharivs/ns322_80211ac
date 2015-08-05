@@ -1,8 +1,8 @@
 close all;
 clear all;
-nSta = 8;
-baseLogName = 'logfiles/log_mimo_channel_ta_noctrl.5';
-pattern = {'k-','r-','g-','m-','b-','y-'};
+nSta = 4;
+baseLogName = 'logfiles/log_mimo_channel_ta_noctrl.7';
+pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
     if (i<16)
@@ -117,31 +117,45 @@ for i=1:nSta
     avgQWait = data(:,6);
     avgQArrivalMbps = data(:,8);
     avgQDvp = data(:,9);
+    avgServedPkts = data(:,11);
+    avgServedBytes = data(:,12)*1e3;
     clear data;
-    subplot(2,2,1);
+    subplot(2,3,1);
     plot(times,avgQPkt,pattern{i});
     hold on;
     legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Avg. Queue Length (pkt)');
     grid on;
-    subplot(2,2,2);
+    subplot(2,3,2);
     plot(times,avgQWait,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Waiting Time (msec)');
     grid on;
-    subplot(2,2,3);
+    subplot(2,3,3);
     plot(times,avgQArrivalMbps,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Arrival Rate (Mb/s)');
     grid on;
-    subplot(2,2,4);
+    subplot(2,3,4);
     plot(times,avgQDvp,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Delay Violation Prob.');
+    grid on;
+    subplot(2,3,5);
+    plot(times,avgServedPkts,pattern{i});
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Avg. Served Pkts /SI');
+    grid on;
+    subplot(2,3,6);
+    plot(times,avgServedBytes,pattern{i});
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Avg. Served Bytes /SI (KB)');
     grid on;
 end
 
