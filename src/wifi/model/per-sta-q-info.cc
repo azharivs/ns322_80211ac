@@ -53,9 +53,11 @@ namespace ns3 {
 
   PerStaQInfo::PerStaQInfo()
   : m_addrs (),
-    m_queueSize (0), m_queueBytes (0), m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
+    m_queueSize (0), m_queueBytes (0), m_servedBytes (0), m_servedPackets(0),
+    m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
     m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
     m_dvp (0.0), m_prEmpty (0),
+    m_avgServedBytes (0.0), m_avgServedPackets(0.0),
     m_insufficientTimeAllowance (false)
 
   {
@@ -68,6 +70,8 @@ namespace ns3 {
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
     m_queueDelayViolationHistory.clear();
+    m_servedBytesHistory.clear();
+    m_servedPacketsHistory.clear();
   }
 
   PerStaQInfo::Item::Item(uint32_t bytes, Time tstamp)
@@ -153,6 +157,30 @@ namespace ns3 {
   PerStaQInfo::GetPrEmpty (void)
   {
     return m_prEmpty;
+  }
+
+  uint32_t
+  PerStaQInfo::GetServedPackets(void)
+  {
+    return m_servedPackets;
+  }
+
+  double
+  PerStaQInfo::GetAvgServedPackets(void)
+  {
+    return m_avgServedPackets;
+  }
+
+  uint32_t
+  PerStaQInfo::GetServedBytes(void)
+  {
+    return m_servedBytes;
+  }
+
+  double
+  PerStaQInfo::GetAvgServedBytes(void)
+  {
+    return m_avgServedBytes;
   }
 
   struct PerStaStatType
@@ -254,6 +282,13 @@ namespace ns3 {
     m_insufficientTimeAllowance = false;
   }
 
+
+  void
+  PerStaQInfo::ResetServedPackets(void)
+  {
+    m_servedBytes = 0;
+    m_servedPackets = 0;
+  }
   void
   PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
   {//TODO: record time of arrival as well for avgArrival and avgWait calculation
@@ -286,6 +321,8 @@ namespace ns3 {
   {
     m_queueSize --;
     m_queueBytes -= bytes;
+    m_servedPackets ++;
+    m_servedBytes += bytes;
 
     if (m_queueSizeHistory.size() == m_histSize)
       {//make sure old samples are discarded
@@ -311,6 +348,20 @@ namespace ns3 {
         m_queueDelayViolationHistory.pop_front();
       }
     m_queueDelayViolationHistory.push_back( (deadline - Simulator::Now()).GetSeconds() );
+
+    if (m_servedPacketsHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_servedPacketsHistory.pop_front();
+      }
+    m_servedPacketsHistory.push_back(m_servedPackets);
+
+    if (m_servedBytesHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_servedBytesHistory.pop_front();
+      }
+    m_servedBytesHistory.push_back(m_servedBytes);
+
+
 #ifdef SVA_DEBUG_DETAIL
     std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
 #endif
@@ -329,6 +380,8 @@ namespace ns3 {
   {
     m_queueSize = 0;
     m_queueBytes = 0;
+    m_servedBytes = 0;
+    m_servedPackets = 0;
     m_avgQueueSize = 0;
     m_avgQueueBytes = 0;
     m_avgQueueWait = 0;
@@ -336,10 +389,14 @@ namespace ns3 {
     m_avgArrivalRateBytes = 0;
     m_dvp = 0;
     m_prEmpty = 0;
+    m_avgServedBytes = 0;
+    m_avgServedPackets = 0;
     m_insufficientTimeAllowance = false;
 
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();
+    m_servedBytesHistory.clear();
+    m_servedPacketsHistory.clear();
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
     m_queueDelayViolationHistory.clear();
@@ -347,73 +404,108 @@ namespace ns3 {
   }
 
   /*
-   * TODO: still need to calculate average arrival rate. This requires to store
-   * the arrival instances in another deque. This deque will have a depth which
-   * is specified in terms of time rather than number of samples.
-   * May be the other sample histories should also be made according to a time depth??
+   * TODO: Change deque to have a depth specified in terms of
+   * time rather than number of samples.
    *
    */
   void
   PerStaQInfo::Update(void)
   {
     double tmp=0;
+    double timespan = 0;
     Time emptyTime(0);
     Time lastEmptyStart(0);
     bool emptyStart = false;
 
-    for (std::deque<Item>::iterator ait=m_queueSizeHistory.begin(); ait != m_queueSizeHistory.end(); ++ait)
+    if (!m_queueSizeHistory.empty())
       {
-        tmp += (*ait).bytes; //number of packets
-        if ((*ait).bytes == 0 && !emptyStart)
+        for (std::deque<Item>::iterator ait=m_queueSizeHistory.begin(); ait != m_queueSizeHistory.end(); ++ait)
           {
-            emptyStart = true;
-            lastEmptyStart = (*ait).tstamp;
+            tmp += (*ait).bytes; //number of packets
+            if ((*ait).bytes == 0 && !emptyStart)
+              {
+                emptyStart = true;
+                lastEmptyStart = (*ait).tstamp;
+              }
+            else if((*ait).bytes != 0 && emptyStart)
+              {
+                emptyStart = false;
+                emptyTime += (*ait).tstamp - lastEmptyStart;
+              }
           }
-        else if((*ait).bytes != 0 && emptyStart)
+        m_avgQueueSize = tmp / (double) m_queueSizeHistory.size();
+        timespan = (m_arrivalHistory.back().tstamp - m_arrivalHistory.front().tstamp).GetSeconds();
+        if (!m_queueSizeHistory.empty() && m_queueSizeHistory.back().bytes == 0)
+          {//if at last sample time the queue is still empty then need to update emptyTime
+            emptyStart=false;
+            emptyTime += m_queueSizeHistory.back().tstamp - lastEmptyStart;
+          }
+        m_prEmpty = emptyTime.GetSeconds()/timespan;
+      }
+
+    if (!m_queueBytesHistory.empty())
+      {
+        tmp = 0;
+        for (std::deque<uint32_t>::iterator it=m_queueBytesHistory.begin(); it != m_queueBytesHistory.end(); ++it)
           {
-            emptyStart = false;
-            emptyTime += (*ait).tstamp - lastEmptyStart;
+            tmp += *it;
           }
+        m_avgQueueBytes = tmp / (double) m_queueBytesHistory.size();
       }
-    m_avgQueueSize = tmp / (double) m_queueSizeHistory.size();
-    double timespan = (m_arrivalHistory.back().tstamp - m_arrivalHistory.front().tstamp).GetSeconds();
-    if (!m_queueSizeHistory.empty() && m_queueSizeHistory.back().bytes == 0)
-      {//if at last sample time the queue is still empty then need to update emptyTime
-        emptyStart=false;
-        emptyTime += m_queueSizeHistory.back().tstamp - lastEmptyStart;
-      }
-    m_prEmpty = emptyTime.GetSeconds()/timespan;
 
-    tmp = 0;
-    for (std::deque<uint32_t>::iterator it=m_queueBytesHistory.begin(); it != m_queueBytesHistory.end(); ++it)
+    if (!m_servedBytesHistory.empty())
       {
-        tmp += *it;
+        tmp = 0;
+        for (std::deque<uint32_t>::iterator it=m_servedBytesHistory.begin(); it != m_servedBytesHistory.end(); ++it)
+          {
+            tmp += *it;
+          }
+        m_avgServedBytes = tmp / (double) m_servedBytesHistory.size();
       }
-    m_avgQueueBytes = tmp / (double) m_queueBytesHistory.size();
 
-    tmp = 0;
-    for (std::deque<double>::iterator dit=m_queueWaitHistory.begin(); dit != m_queueWaitHistory.end(); ++dit)
+
+    if (!m_servedPacketsHistory.empty())
       {
-        tmp += *dit;
-
+        tmp = 0;
+        for (std::deque<uint32_t>::iterator it=m_servedPacketsHistory.begin(); it != m_servedPacketsHistory.end(); ++it)
+          {
+            tmp += *it;
+          }
+        m_avgServedPackets = tmp / (double) m_servedPacketsHistory.size();
       }
-    m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
 
-    tmp = 0;
-    for (std::deque<Item>::iterator ait=m_arrivalHistory.begin(); ait != m_arrivalHistory.end(); ++ait)
+    if (!m_queueWaitHistory.empty())
       {
-        tmp += (*ait).bytes;
-      }
-    timespan = (m_arrivalHistory.back().tstamp - m_arrivalHistory.front().tstamp).GetSeconds();
-    m_avgArrivalRateBytes = tmp / timespan;
-    m_avgArrivalRate = m_arrivalHistory.size() / timespan;
+        tmp = 0;
+        for (std::deque<double>::iterator dit=m_queueWaitHistory.begin(); dit != m_queueWaitHistory.end(); ++dit)
+          {
+            tmp += *dit;
 
-    tmp = 0;
-    for (std::deque<double>::iterator dit=m_queueDelayViolationHistory.begin(); dit != m_queueDelayViolationHistory.end(); ++dit)
-      {
-        if (*dit < 0) tmp ++;//count number of violations
+          }
+        m_avgQueueWait = tmp / (double) m_queueWaitHistory.size();
       }
-    m_dvp = tmp / m_queueDelayViolationHistory.size();
+
+    if (!m_arrivalHistory.empty())
+      {
+        tmp = 0;
+        for (std::deque<Item>::iterator ait=m_arrivalHistory.begin(); ait != m_arrivalHistory.end(); ++ait)
+          {
+            tmp += (*ait).bytes;
+          }
+        timespan = (m_arrivalHistory.back().tstamp - m_arrivalHistory.front().tstamp).GetSeconds();
+        m_avgArrivalRateBytes = tmp / timespan;
+        m_avgArrivalRate = m_arrivalHistory.size() / timespan;
+      }
+
+    if (!m_queueDelayViolationHistory.empty())
+      {
+        tmp = 0;
+        for (std::deque<double>::iterator dit=m_queueDelayViolationHistory.begin(); dit != m_queueDelayViolationHistory.end(); ++dit)
+          {
+            if (*dit < 0) tmp ++;//count number of violations
+          }
+        m_dvp = tmp / m_queueDelayViolationHistory.size();
+      }
 
 #ifdef SVA_DEBUG
     std::cout << Simulator::Now().GetSeconds() << " PerStaQInfo::Update " << GetMac() << " [TID " << (int) m_tid << "] " ;
@@ -421,7 +513,8 @@ namespace ns3 {
     std::cout << "avgQ= " << m_avgQueueSize << " Pkts( " << m_avgQueueBytes/1000000 << " MB) " ;
     std::cout << "avgW= " << m_avgQueueWait*1000 << " msec arrRate= " << m_avgArrivalRate << " pps( "
         << m_avgArrivalRateBytes*8/1000000 << " Mbps) DVP= " << m_dvp
-        << " History= " << m_queueSizeHistory.size() << " ProbEmpty= " << m_prEmpty << "\n" ;
+        << " History= " << m_queueSizeHistory.size() << " ProbEmpty= " << m_prEmpty
+        << " avgServedPackets= " << m_avgServedPackets << " avgServedBytes= " << m_avgServedBytes/1000000 << "\n" ;
 #endif
 
   }

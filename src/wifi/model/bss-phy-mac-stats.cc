@@ -197,7 +197,7 @@ namespace ns3 {
             << "PACKET: " << packet->ToString()
             << "Header : " << os.str() << "\n";
 #endif
-    }
+      }
   }
 
   void
@@ -237,11 +237,15 @@ namespace ns3 {
 
     std::ostringstream os;
     hdr.Print(os);
+    //find PerStaQ related to this packet
     Ptr<PerStaQInfo> staQInfo = m_perStaQInfo->GetByMac(hdr.GetAddr1());
     NS_ASSERT_MSG(staQInfo, "BssPhyMacStats::RecordTx, No station found by that MAC address "
                   << hdr.GetAddr1() << " PACKET: " << m_curPacket->ToString()
                   << " HEADER: " << os.str());
+    //update time allowance. TODO: is it necessary to do this for all types of aggregators and service disciplines?
     Time leftOver = staQInfo->DeductTimeAllowance(duration);
+    //Note: updating of total aggeragted MPDUs sent during this time interval is performed upon departure from PerStaWifiMacQueue::Departure
+    //Note: retransmissions are NOT counted, as they are dequeued from PerStaWifiQueue and put into the aggregator's queue at MacLow
 #ifdef SVA_DEBUG_DETAIL
     std::cout << Simulator::Now().GetSeconds() << " RTA BssPhyMacStats::RecordTx Tx-duration= "
         << duration.GetSeconds()*1000 << " msec leftover= "

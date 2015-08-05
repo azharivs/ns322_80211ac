@@ -344,7 +344,9 @@ MpduUniversalAggregator::ResetTimeAllowance (void)
 
   for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
     {
+      (*it)->Update();//update statistics
       (*it)->ResetTimeAllowance();
+      (*it)->ResetServedPackets();
     }
 }
 
