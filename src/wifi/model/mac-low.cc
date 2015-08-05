@@ -1524,8 +1524,9 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
         }
 #ifdef SVA_DEBUG
       //only execute the first time after all MPDUs have been scheduled
+      if (delay != Seconds(0))
+        delay = delay + m_phy->CalculateTxDuration (GetSize (newPacket, &newHdr), txVector, preamble, m_phy->GetFrequency(), packetType, 0);
       //include tx time for last packet
-      delay = delay + m_phy->CalculateTxDuration (GetSize (newPacket, &newHdr), txVector, preamble, m_phy->GetFrequency(), packetType, 0);
       AmpduTag ampduTag;
       if (packet->PeekPacketTag(ampduTag))
         {

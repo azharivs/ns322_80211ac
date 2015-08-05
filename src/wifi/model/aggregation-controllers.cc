@@ -76,7 +76,7 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_maxDelay),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("TimeAllowance", "Fixed Time Allowance (in sec) when NO_CONTROL controller is selected",
-                   TimeValue (MilliSeconds (1.0) ), //sva: the default value should be later changed to beacon interval
+                   TimeValue (MilliSeconds (7.0) ), //sva: the default value should be later changed to beacon interval
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
