@@ -120,6 +120,11 @@ public:
   void PendingServiceInterval (void);
 
   /*
+   * returns true if a service interval is pending, false otherwise
+   */
+  bool IsPendingServiceInterval (void);
+
+  /*
    * Called at the actual beginning of a new service interval
    * Calls any update procedure that is required for aggregation parameters
    *

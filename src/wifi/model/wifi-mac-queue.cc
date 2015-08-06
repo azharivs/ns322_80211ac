@@ -943,7 +943,17 @@ PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBl
     }
   //otherwise if no packet found then don't service anything.
   //TODO: This causes a problem as it will sometimes result in an unbounded pending service interval. Should call pending service interval if this happens
+  if (m_mpduAggregator)
+    {
+      if (m_mpduAggregator->IsPendingServiceInterval())
+        {
+          Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, m_mpduAggregator); //make sure current line of execution is finished
 
+          #ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance pending service interval, CAN NOT PEEK QUEUE so re-schedule PendingServiceInterval \n";
+          #endif
+        }
+    }
   return false;
 }
 
