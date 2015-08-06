@@ -62,6 +62,13 @@ public:
 
   virtual void Update (void) ;
 
+  /*
+   * Initializes PerStaWifiMacQueue and PerStaQInfoContainer
+   * related to this aggregator. Also installs a controller
+   * for each PerStaQInfo so the container has to be initialized
+   * before calling this function.
+   * TODO: combine this with SetAggregator
+   */
   void SetQueue(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c);
 
   void SetAggregator(Ptr<MpduUniversalAggregator> agg);

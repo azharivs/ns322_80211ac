@@ -21,6 +21,7 @@
 #include "ns3/enum.h"
 #include "ns3/double.h"
 #include "ns3/nstime.h"
+#include "pid-controller.h"
 
 //TODO: For now all PerStaQ's have the same DVP and MaxDelay. To be changed later.
 
@@ -43,6 +44,12 @@ AggregationController::SetQueue(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContai
 {
   m_queue = queue;
   m_perStaQInfo = &c;
+  NS_ASSERT(m_perStaQInfo);
+  //initialize a controller for each PerStaQInfo
+  for (PerStaQInfoContainer::Iterator it = c.Begin(); it != c.End(); ++it)
+    {
+
+    }
 }
 
 void
@@ -148,6 +155,53 @@ TimeAllowanceAggregationController::NoControlUpdate (void)
     }
 }
 
+/* old code
+void
+TimeAllowanceAggregationController::PidControlUpdate (void)
+{//TODO: define perSta targetDVP and Dmax
+  if (!m_perStaQInfo)//not supported
+    {
+      return ;
+    }
+  double err = 0;
+  double ctrlSignal = 0;
+  double totalTimeAllowance = 0;
+  double tmpTimeAllowance = 0;
+  double tmpPrEmpty = 0;
+  PerStaQInfoContainer::Iterator it;
+  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      tmpPrEmpty = 0.999;
+      if ((*it)->GetPrEmpty() != 1) //prevent division by zero
+        tmpPrEmpty = (*it)->GetPrEmpty();
+      err = (*it)->GetAvgServedPackets() + log(m_targetDvp)*m_serviceInterval * (*it)->GetAvgSize()/m_maxDelay/(1-tmpPrEmpty);
+      ctrlSignal = -kp*err; //TODO: for now just proportional controller
+      tmpTimeAllowance = std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+
+      #ifdef SVA_DEBUG
+      std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << (*it)->GetMac()
+          << " err= " << err << " ctrlSignal= " << ctrlSignal
+          << " curTimeAllowance= " << (*it)->GetTimeAllowance().GetSeconds()*1000 << " msec"
+          << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
+          << " avgServed= " << (*it)->GetAvgServedPackets()
+          << " avgQueue= " << (*it)->GetAvgSize()
+          << " const= " << log(m_targetDvp)*m_serviceInterval/m_maxDelay << "\n";
+      #endif
+
+      (*it)->SetTimeAllowance(Seconds(tmpTimeAllowance));
+      totalTimeAllowance += tmpTimeAllowance;
+    }
+  //adjust time allowance to not exceed service interval
+  if (totalTimeAllowance > m_serviceInterval)
+    {
+      totalTimeAllowance = totalTimeAllowance / m_serviceInterval;
+      for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+        {
+          (*it)->SetTimeAllowance((*it)->GetTimeAllowance()/totalTimeAllowance);
+        }
+    }
+}
+*/
 
 void
 TimeAllowanceAggregationController::PidControlUpdate (void)
