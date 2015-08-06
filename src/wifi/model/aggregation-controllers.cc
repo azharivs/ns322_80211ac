@@ -22,6 +22,8 @@
 #include "ns3/double.h"
 #include "ns3/nstime.h"
 
+//TODO: For now all PerStaQ's have the same DVP and MaxDelay. To be changed later.
+
 namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED (AggregationController);
