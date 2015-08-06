@@ -346,7 +346,7 @@ MpduUniversalAggregator::ResetTimeAllowance (void)
     {
       (*it)->Update();//update statistics
       (*it)->ResetTimeAllowance();
-      (*it)->ResetServedPackets();
+      (*it)->CollectServedPackets();
     }
 }
 

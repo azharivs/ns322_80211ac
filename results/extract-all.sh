@@ -17,5 +17,6 @@ do
     Mac=$(echo $BaseMac$i)
     ./extract-sta-agg-stat.sh $1 $Mac
     ./extract-sta-q-stat.sh $1 $Mac
+    ./extract-sta-agg-ctrl-stat.sh $1 $Mac
 done
 

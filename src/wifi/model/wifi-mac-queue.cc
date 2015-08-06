@@ -942,7 +942,8 @@ PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBl
         }
     }
   //otherwise if no packet found then don't service anything.
-  //TODO: I am not sure if this will cause a problem.
+  //TODO: This causes a problem as it will sometimes result in an unbounded pending service interval. Should call pending service interval if this happens
+
   return false;
 }
 

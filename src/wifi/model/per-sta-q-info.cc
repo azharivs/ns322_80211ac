@@ -213,6 +213,8 @@ namespace ns3 {
   bool
   PerStaQInfo::IsInsufficientTimeAllowanceEncountered (void)
   {
+    if (m_timeAllowance == 0)
+      m_insufficientTimeAllowance = true;
     return m_insufficientTimeAllowance;
   }
 
@@ -244,6 +246,10 @@ namespace ns3 {
   PerStaQInfo::SetTimeAllowance(Time allowance)
   {
     m_timeAllowance = allowance;
+    if (m_timeAllowance == 0)
+      m_insufficientTimeAllowance = true;
+    else
+      m_insufficientTimeAllowance = false;
   }
 
   void
@@ -261,7 +267,10 @@ namespace ns3 {
         m_remainingTimeAllowance.GetSeconds()*1000 << " msec, Reset to " << m_timeAllowance.GetSeconds()*1000 << " msec \n";
 #endif
     m_remainingTimeAllowance = m_timeAllowance;
-    m_insufficientTimeAllowance = false;
+    if (m_timeAllowance == 0)
+      m_insufficientTimeAllowance = true;
+    else
+      m_insufficientTimeAllowance = false;
   }
 
   void
@@ -284,8 +293,20 @@ namespace ns3 {
 
 
   void
-  PerStaQInfo::ResetServedPackets(void)
+  PerStaQInfo::CollectServedPackets(void)
   {
+    if (m_servedPacketsHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_servedPacketsHistory.pop_front();
+      }
+    m_servedPacketsHistory.push_back(m_servedPackets);
+
+    if (m_servedBytesHistory.size() == m_histSize)
+      {//make sure old samples are discarded
+        m_servedBytesHistory.pop_front();
+      }
+    m_servedBytesHistory.push_back(m_servedBytes);
+
     m_servedBytes = 0;
     m_servedPackets = 0;
   }
@@ -348,19 +369,6 @@ namespace ns3 {
         m_queueDelayViolationHistory.pop_front();
       }
     m_queueDelayViolationHistory.push_back( (deadline - Simulator::Now()).GetSeconds() );
-
-    if (m_servedPacketsHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_servedPacketsHistory.pop_front();
-      }
-    m_servedPacketsHistory.push_back(m_servedPackets);
-
-    if (m_servedBytesHistory.size() == m_histSize)
-      {//make sure old samples are discarded
-        m_servedBytesHistory.pop_front();
-      }
-    m_servedBytesHistory.push_back(m_servedBytes);
-
 
 #ifdef SVA_DEBUG_DETAIL
     std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
