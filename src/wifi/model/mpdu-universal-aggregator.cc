@@ -262,6 +262,12 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalTimeAllowance(void)
   return flag;
 }
 
+bool
+MpduUniversalAggregator::IsPendingServiceInterval(void)
+{
+  return m_pendingServiceInterval;
+}
+
 void
 MpduUniversalAggregator::PendingServiceInterval(void)
 {
