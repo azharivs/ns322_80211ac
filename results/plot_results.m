@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_ta_noctrl.7';
+baseLogName = 'logfiles/log_mimo_channel_ta_pid.1';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
@@ -12,6 +12,7 @@ for i=1:nSta
     end
     staQInfoLogName{i} = sprintf('%s.StaQInfo.%s',baseLogName,mac);
     staAggLogName{i} = sprintf('%s.StaAgg.%s',baseLogName,mac);
+    staAggCtrlLogName{i} = sprintf('%s.StaAggCtrl.%s',baseLogName,mac);
     legendStr{i} = sprintf('STA %d',i);
 end
 
@@ -171,30 +172,62 @@ for i=1:nSta
     dataRate = data(:,4);
     aggTxTime = data(:,5);
     clear data;
-    subplot(2,2,1);
+    subplot(3,3,1);
     plot(times,aggPkts,pattern{i});
     hold on;
     legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Size of A-MPDU (packets)');
     grid on;
-    subplot(2,2,2);
+    subplot(3,3,2);
     plot(times,aggTxTime,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Tx Time of A-MPDU (msec)');
     grid on;
-    subplot(2,2,3);
+    subplot(3,3,3);
     plot(times,dataRate,pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Data Rate (Mb/s)');
     grid on;
-    subplot(2,2,4);
+    subplot(3,3,4);
     plot(times,aggPkts*1472*8./dataRate/1000 - aggTxTime,pattern{i})
     hold on;
     xlabel('Time (seconds)');
     ylabel('Computed Tx Time - Logged Tx Time (msec)');
+    grid on;
+    %controller info
+    data = load(staAggCtrlLogName{i});
+    times = data(:,1);
+    err = data(:,2);
+    ctrlSignal = data(:,3);
+    curTimeAllowance = data(:,4);
+    newTimeAllowance = data(:,5);
+    clear data;
+    subplot(3,3,5);
+    plot(times,err,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Error Signal');
+    grid on;
+    subplot(3,3,6);
+    plot(times,ctrlSignal,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Control Signal');
+    grid on;
+    subplot(3,3,7);
+    plot(times,curTimeAllowance,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Current Time Allowance (msec)');
+    grid on;
+    subplot(3,3,8);
+    plot(times,newTimeAllowance,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('New Time Allowance (msec)');
     grid on;
 end
 

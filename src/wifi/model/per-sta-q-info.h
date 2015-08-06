@@ -238,10 +238,11 @@ public:
   //void UpdateServedPackets(Ptr<Packet> packet);
 
   /*
-   * resets the number of served packets to zero at the
+   * adds number of served packets and bytes to sample history
+   * and resets the number of served packets and bytes to zero at the
    * beginning of a new service interval
    */
-  void ResetServedPackets(void);
+  void CollectServedPackets(void);
 
   /**
    * A new packet has arrived: collect statistics and update
