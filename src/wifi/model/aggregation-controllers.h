@@ -22,11 +22,14 @@
 
 #include <math.h>
 #include <algorithm>
+#include <map>
 #include "mpdu-aggregator.h"
 #include "mpdu-universal-aggregator.h"
 #include "ns3/enum.h"
 #include "wifi-mac-queue.h"
 #include "ns3/per-sta-q-info-container.h"
+#include "ns3/mac48-address.h"
+#include "pid-controller.h"
 
 namespace ns3 {
 
@@ -63,18 +66,20 @@ public:
   virtual void Update (void) ;
 
   /*
-   * Initializes PerStaWifiMacQueue and PerStaQInfoContainer
+   * Initializes PerStaWifiMacQueue, PerStaQInfoContainer and MpduUniversalAggregator
    * related to this aggregator. Also installs a controller
    * for each PerStaQInfo so the container has to be initialized
    * before calling this function.
-   * TODO: combine this with SetAggregator
    */
-  void SetQueue(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c);
-
-  void SetAggregator(Ptr<MpduUniversalAggregator> agg);
+  void Initialize(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c, Ptr<MpduUniversalAggregator> agg);
 
 protected:
 
+  /*
+   * subclass specific initialization procedure
+   * to be re-implemented by each subclass
+   */
+  virtual void DoInitialize (void);
   Ptr<MpduUniversalAggregator> m_aggregator; //!< Pointer to MpduUniversalAggregator
   Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to PerStaWifiMacQueue
   PerStaQInfoContainer *m_perStaQInfo; //!< Pointer to PerStaQInfoContainer
@@ -100,6 +105,10 @@ public:
 
 private:
 
+  /*
+   * should be redefined by each subclass to reflect its own specific initialization steps
+   */
+  void DoInitialize (void);
   void NoControlUpdate (void);
   void PidControlUpdate (void);
 
@@ -110,6 +119,7 @@ private:
   double m_serviceInterval; //!< service interval in seconds
 
   //controller parameters
+  std::map<Mac48Address,Ptr<PidController> > m_ctrl; //!< map relating MAC address to controller, assumes there is one PerStaQInfo per STA (TODO: change later)
   Time m_timeAllowance; //!< Fixed time allowance used for NO_CONTROL
   ControllerType m_type; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters

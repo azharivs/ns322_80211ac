@@ -40,22 +40,25 @@ AggregationController::GetTypeId (void)
 }
 
 void
-AggregationController::SetQueue(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c)
-{
+AggregationController::Initialize(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c, Ptr<MpduUniversalAggregator> agg)
+{//TODO: initialize aggregator here as well and remove next method
   m_queue = queue;
   m_perStaQInfo = &c;
+  m_aggregator = agg;
   NS_ASSERT(m_perStaQInfo);
-  //initialize a controller for each PerStaQInfo
-  for (PerStaQInfoContainer::Iterator it = c.Begin(); it != c.End(); ++it)
-    {
-
-    }
+  NS_ASSERT(m_queue);
+  NS_ASSERT(m_aggregator);
+  //perform initialization specific to the particular type of AggragationController subclass
+  DoInitialize();
 }
 
+/*
+ * should be redefined by each subclass to reflect its own specific initialization steps
+ */
 void
-AggregationController::SetAggregator(Ptr<MpduUniversalAggregator> agg)
+AggregationController::DoInitialize(void)
 {
-  m_aggregator = agg;
+  return ;
 }
 
 void
@@ -118,6 +121,23 @@ TimeAllowanceAggregationController::TimeAllowanceAggregationController ()
 
 TimeAllowanceAggregationController::~TimeAllowanceAggregationController ()
 {
+}
+
+void
+TimeAllowanceAggregationController::DoInitialize (void)
+{
+  //allocate a controller for each PerStaQInfo
+  for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      Ptr<PidController> pid;
+      //initialize pid controller if necessary
+      pid->SetAttribute("MovingAverageWeight",DoubleValue(0.1));
+      pid->SetAttribute("KP",DoubleValue(0.1));
+      pid->SetAttribute("KI",DoubleValue(0.1));
+      pid->SetAttribute("KD",DoubleValue(0.1));
+      pid = CreateObject<PidController>();
+      m_ctrl[(*it)->GetMac()] = pid;
+    }
 }
 
 void
