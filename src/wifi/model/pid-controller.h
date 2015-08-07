@@ -27,6 +27,7 @@
 
 #include <math.h>
 #include <algorithm>
+#include "per-sta-q-info.h"
 
 namespace ns3 {
 
@@ -40,7 +41,10 @@ struct PidStateType
 {
     double prevErr; //!< previous error signal
     double curErr; //!< current error signal
-    PidStateType(double prevErr=0, double curErr=0);
+    double prevOut; //!< previous output (e.g., time allowance)
+    double curOut; //!< Current output (e.g., time allowance)
+    double integral; //!< Current value of integral term
+    PidStateType(double prevErr=0, double curErr=0, double prevOut=0, double curOut=0, double integral=0);
 };
 
 struct PidParamType
@@ -73,11 +77,6 @@ struct FeedbackSigType
     double avgServedPacketes; //!<average served packets in a service interval
     double avgServedBytes; //!<average served bytes in a service interval
     FeedbackSigType(double avgServedPacketes=0, double avgServedBytes=0);
-};
-
-struct OutSigType
-{
-    double deltaTimeAllowance; //!<delta that should be applied to current time allowance
 };
 
 struct CtrlSigType
@@ -120,9 +119,17 @@ public:
 
   /*
    * Calculates control and output signals
+   * uses adjustment parameter to scale output
    * Returns new output signal
    */
-  OutSigType UpdateController (void);
+  double UpdateController (double adjustment=1);
+
+  /*
+   * Calculates control and output signals
+   * but does not change controller state variables
+   * Returns new output signal
+   */
+  double ComputeOutput ();
 
   /*
    * returns the most recent value of the control signal
@@ -132,16 +139,17 @@ public:
   /*
    * returns the current value of the controller output signal
    */
-  OutSigType GetOutputSignal (void);
-
-protected:
+  double GetOutputSignal (void);
 
   /*
    * returns the current value of the error signal at the input to the controller
    * that is: target - actual
    */
   double GetErrorSignal(void);
-  double UpdateErrorSignal(void);
+
+protected:
+
+  double ComputeErrorSignal(void);
   void UpdateFeedbackSignal(void);
 
   //void DoGetInputSignal(void);
@@ -155,7 +163,7 @@ protected:
   PidParamType m_pidParam; //!<PID controller parameters: kp,ki,kd,wi
   InParamType m_inParam; //!<input parametes: dvp, dMax
   InSigType m_input; //!<current value of input signal
-  OutSigType m_output; //!<current value of output signal
+  double m_output; //!<current value of output signal
   FeedbackSigType m_feedback; //!<current value of feedback signal
   CtrlSigType m_ctrl; //!<current value of control signal
   Ptr<PerStaQInfo> m_staQ; //!<Pointer to PerStaQInfo element being used by this controller

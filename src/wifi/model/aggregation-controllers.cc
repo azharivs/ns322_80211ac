@@ -132,9 +132,9 @@ TimeAllowanceAggregationController::DoInitialize (void)
       Ptr<PidController> pid;
       //initialize pid controller if necessary
       pid->SetAttribute("MovingAverageWeight",DoubleValue(0.1));
-      pid->SetAttribute("KP",DoubleValue(0.1));
-      pid->SetAttribute("KI",DoubleValue(0.1));
-      pid->SetAttribute("KD",DoubleValue(0.1));
+      pid->SetAttribute("KP",DoubleValue(1));
+      pid->SetAttribute("KI",DoubleValue(1));
+      pid->SetAttribute("KD",DoubleValue(1));
       pid = CreateObject<PidController>();
       pid->SetStaQInfo ( (*it) );
       InParamType in(m_targetDvp, m_maxDelay, m_serviceInterval);
@@ -233,11 +233,8 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
     {
       return ;
     }
-  double err = 0;
-  double ctrlSignal = 0;
   double totalTimeAllowance = 0;
   double tmpTimeAllowance = 0;
-  double tmpPrEmpty = 0;
   PidIterator it;
   Ptr<PerStaQInfo> sta;
   for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
@@ -248,30 +245,33 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
       //apply input signal to controller and update controller
       InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
       it->second->SetInputSignal(inSig);
-      tmpTimeAllowance = sta->GetTimeAllowance().GetSeconds() + it->second->UpdateController();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      tmpTimeAllowance = it->second->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
 
       #ifdef SVA_DEBUG
-      std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << (*it)->GetMac()
-          << " err= " << err << " ctrlSignal= " << ctrlSignal
-          << " curTimeAllowance= " << (*it)->GetTimeAllowance().GetSeconds()*1000 << " msec"
+      std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << sta->GetMac()
+          << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << it->second->GetControlSignal().sig
+          << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
           << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
-          << " avgServed= " << (*it)->GetAvgServedPackets()
-          << " avgQueue= " << (*it)->GetAvgSize()
-          << " const= " << log(m_targetDvp)*m_serviceInterval/m_maxDelay << "\n";
+          << " avgServed= " << sta->GetAvgServedPackets()
+          << " avgQueue= " << sta->GetAvgSize() << "\n";
       #endif
 
-      (*it)->SetTimeAllowance(Seconds(tmpTimeAllowance));
       totalTimeAllowance += tmpTimeAllowance;
     }
+
   //adjust time allowance to not exceed service interval
+  double adjustment = 1;
   if (totalTimeAllowance > m_serviceInterval)
     {
-      totalTimeAllowance = totalTimeAllowance / m_serviceInterval;
-      for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
-        {
-          (*it)->SetTimeAllowance((*it)->GetTimeAllowance()/totalTimeAllowance);
-        }
-   }
+      adjustment = totalTimeAllowance/m_serviceInterval;
+    }
+  //start adjusting output signals to fit in one service interval
+  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
+    {
+      tmpTimeAllowance = it->second->UpdateController(adjustment);
+      sta = m_perStaQInfo->GetByMac(it->first);
+      sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
+    }
 }
 
 }  // namespace ns3
