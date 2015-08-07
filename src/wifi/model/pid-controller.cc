@@ -37,8 +37,8 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
  *
  */
 
-PidStateType::PidStateType(double prevErr, double curErr)
-  : prevErr(prevErr), curErr(curErr)
+PidStateType::PidStateType(double prevErr, double curErr, double prevOut, double curOut, double integral)
+  : prevErr(prevErr), curErr(curErr), prevOut(prevOut), curOut(curOut), integral(integral)
 {
 }
 
@@ -61,7 +61,6 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
   : avgServedPacketes(avgServedPacketes), avgServedBytes(avgServedBytes)
 {
 }
-
   TypeId
   PidController::GetTypeId (void)
   {
@@ -135,7 +134,6 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     return m_feedback;
   }
 
-
   void
   PidController::UpdateFeedbackSignal (void)
   {
@@ -143,10 +141,26 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
   }
 
-  OutSigType
-  PidController::UpdateController (void)
-  {//TODO
+  double
+  PidController::ComputeOutput (void)
+  {
+    double err = ComputeErrorSignal();
+    double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
+    double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
+    double output = m_state.curOut + ctrl;
+    return output;
+  }
 
+  double
+  PidController::UpdateController (double adjustment)
+  {
+    m_state.prevErr = m_state.curErr;
+    m_state.curErr = ComputeErrorSignal();
+    m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
+    m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
+    m_output = (m_state.prevOut + m_ctrl.sig) / adjustment;
+    m_state.prevOut = m_state.curOut;
+    m_state.curOut = m_output;
     return m_output;
   }
 
@@ -156,7 +170,7 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     return m_ctrl;
   }
 
-  OutSigType
+  double
   PidController::GetOutputSignal (void)
   {
     return m_output;
@@ -168,14 +182,13 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     return m_state.curErr;
   }
 
-  double PidController::UpdateErrorSignal(void)
+  double PidController::ComputeErrorSignal(void)
   {
-    m_state.prevErr = m_state.curErr;
     double tmpPrEmpty = 0.999;
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
-    m_state.curErr = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
-    return m_state.curErr;
+    double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
+    return err;
   }
 
 }  // end namespace ns3
