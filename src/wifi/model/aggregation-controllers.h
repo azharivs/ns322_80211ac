@@ -119,6 +119,7 @@ private:
   double m_serviceInterval; //!< service interval in seconds
 
   //controller parameters
+  typedef std::map<Mac48Address,Ptr<PidController> >::iterator PidIterator;
   std::map<Mac48Address,Ptr<PidController> > m_ctrl; //!< map relating MAC address to controller, assumes there is one PerStaQInfo per STA (TODO: change later)
   Time m_timeAllowance; //!< Fixed time allowance used for NO_CONTROL
   ControllerType m_type; //!< Type of controller, PID, etc.

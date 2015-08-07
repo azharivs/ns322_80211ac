@@ -37,6 +37,31 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
  *
  */
 
+PidStateType::PidStateType(double prevErr, double curErr)
+  : prevErr(prevErr), curErr(curErr)
+{
+}
+
+PidParamType::PidParamType(double kp, double ki, double kd, double wi)
+  : kp(kp), ki(ki), kd(kd), wi(wi)
+{
+}
+
+InParamType::InParamType(double dvp, double dMax, double si)
+  : dvp(dvp), dMax(dMax), si(si)
+{
+}
+
+InSigType::InSigType(double avgQ, double avgQBytes, double prEmpty)
+  : avgQ(avgQ), avgQBytes(avgQBytes), prEmpty(prEmpty)
+{
+}
+
+FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes)
+  : avgServedPacketes(avgServedPacketes), avgServedBytes(avgServedBytes)
+{
+}
+
   TypeId
   PidController::GetTypeId (void)
   {
@@ -69,6 +94,12 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
     return true;
   }
 
+  void
+  PidController::SetStaQInfo (const Ptr<PerStaQInfo> sta)
+  {
+    m_staQ = sta;
+  }
+
   PidController::PidController ()
   {//TODO
     return ;
@@ -80,8 +111,15 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
   }
 
   void
+  PidController::SetInputParams (const InParamType &in)
+  {
+    m_inParam = in;
+  }
+
+  void
   PidController::SetInputSignal (const InSigType &sig)
-  {//TODO
+  {
+    m_input = sig;
     return ;
   }
 
@@ -97,9 +135,18 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
     return m_feedback;
   }
 
+
+  void
+  PidController::UpdateFeedbackSignal (void)
+  {
+    m_feedback.avgServedPacketes = m_staQ->GetAvgServedPackets();
+    m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
+  }
+
   OutSigType
   PidController::UpdateController (void)
   {//TODO
+
     return m_output;
   }
 
@@ -113,6 +160,22 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
   PidController::GetOutputSignal (void)
   {
     return m_output;
+  }
+
+  double
+  PidController::GetErrorSignal(void)
+  {
+    return m_state.curErr;
+  }
+
+  double PidController::UpdateErrorSignal(void)
+  {
+    m_state.prevErr = m_state.curErr;
+    double tmpPrEmpty = 0.999;
+    if (m_input.prEmpty != 1) //prevent division by zero
+      tmpPrEmpty = m_input.prEmpty;
+    m_state.curErr = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
+    return m_state.curErr;
   }
 
 }  // end namespace ns3
