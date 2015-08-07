@@ -86,8 +86,7 @@ MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<PerStaW
   m_queue = queue;
   m_low = low;
   m_phy = phy;
-  m_controller->SetQueue(m_queue, c);
-  m_controller->SetAggregator(this);
+  m_controller->Initialize(m_queue, c, this);
   return true;
 }
 

@@ -47,6 +47,18 @@ NS_OBJECT_ENSURE_REGISTERED (PidController);
                        DoubleValue (0.1),
                        MakeDoubleAccessor (&PidController::m_weightIntegral),
                        MakeDoubleChecker<double> ())
+        .AddAttribute ("KP", "Proportional coefficient used with the PID controller",
+                       DoubleValue (1.0),
+                       MakeDoubleAccessor (&PidController::m_kp),
+                       MakeDoubleChecker<double> ())
+        .AddAttribute ("KI", "Integral coefficient used with the PID controller",
+                      DoubleValue (1.0),
+                      MakeDoubleAccessor (&PidController::m_ki),
+                      MakeDoubleChecker<double> ())
+       .AddAttribute ("KD", "Derivative coefficient used with the PID controller",
+                      DoubleValue (1.0),
+                      MakeDoubleAccessor (&PidController::m_kd),
+                      MakeDoubleChecker<double> ())
         ;
     return tid;
   }
