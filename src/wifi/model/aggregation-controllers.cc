@@ -136,6 +136,9 @@ TimeAllowanceAggregationController::DoInitialize (void)
       pid->SetAttribute("KI",DoubleValue(0.1));
       pid->SetAttribute("KD",DoubleValue(0.1));
       pid = CreateObject<PidController>();
+      pid->SetStaQInfo ( (*it) );
+      InParamType in(m_targetDvp, m_maxDelay, m_serviceInterval);
+      pid->SetInputParams(in);
       m_ctrl[(*it)->GetMac()] = pid;
     }
 }
@@ -235,15 +238,17 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
   double totalTimeAllowance = 0;
   double tmpTimeAllowance = 0;
   double tmpPrEmpty = 0;
-  PerStaQInfoContainer::Iterator it;
-  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+  PidIterator it;
+  Ptr<PerStaQInfo> sta;
+  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
     {
-      tmpPrEmpty = 0.999;
-      if ((*it)->GetPrEmpty() != 1) //prevent division by zero
-        tmpPrEmpty = (*it)->GetPrEmpty();
-      err = (*it)->GetAvgServedPackets() + log(m_targetDvp)*m_serviceInterval * (*it)->GetAvgSize()/m_maxDelay/(1-tmpPrEmpty);
-      ctrlSignal = -kp*err; //TODO: for now just proportional controller
-      tmpTimeAllowance = std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      sta = m_perStaQInfo->GetByMac(it->first); //tid = UP_VI by default, TODO: this should be made generic
+      NS_ASSERT(sta);
+
+      //apply input signal to controller and update controller
+      InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
+      it->second->SetInputSignal(inSig);
+      tmpTimeAllowance = sta->GetTimeAllowance().GetSeconds() + it->second->UpdateController();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
 
       #ifdef SVA_DEBUG
       std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << (*it)->GetMac()
@@ -266,7 +271,7 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
         {
           (*it)->SetTimeAllowance((*it)->GetTimeAllowance()/totalTimeAllowance);
         }
-    }
+   }
 }
 
 }  // namespace ns3

@@ -36,49 +36,54 @@ namespace ns3 {
  *
  */
 
-typedef struct
+struct PidStateType
 {
     double prevErr; //!< previous error signal
     double curErr; //!< current error signal
-}PidStateType;
+    PidStateType(double prevErr=0, double curErr=0);
+};
 
-typedef struct
+struct PidParamType
 {
     double kp; //!< proportional gain
     double ki; //!< integral gain
     double kd; //!< derivative gain
     double wi; //!< recent sample weight for approximating the integral term as a moving average (must be between zero and one)
-}PidParamType;
+    PidParamType(double kp=0, double ki=0, double kd=0, double wi=0);
+};
 
-typedef struct
+struct InParamType
 {
     double dvp; //!< Target delay violation probability
     double dMax; //!< Maximum tolerable delay
     double si; //!< Length of service interval in seconds
-}InParamType;
+    InParamType(double dvp=0, double dMax=0, double si=0);
+};
 
-typedef struct
+struct InSigType
 {
     double avgQ; //!<average queue length in packets
     double avgQBytes; //!<average queue length in bytes
     double prEmpty; //!<probability of empty queue
-}InSigType;
+    InSigType(double avgQ=0, double avgQBytes=0, double prEmpty=0);
+};
 
-typedef struct
+struct FeedbackSigType
 {
     double avgServedPacketes; //!<average served packets in a service interval
     double avgServedBytes; //!<average served bytes in a service interval
-}FeedbackSigType;
+    FeedbackSigType(double avgServedPacketes=0, double avgServedBytes=0);
+};
 
-typedef struct
+struct OutSigType
 {
     double deltaTimeAllowance; //!<delta that should be applied to current time allowance
-}OutSigType;
+};
 
-typedef struct
+struct CtrlSigType
 {
     double sig; //!<delta that should be applied to current time allowance
-}CtrlSigType;
+};
 
 class PidController : public Object
 {
@@ -92,8 +97,14 @@ public:
    */
   bool Init (void);
 
+  void SetStaQInfo (const Ptr<PerStaQInfo> sta);
   /*
-   * returns the current value of the input signal to the controller
+   * sets the input parameters of the controller: dvp,dMax,SI
+   */
+  void SetInputParams (const InParamType &in);
+
+  /*
+   * sets the current value of the input signal to the controller
    */
   void SetInputSignal (const InSigType &sig);
 
@@ -128,11 +139,13 @@ protected:
   /*
    * returns the current value of the error signal at the input to the controller
    * that is: target - actual
-   *
+   */
   double GetErrorSignal(void);
+  double UpdateErrorSignal(void);
+  void UpdateFeedbackSignal(void);
 
-  void DoGetInputSignal(void);
-  */
+  //void DoGetInputSignal(void);
+
 
   double m_weightIntegral; //!<recent sample weight for approximating the integral term as a moving average. Will initialize m_pidParam.wi because I didn't know how to directly access that from the attribute system
   double m_kp; //!< proportional coefficient. Will initialize m_pidParam.kp because I didn't know how to directly access that from the attribute system
@@ -145,7 +158,7 @@ protected:
   OutSigType m_output; //!<current value of output signal
   FeedbackSigType m_feedback; //!<current value of feedback signal
   CtrlSigType m_ctrl; //!<current value of control signal
-
+  Ptr<PerStaQInfo> m_staQ; //!<Pointer to PerStaQInfo element being used by this controller
 };
 
 
