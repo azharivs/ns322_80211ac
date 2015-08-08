@@ -125,9 +125,9 @@ private:
   ControllerType m_type; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
   //redundant: is there a way to group these together in the attribute system?
-  double kp;
-  double ki;
-  double kd;
+  double m_kp;
+  double m_ki;
+  double m_kd;
 
   Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
 };

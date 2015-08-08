@@ -146,6 +146,9 @@ public:
    * that is: target - actual
    */
   double GetErrorSignal(void);
+  double GetDerivative(void);
+  double GetIntegral(void);
+  double GetReference(void);
 
 protected:
 

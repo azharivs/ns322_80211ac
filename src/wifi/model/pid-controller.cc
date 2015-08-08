@@ -163,8 +163,6 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
     m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
     m_output = std::max(0.0,(m_state.prevOut + m_ctrl.sig)) / adjustment;
-    std::cout << "PidController::UpdateController (KP,KI,KD)= (" << m_pidParam.kp << "," << m_pidParam.ki << "," << m_pidParam.kd
-        << ") error= " << m_state.curErr << " control= " << m_ctrl.sig << " output= " << m_output << "\n";
     m_state.prevOut = m_state.curOut;
     m_state.curOut = m_output;
     return m_output;
@@ -188,8 +186,29 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     return m_state.curErr;
   }
 
+
+  double
+  PidController::GetDerivative(void)
+  {
+    return m_state.curErr-m_state.prevErr;
+  }
+
+
+  double
+  PidController::GetIntegral(void)
+  {
+    return m_state.integral;
+  }
+
+  double
+  PidController::GetReference(void)
+  {
+    return ComputeErrorSignal() + m_feedback.avgServedPacketes;
+  }
+
   double PidController::ComputeErrorSignal(void)
   {
+    UpdateFeedbackSignal();
     double tmpPrEmpty = 0.999;
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
