@@ -90,6 +90,10 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
   bool
   PidController::Init (void)
   {//TODO
+    m_pidParam.kp = m_kp;
+    m_pidParam.ki = m_ki;
+    m_pidParam.kd = m_kd;
+    m_pidParam.wi = m_weightIntegral;
     return true;
   }
 
@@ -147,7 +151,7 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     double err = ComputeErrorSignal();
     double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
-    double output = m_state.curOut + ctrl;
+    double output = std::max(0.0,m_state.curOut + ctrl);
     return output;
   }
 
@@ -158,7 +162,9 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     m_state.curErr = ComputeErrorSignal();
     m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
     m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
-    m_output = (m_state.prevOut + m_ctrl.sig) / adjustment;
+    m_output = std::max(0.0,(m_state.prevOut + m_ctrl.sig)) / adjustment;
+    std::cout << "PidController::UpdateController (KP,KI,KD)= (" << m_pidParam.kp << "," << m_pidParam.ki << "," << m_pidParam.kd
+        << ") error= " << m_state.curErr << " control= " << m_ctrl.sig << " output= " << m_output << "\n";
     m_state.prevOut = m_state.curOut;
     m_state.curOut = m_output;
     return m_output;
