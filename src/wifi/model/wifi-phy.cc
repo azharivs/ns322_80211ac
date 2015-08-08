@@ -549,11 +549,6 @@ WifiPhy::GetPayloadDuration (uint32_t size, WifiTxVector txvector, WifiPreamble 
         else
            NS_FATAL_ERROR ("Wrong combination of preamble and packet type");
        
-        //sva for debug, to be removed
-        std::cout << Simulator::Now().GetSeconds() << " WifiPhy::GetPayloadDuration numDataBitsPerSymbol= " << (double)numDataBitsPerSymbol
-            << " numSymbols= " << (int) numSymbols << " symbolDuration= " << symbolDuration
-            << " m_totalAmpduSize= " << (int) m_totalAmpduSize
-            << " packetType= " << (int)packetType << "\n";
         if (frequency >= 2400 && frequency <= 2500 && ((packetType == 0 && preamble != WIFI_PREAMBLE_NONE) || (packetType == 2 && preamble == WIFI_PREAMBLE_NONE))) //at 2.4 GHz
           {
             return Time (numSymbols * symbolDuration) + MicroSeconds(6);
@@ -586,8 +581,6 @@ WifiPhy::CalculateTxDuration (uint32_t size, WifiTxVector txvector, WifiPreamble
     + GetPlcpHtSigHeaderDuration (payloadMode, preamble)
     + GetPlcpHtTrainingSymbolDuration (preamble, txvector)
     + GetPayloadDuration (size, txvector, preamble, frequency, packetType, incFlag);
-  //sva for debug to be removed!
-  std::cout << Simulator::Now().GetSeconds() << " WifiPhy::CalculateTxDuration duration= " << duration << "\n";
   return duration;
 }
 

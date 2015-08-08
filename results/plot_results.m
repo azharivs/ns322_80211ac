@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_ta_pid.2';
+baseLogName = 'logfiles/log_mimo_channel_ta_pid.1';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
@@ -191,12 +191,6 @@ for i=1:nSta
     xlabel('Time (seconds)');
     ylabel('Data Rate (Mb/s)');
     grid on;
-    subplot(3,3,4);
-    plot(times,aggPkts*1472*8./dataRate/1000 - aggTxTime,pattern{i})
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Computed Tx Time - Logged Tx Time (msec)');
-    grid on;
     %controller info
     data = load(staAggCtrlLogName{i});
     times = data(:,1);
@@ -204,30 +198,45 @@ for i=1:nSta
     ctrlSignal = data(:,3);
     curTimeAllowance = data(:,4);
     newTimeAllowance = data(:,5);
+    derivative = data(:,6);
+    integral = data(:,7);
+    ref = data(:,8);
     clear data;
-    subplot(3,3,5);
+    subplot(3,3,4);
     plot(times,err,pattern{i})
     hold on;
     xlabel('Time (seconds)');
     ylabel('Error Signal');
     grid on;
-    subplot(3,3,6);
+    subplot(3,3,5);
     plot(times,ctrlSignal,pattern{i})
     hold on;
     xlabel('Time (seconds)');
     ylabel('Control Signal');
     grid on;
-    subplot(3,3,7);
+    subplot(3,3,6);
     plot(times,curTimeAllowance,pattern{i})
     hold on;
     xlabel('Time (seconds)');
     ylabel('Current Time Allowance (msec)');
     grid on;
-    subplot(3,3,8);
-    plot(times,newTimeAllowance,pattern{i})
+    subplot(3,3,7);
+    plot(times,derivative,pattern{i})
     hold on;
     xlabel('Time (seconds)');
-    ylabel('New Time Allowance (msec)');
+    ylabel('Derivative Term');
+    grid on;
+    subplot(3,3,8);
+    plot(times,integral,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Integral Term');
+    grid on;
+    subplot(3,3,9);
+    plot(times,ref,pattern{i})
+    hold on;
+    xlabel('Time (seconds)');
+    ylabel('Reference Signal');
     grid on;
 end
 

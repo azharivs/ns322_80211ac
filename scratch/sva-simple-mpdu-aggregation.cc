@@ -206,7 +206,7 @@ int main (int argc, char *argv[])
 	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
 	  //sva: set dealine for each stations traffic
 	  //sva: 0.5 sec, 0.7sec, 0.9sec, 1.2 sec
-	  myClient.SetAttribute("Deadline",DoubleValue(0.5+j*0.2));
+	  myClient.SetAttribute("Deadline",DoubleValue(1.0));
 	  //sva: this is not the correct way of doing it.
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this

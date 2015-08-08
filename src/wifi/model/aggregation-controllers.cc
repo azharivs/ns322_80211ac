@@ -92,16 +92,16 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
     .AddAttribute ("KP", "Proportional coefficient used with the PID controller",
-                   DoubleValue (1.0),
-                   MakeDoubleAccessor (&TimeAllowanceAggregationController::kp),
+                   DoubleValue (0.0001),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kp),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KI", "Integral coefficient used with the PID controller",
-                   DoubleValue (1.0),
-                   MakeDoubleAccessor (&TimeAllowanceAggregationController::ki),
+                   DoubleValue (0.0001),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_ki),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KD", "Derivative coefficient used with the PID controller",
-                   DoubleValue (1.0),
-                   MakeDoubleAccessor (&TimeAllowanceAggregationController::kd),
+                   DoubleValue (0.000),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kd),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
                    EnumValue (PID),
@@ -133,9 +133,9 @@ TimeAllowanceAggregationController::DoInitialize (void)
       pid = CreateObject<PidController>();
       //initialize pid controller if necessary
       pid->SetAttribute("MovingAverageWeight",DoubleValue(0.1));
-      pid->SetAttribute("KP",DoubleValue(1));
-      pid->SetAttribute("KI",DoubleValue(1));
-      pid->SetAttribute("KD",DoubleValue(1));
+      pid->SetAttribute("KP",DoubleValue(m_kp));
+      pid->SetAttribute("KI",DoubleValue(m_ki));
+      pid->SetAttribute("KD",DoubleValue(m_kd));
       pid->SetStaQInfo ( (*it) );
       InParamType in(m_targetDvp, m_maxDelay, m_serviceInterval);
       pid->SetInputParams(in);
@@ -267,7 +267,11 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " <<
     << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
     << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
     << " avgServed= " << sta->GetAvgServedPackets()
-    << " avgQueue= " << sta->GetAvgSize() << "\n";
+    << " avgQueue= " << sta->GetAvgSize()
+    << " derivative= " << it->second->GetDerivative()
+    << " integral= " << it->second->GetIntegral()
+    << " reference= " << it->second->GetReference()
+    << "\n";
 #endif
 
     }
