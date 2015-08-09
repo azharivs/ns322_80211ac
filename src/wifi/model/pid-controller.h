@@ -105,7 +105,7 @@ public:
   /*
    * sets the current value of the input signal to the controller
    */
-  void SetInputSignal (const InSigType &sig);
+  void SetInputSignal (const InSigType sig);
 
   /*
    * returns the current value of the input signal to the controller

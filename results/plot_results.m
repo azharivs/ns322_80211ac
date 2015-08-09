@@ -215,10 +215,10 @@ for i=1:nSta
     ylabel('Control Signal');
     grid on;
     subplot(3,3,6);
-    plot(times,curTimeAllowance,pattern{i})
+    plot(times,newTimeAllowance,pattern{i})
     hold on;
     xlabel('Time (seconds)');
-    ylabel('Current Time Allowance (msec)');
+    ylabel('New Time Allowance (msec)');
     grid on;
     subplot(3,3,7);
     plot(times,derivative,pattern{i})

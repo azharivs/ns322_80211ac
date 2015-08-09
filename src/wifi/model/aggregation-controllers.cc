@@ -91,16 +91,20 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    TimeValue (MilliSeconds (7.0) ), //sva: the default value should be later changed to beacon interval
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
+    .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
+                   DoubleValue (0.02),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_weightIntegral),
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("KP", "Proportional coefficient used with the PID controller",
                    DoubleValue (0.0001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kp),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KI", "Integral coefficient used with the PID controller",
-                   DoubleValue (0.0001),
+                   DoubleValue (0.0005),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_ki),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KD", "Derivative coefficient used with the PID controller",
-                   DoubleValue (0.000),
+                   DoubleValue (0.0005),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kd),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
@@ -132,13 +136,12 @@ TimeAllowanceAggregationController::DoInitialize (void)
       Ptr<PidController> pid;
       pid = CreateObject<PidController>();
       //initialize pid controller if necessary
-      pid->SetAttribute("MovingAverageWeight",DoubleValue(0.1));
+      pid->SetAttribute("MovingAverageWeight",DoubleValue(m_weightIntegral));
       pid->SetAttribute("KP",DoubleValue(m_kp));
       pid->SetAttribute("KI",DoubleValue(m_ki));
       pid->SetAttribute("KD",DoubleValue(m_kd));
       pid->SetStaQInfo ( (*it) );
-      InParamType in(m_targetDvp, m_maxDelay, m_serviceInterval);
-      pid->SetInputParams(in);
+      pid->SetInputParams(InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
       pid->Init();
       m_ctrl[(*it)->GetMac()] = pid;
     }
@@ -244,8 +247,8 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
       NS_ASSERT(sta);
 
       //apply input signal to controller and update controller
-      InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
-      it->second->SetInputSignal(inSig);
+      //InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
+      it->second->SetInputSignal(InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
       tmpTimeAllowance = it->second->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
       totalTimeAllowance += tmpTimeAllowance;
     }
@@ -263,14 +266,16 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
 
 #ifdef SVA_DEBUG
 std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << sta->GetMac()
-    << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << it->second->GetControlSignal().sig
+    << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
     << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
     << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
     << " avgServed= " << sta->GetAvgServedPackets()
     << " avgQueue= " << sta->GetAvgSize()
-    << " derivative= " << it->second->GetDerivative()
-    << " integral= " << it->second->GetIntegral()
-    << " reference= " << it->second->GetReference()
+    << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
+    << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
+    << " reference= " << m_ctrl[sta->GetMac()]->GetReference()
+    << " totalAllowance= " << totalTimeAllowance
+    << " adjust= " << adjustment
     << "\n";
 #endif
 

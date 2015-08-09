@@ -120,7 +120,7 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
   }
 
   void
-  PidController::SetInputSignal (const InSigType &sig)
+  PidController::SetInputSignal (const InSigType sig)
   {
     m_input = sig;
     return ;
@@ -143,6 +143,7 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
   {
     m_feedback.avgServedPacketes = m_staQ->GetAvgServedPackets();
     m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
+//sva for debug    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
   }
 
   double
@@ -152,6 +153,7 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
     double output = std::max(0.0,m_state.curOut + ctrl);
+//sva for debug    std::cout << "err= " << err << " computed output = " << output << "\n";
     return output;
   }
 
@@ -162,7 +164,8 @@ FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes
     m_state.curErr = ComputeErrorSignal();
     m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
     m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
-    m_output = std::max(0.0,(m_state.prevOut + m_ctrl.sig)) / adjustment;
+    m_output = std::max(0.0,(m_state.curOut + m_ctrl.sig)) / adjustment;
+//sva for debug    std::cout << "curErr= " << m_state.curErr << " outputBeforeMax= "<< m_state.curOut + m_ctrl.sig << " actual output = " << m_output << " adjusted by " << adjustment << "\n";
     m_state.prevOut = m_state.curOut;
     m_state.curOut = m_output;
     return m_output;
