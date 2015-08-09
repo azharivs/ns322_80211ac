@@ -70,7 +70,7 @@ int main (int argc, char *argv[])
   //LogComponentEnable ("UdpServer", LOG_LEVEL_DEBUG);
 
   uint32_t payloadSize = 1472; //bytes
-  uint64_t simulationTime = 10; //seconds
+  uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
   uint32_t nSta = 4;
   bool enableRts = 0;
