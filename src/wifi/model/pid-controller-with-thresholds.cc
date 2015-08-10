@@ -93,6 +93,33 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
     return ;
   }
 
+
+  double
+  PidControllerWithThresholds::GetErrorSignal(void)
+  {
+    return m_state.curErr;
+  }
+
+
+  double
+  PidControllerWithThresholds::GetDerivative(void)
+  {
+    return m_state.curErr-m_state.prevErr;
+  }
+
+
+  double
+  PidControllerWithThresholds::GetIntegral(void)
+  {
+    return m_state.integral;
+  }
+
+  double
+  PidControllerWithThresholds::GetReference(void)
+  {
+    return ComputeErrorSignal() + m_feedback.avgServedPacketes;
+  }
+
   double
   PidControllerWithThresholds::ComputeOutput (void)
   {

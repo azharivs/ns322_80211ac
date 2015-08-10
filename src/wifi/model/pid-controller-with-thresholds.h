@@ -91,6 +91,15 @@ public:
    */
   double ComputeOutput ();
 
+  /*
+   * returns the current value of the error signal at the input to the controller
+   * that is: target - actual
+   */
+  double GetErrorSignal(void);
+  double GetDerivative(void);
+  double GetIntegral(void);
+  double GetReference(void);
+
   double GetHighThreshold(void);
   double GetLowThreshold(void);
 
@@ -106,11 +115,11 @@ protected:
   double m_thrL;
   PidStateType m_state; //!<PID controller state: prevErr,curErr
   PidParamType m_pidParam; //!<PID controller parameters: kp,ki,kd,wi
-  InParamType m_inParam; //!<input parametes: dvp, dMax
-  InSigType m_input; //!<current value of input signal
-  double m_output; //!<current value of output signal
-  FeedbackSigType m_feedback; //!<current value of feedback signal
-  CtrlSigType m_ctrl; //!<current value of control signal
+  //InParamType m_inParam; //!<input parametes: dvp, dMax
+  //InSigType m_input; //!<current value of input signal
+  //double m_output; //!<current value of output signal
+  //FeedbackSigType m_feedback; //!<current value of feedback signal
+  //CtrlSigType m_ctrl; //!<current value of control signal
 };
 
 
