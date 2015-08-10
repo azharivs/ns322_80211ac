@@ -137,11 +137,14 @@ private:
   Time m_timeAllowance; //!< Fixed time allowance used for NO_CONTROL
   ControllerType m_type; //!< Type of controller, PID, etc.
   PidParametersType m_pidParams; //!< PID controller parameters
-  //redundant: is there a way to group these together in the attribute system?
+  //TODO redundant: is there a way to group these together in the attribute system?
   double m_weightIntegral;
   double m_kp;
   double m_ki;
   double m_kd;
+  double m_thrW;
+  double m_thrH;
+  double m_thrL;
 
   Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
 };
