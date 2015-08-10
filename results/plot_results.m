@@ -204,14 +204,14 @@ for i=1:nSta
     derivative = data(:,6);
     integral = data(:,7);
     ref = data(:,8);
-    %thrHi = data(:,11);
-    %thrLo = data(:,12);
+    thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
+    thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
     clear data;
     subplot(3,3,4);
     plot(times,err,pattern{i})
     hold on;
-    %plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
-    %plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+    plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+    plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
     xlabel('Time (seconds)');
     ylabel('Error (/H/L) Signals');
     grid on;
