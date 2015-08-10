@@ -22,6 +22,7 @@
 #include "ns3/double.h"
 #include "ns3/nstime.h"
 #include "pid-controller.h"
+#include "pid-controller-with-thresholds.h"
 
 //TODO: For now all PerStaQ's have the same DVP and MaxDelay. To be changed later.
 
@@ -91,27 +92,28 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    TimeValue (MilliSeconds (7.0) ), //sva: the default value should be later changed to beacon interval
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
-    .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
-                   DoubleValue (0.02),
+    .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controllers",
+                   DoubleValue (0.05),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_weightIntegral),
                    MakeDoubleChecker<double> ())
-    .AddAttribute ("KP", "Proportional coefficient used with the PID controller",
-                   DoubleValue (0.0001),
+    .AddAttribute ("KP", "Proportional coefficient used with the PID controllers",
+                   DoubleValue (0.0002),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kp),
                    MakeDoubleChecker<double> ())
-    .AddAttribute ("KI", "Integral coefficient used with the PID controller",
-                   DoubleValue (0.0005),
+    .AddAttribute ("KI", "Integral coefficient used with the PID controllers",
+                   DoubleValue (0.0001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_ki),
                    MakeDoubleChecker<double> ())
-    .AddAttribute ("KD", "Derivative coefficient used with the PID controller",
-                   DoubleValue (0.0005),
+    .AddAttribute ("KD", "Derivative coefficient used with the PID controllers",
+                   DoubleValue (0.0001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kd),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
-                   EnumValue (PID),
+                   EnumValue (PID_WITH_THRESHOLDS),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
                    MakeEnumChecker (ns3::NO_CONTROL, "ns3::NO_CONTROL",
-                                    /*sva-design: add for new aggregation controller AGG_CRTL
+                                    ns3::PID_WITH_THRESHOLDS, "ns3::PID_WITH_THRESHOLDS",
+                                     /*sva-design: add for new aggregation controller AGG_CRTL
                                     ns3::AGG_CTRL, "ns3::AGG_CRTL",
                                     sva-design*/
                                     ns3::PID, "ns3::PID"))
@@ -130,6 +132,45 @@ TimeAllowanceAggregationController::~TimeAllowanceAggregationController ()
 void
 TimeAllowanceAggregationController::DoInitialize (void)
 {
+  switch (m_type)
+  {
+    case ns3::NO_CONTROL:
+      DoInitializeNoControl();
+      break;
+    case ns3::PID:
+      DoInitializePidControl();
+      break;
+    case ns3::PID_WITH_THRESHOLDS:
+      DoInitializePidControlWithThresholds();
+      break;
+      /*sva design: add following lines for each new type of controller ?
+    case ns3::?:
+      DoInitialize?();
+      break;
+      sva-design*/
+    default:
+      NS_FATAL_ERROR("Undefined Controller Associated to AggregationController " << m_type);
+  }
+}
+
+/*sva design: add following lines for each new type of controller ?
+void
+TimeAllowanceAggregationController::DoInitialize? (void)
+{
+  //TODO Implementation of initialization code for controller of type ?
+}
+sva-design*/
+
+void
+TimeAllowanceAggregationController::DoInitializeNoControl (void)
+{
+  return ;
+}
+
+
+void
+TimeAllowanceAggregationController::DoInitializePidControl (void)
+{
   //allocate a controller for each PerStaQInfo
   for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
     {
@@ -141,12 +182,31 @@ TimeAllowanceAggregationController::DoInitialize (void)
       pid->SetAttribute("KI",DoubleValue(m_ki));
       pid->SetAttribute("KD",DoubleValue(m_kd));
       pid->SetStaQInfo ( (*it) );
-      pid->SetInputParams(InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
+      pid->SetInputParams(PidController::InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
       pid->Init();
       m_ctrl[(*it)->GetMac()] = pid;
     }
 }
 
+void
+TimeAllowanceAggregationController::DoInitializePidControlWithThresholds (void)
+{
+  //allocate a controller for each PerStaQInfo
+  for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      Ptr<PidControllerWithThresholds> pid;
+      pid = CreateObject<PidControllerWithThresholds>();
+      //initialize pid controller if necessary
+      pid->SetAttribute("MovingAverageWeight",DoubleValue(m_weightIntegral));
+      pid->SetAttribute("KP",DoubleValue(m_kp));
+      pid->SetAttribute("KI",DoubleValue(m_ki));
+      pid->SetAttribute("KD",DoubleValue(m_kd));
+      pid->SetStaQInfo ( (*it) );
+      pid->SetInputParams(PidControllerWithThresholds::InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
+      pid->Init();
+      m_ctrl[(*it)->GetMac()] = pid;
+    }
+}
 void
 TimeAllowanceAggregationController::Update (void)
 {
@@ -182,54 +242,6 @@ TimeAllowanceAggregationController::NoControlUpdate (void)
     }
 }
 
-/* old code
-void
-TimeAllowanceAggregationController::PidControlUpdate (void)
-{//TODO: define perSta targetDVP and Dmax
-  if (!m_perStaQInfo)//not supported
-    {
-      return ;
-    }
-  double err = 0;
-  double ctrlSignal = 0;
-  double totalTimeAllowance = 0;
-  double tmpTimeAllowance = 0;
-  double tmpPrEmpty = 0;
-  PerStaQInfoContainer::Iterator it;
-  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
-    {
-      tmpPrEmpty = 0.999;
-      if ((*it)->GetPrEmpty() != 1) //prevent division by zero
-        tmpPrEmpty = (*it)->GetPrEmpty();
-      err = (*it)->GetAvgServedPackets() + log(m_targetDvp)*m_serviceInterval * (*it)->GetAvgSize()/m_maxDelay/(1-tmpPrEmpty);
-      ctrlSignal = -kp*err; //TODO: for now just proportional controller
-      tmpTimeAllowance = std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
-
-      #ifdef SVA_DEBUG
-      std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << (*it)->GetMac()
-          << " err= " << err << " ctrlSignal= " << ctrlSignal
-          << " curTimeAllowance= " << (*it)->GetTimeAllowance().GetSeconds()*1000 << " msec"
-          << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
-          << " avgServed= " << (*it)->GetAvgServedPackets()
-          << " avgQueue= " << (*it)->GetAvgSize()
-          << " const= " << log(m_targetDvp)*m_serviceInterval/m_maxDelay << "\n";
-      #endif
-
-      (*it)->SetTimeAllowance(Seconds(tmpTimeAllowance));
-      totalTimeAllowance += tmpTimeAllowance;
-    }
-  //adjust time allowance to not exceed service interval
-  if (totalTimeAllowance > m_serviceInterval)
-    {
-      totalTimeAllowance = totalTimeAllowance / m_serviceInterval;
-      for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
-        {
-          (*it)->SetTimeAllowance((*it)->GetTimeAllowance()/totalTimeAllowance);
-        }
-    }
-}
-*/
-
 void
 TimeAllowanceAggregationController::PidControlUpdate (void)
 {//TODO: define perSta targetDVP and Dmax
@@ -248,7 +260,7 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
 
       //apply input signal to controller and update controller
       //InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
-      it->second->SetInputSignal(InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
+      it->second->SetInputSignal(PidController::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
       tmpTimeAllowance = it->second->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
       totalTimeAllowance += tmpTimeAllowance;
     }
@@ -281,6 +293,60 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " <<
 
     }
 }
+
+
+void
+TimeAllowanceAggregationController::PidControlWithThresholdsUpdate (void)
+{//TODO: define perSta targetDVP and Dmax
+  if (!m_perStaQInfo)//not supported
+    {
+      return ;
+    }
+  double totalTimeAllowance = 0;
+  double tmpTimeAllowance = 0;
+  PidIterator it;
+  Ptr<PerStaQInfo> sta;
+  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
+    {
+      sta = m_perStaQInfo->GetByMac(it->first); //tid = UP_VI by default, TODO: this should be made generic
+      NS_ASSERT(sta);
+
+      //apply input signal to controller and update controller
+      //InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
+      it->second->SetInputSignal(PidControllerWithThresholds::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
+      tmpTimeAllowance = it->second->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      totalTimeAllowance += tmpTimeAllowance;
+    }
+
+  //adjust time allowance to not exceed service interval
+  double adjustment = 1;
+  if (totalTimeAllowance > m_serviceInterval)
+      adjustment = totalTimeAllowance/m_serviceInterval;
+  //start adjusting output signals to fit in one service interval
+  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
+    {
+      tmpTimeAllowance = it->second->UpdateController(adjustment);
+      sta = m_perStaQInfo->GetByMac(it->first);
+      sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
+
+#ifdef SVA_DEBUG
+std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << sta->GetMac()
+    << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
+    << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
+    << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
+    << " avgServed= " << sta->GetAvgServedPackets()
+    << " avgQueue= " << sta->GetAvgSize()
+    << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
+    << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
+    << " reference= " << m_ctrl[sta->GetMac()]->GetReference()
+    << " totalAllowance= " << totalTimeAllowance
+    << " adjust= " << adjustment
+    << "\n";
+#endif
+
+    }
+}
+
 
 }  // namespace ns3
 

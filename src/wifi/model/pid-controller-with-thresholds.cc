@@ -26,70 +26,70 @@
 #include <algorithm>
 #include "ns3/object.h"
 #include "ns3/double.h"
-#include "pid-controller.h"
+#include "pid-controller-with-thresholds.h"
 
 namespace ns3 {
 
-NS_OBJECT_ENSURE_REGISTERED (PidController);
+NS_OBJECT_ENSURE_REGISTERED (PidControllerWithThresholds);
 /**
  * \ingroup wifi
  * PID Controller
  *
  */
 
-PidController::PidStateType::PidStateType(double prevErr, double curErr, double prevOut, double curOut, double integral)
+PidControllerWithThresholds::PidStateType::PidStateType(double prevErr, double curErr, double prevOut, double curOut, double integral)
   : prevErr(prevErr), curErr(curErr), prevOut(prevOut), curOut(curOut), integral(integral)
 {
 }
 
-PidController::PidParamType::PidParamType(double kp, double ki, double kd, double wi)
+PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, double kd, double wi)
   : kp(kp), ki(ki), kd(kd), wi(wi)
 {
 }
 
-PidController::InParamType::InParamType(double dvp, double dMax, double si)
+PidControllerWithThresholds::InParamType::InParamType(double dvp, double dMax, double si)
   : dvp(dvp), dMax(dMax), si(si)
 {
 }
 
-PidController::InSigType::InSigType(double avgQ, double avgQBytes, double prEmpty)
+PidControllerWithThresholds::InSigType::InSigType(double avgQ, double avgQBytes, double prEmpty)
   : avgQ(avgQ), avgQBytes(avgQBytes), prEmpty(prEmpty)
 {
 }
 
-PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes)
+PidControllerWithThresholds::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double avgServedBytes)
   : avgServedPacketes(avgServedPacketes), avgServedBytes(avgServedBytes)
 {
 }
 
   TypeId
-  PidController::GetTypeId (void)
+  PidControllerWithThresholds::GetTypeId (void)
   {
-    static TypeId tid = TypeId ("ns3::PidController")
-        .SetParent<Object> ()
-        .AddConstructor<PidController> ()
+    static TypeId tid = TypeId ("ns3::PidControllerWithThresholds")
+        .SetParent<PidController> ()
+        .AddConstructor<PidControllerWithThresholds> ()
         .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
                        DoubleValue (0.1),
-                       MakeDoubleAccessor (&PidController::m_weightIntegral),
+                       MakeDoubleAccessor (&PidControllerWithThresholds::m_weightIntegral),
                        MakeDoubleChecker<double> ())
         .AddAttribute ("KP", "Proportional coefficient used with the PID controller",
                        DoubleValue (1.0),
-                       MakeDoubleAccessor (&PidController::m_kp),
+                       MakeDoubleAccessor (&PidControllerWithThresholds::m_kp),
                        MakeDoubleChecker<double> ())
         .AddAttribute ("KI", "Integral coefficient used with the PID controller",
                       DoubleValue (1.0),
-                      MakeDoubleAccessor (&PidController::m_ki),
+                      MakeDoubleAccessor (&PidControllerWithThresholds::m_ki),
                       MakeDoubleChecker<double> ())
        .AddAttribute ("KD", "Derivative coefficient used with the PID controller",
                       DoubleValue (1.0),
-                      MakeDoubleAccessor (&PidController::m_kd),
+                      MakeDoubleAccessor (&PidControllerWithThresholds::m_kd),
                       MakeDoubleChecker<double> ())
         ;
     return tid;
   }
 
   bool
-  PidController::Init (void)
+  PidControllerWithThresholds::Init (void)
   {//TODO
     m_pidParam.kp = m_kp;
     m_pidParam.ki = m_ki;
@@ -99,48 +99,48 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   }
 
   void
-  PidController::SetStaQInfo (const Ptr<PerStaQInfo> sta)
+  PidControllerWithThresholds::SetStaQInfo (const Ptr<PerStaQInfo> sta)
   {
     m_staQ = sta;
   }
 
-  PidController::PidController ()
+  PidControllerWithThresholds::PidControllerWithThresholds ()
   {//TODO
     return ;
   }
 
-  PidController::~PidController ()
+  PidControllerWithThresholds::~PidControllerWithThresholds ()
   {//TODO
     return ;
   }
 
   void
-  PidController::SetInputParams (const PidController::InParamType &in)
+  PidControllerWithThresholds::SetInputParams (const InParamType &in)
   {
     m_inParam = in;
   }
 
   void
-  PidController::SetInputSignal (const PidController::InSigType sig)
+  PidControllerWithThresholds::SetInputSignal (const InSigType sig)
   {
     m_input = sig;
     return ;
   }
 
-  PidController::InSigType
-  PidController::GetInputSignal (void)
+  PidControllerWithThresholds::InSigType
+  PidControllerWithThresholds::GetInputSignal (void)
   {
     return m_input;
   }
 
-  PidController::FeedbackSigType
-  PidController::GetFeedbackSignal (void)
+  PidControllerWithThresholds::FeedbackSigType
+  PidControllerWithThresholds::GetFeedbackSignal (void)
   {
     return m_feedback;
   }
 
   void
-  PidController::UpdateFeedbackSignal (void)
+  PidControllerWithThresholds::UpdateFeedbackSignal (void)
   {
     m_feedback.avgServedPacketes = m_staQ->GetAvgServedPackets();
     m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
@@ -148,7 +148,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   }
 
   double
-  PidController::ComputeOutput (void)
+  PidControllerWithThresholds::ComputeOutput (void)
   {
     double err = ComputeErrorSignal();
     double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
@@ -159,7 +159,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   }
 
   double
-  PidController::UpdateController (double adjustment)
+  PidControllerWithThresholds::UpdateController (double adjustment)
   {
     m_state.prevErr = m_state.curErr;
     m_state.curErr = ComputeErrorSignal();
@@ -172,45 +172,45 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     return m_output;
   }
 
-  PidController::CtrlSigType
-  PidController::GetControlSignal (void)
+  PidControllerWithThresholds::CtrlSigType
+  PidControllerWithThresholds::GetControlSignal (void)
   {
     return m_ctrl;
   }
 
   double
-  PidController::GetOutputSignal (void)
+  PidControllerWithThresholds::GetOutputSignal (void)
   {
     return m_output;
   }
 
   double
-  PidController::GetErrorSignal(void)
+  PidControllerWithThresholds::GetErrorSignal(void)
   {
     return m_state.curErr;
   }
 
 
   double
-  PidController::GetDerivative(void)
+  PidControllerWithThresholds::GetDerivative(void)
   {
     return m_state.curErr-m_state.prevErr;
   }
 
 
   double
-  PidController::GetIntegral(void)
+  PidControllerWithThresholds::GetIntegral(void)
   {
     return m_state.integral;
   }
 
   double
-  PidController::GetReference(void)
+  PidControllerWithThresholds::GetReference(void)
   {
     return ComputeErrorSignal() + m_feedback.avgServedPacketes;
   }
 
-  double PidController::ComputeErrorSignal(void)
+  double PidControllerWithThresholds::ComputeErrorSignal(void)
   {
     UpdateFeedbackSignal();
     double tmpPrEmpty = 0.999;

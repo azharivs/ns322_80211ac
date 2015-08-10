@@ -61,7 +61,7 @@ IdealWifiManagerForMarkovChannelModel11n::GetTypeId (void)
 				   MakeUintegerChecker<uint32_t> ())
 	 .AddAttribute ("Symbol Duration",
 			       "Duration of each symbol " ,
-			       UintegerValue (4),
+			       UintegerValue (1),
 				   MakeUintegerAccessor (&IdealWifiManagerForMarkovChannelModel11n::SymbolDuration),
 				   MakeUintegerChecker<uint32_t> ())
 	.AddAttribute ("Rho",
@@ -71,7 +71,7 @@ IdealWifiManagerForMarkovChannelModel11n::GetTypeId (void)
 				   MakeDoubleChecker<double> ())
 	.AddAttribute ("fm",
 			       "Maximum doppler frequency fm= nu/lambda where  nu is the  speed  of  the  vehicle  and  lambda  is the  wave length",
-				   DoubleValue (2),
+				   DoubleValue (3),
 				   MakeDoubleAccessor (&IdealWifiManagerForMarkovChannelModel11n::fm),
 				   MakeDoubleChecker<double> ())
 	.AddAttribute ("R",
