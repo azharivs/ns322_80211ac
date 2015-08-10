@@ -162,10 +162,10 @@ protected:
   //void DoGetInputSignal(void);
 
 
-  double m_weightIntegral; //!<recent sample weight for approximating the integral term as a moving average. Will initialize m_pidParam.wi because I didn't know how to directly access that from the attribute system
-  double m_kp; //!< proportional coefficient. Will initialize m_pidParam.kp because I didn't know how to directly access that from the attribute system
-  double m_ki; //!< integral coefficient. Will initialize m_pidParam.ki because I didn't know how to directly access that from the attribute system
-  double m_kd; //!< derivative coefficient. Will initialize m_pidParam.kd because I didn't know how to directly access that from the attribute system
+  //double m_weightIntegral; //!<recent sample weight for approximating the integral term as a moving average. Will initialize m_pidParam.wi because I didn't know how to directly access that from the attribute system
+  //double m_kp; //!< proportional coefficient. Will initialize m_pidParam.kp because I didn't know how to directly access that from the attribute system
+  //double m_ki; //!< integral coefficient. Will initialize m_pidParam.ki because I didn't know how to directly access that from the attribute system
+  //double m_kd; //!< derivative coefficient. Will initialize m_pidParam.kd because I didn't know how to directly access that from the attribute system
   PidStateType m_state; //!<PID controller state: prevErr,curErr
   PidParamType m_pidParam; //!<PID controller parameters: kp,ki,kd,wi
   InParamType m_inParam; //!<input parametes: dvp, dMax
@@ -173,7 +173,7 @@ protected:
   double m_output; //!<current value of output signal
   FeedbackSigType m_feedback; //!<current value of feedback signal
   CtrlSigType m_ctrl; //!<current value of control signal
-  Ptr<PerStaQInfo> m_staQ; //!<Pointer to PerStaQInfo element being used by this controller
+  //Ptr<PerStaQInfo> m_staQ; //!<Pointer to PerStaQInfo element being used by this controller
 };
 
 

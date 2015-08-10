@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_ta_pid.1';
+baseLogName = 'logfiles/log_mimo_channel_ta_pid.2';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta

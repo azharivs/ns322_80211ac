@@ -218,12 +218,15 @@ TimeAllowanceAggregationController::Update (void)
     case PID:
       PidControlUpdate();
       break;
+    case PID_WITH_THRESHOLDS:
+      PidControlWithThresholdsUpdate();
+      break;
       /*sva-design: add for new aggregation controller AGG_CTRL
     case AGG_CTRL:
       break;
       sva-design*/
     default:
-      NS_FATAL_ERROR("Unspecified Aggregation Controller" << m_type);
+      NS_FATAL_ERROR("Unspecified Aggregation Controller " << m_type);
   }
   return ;
 }
@@ -305,16 +308,18 @@ TimeAllowanceAggregationController::PidControlWithThresholdsUpdate (void)
   double totalTimeAllowance = 0;
   double tmpTimeAllowance = 0;
   PidIterator it;
+  Ptr<PidControllerWithThresholds> controller;
   Ptr<PerStaQInfo> sta;
   for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
     {
+      controller = it->second->GetObject<PidControllerWithThresholds>();
       sta = m_perStaQInfo->GetByMac(it->first); //tid = UP_VI by default, TODO: this should be made generic
       NS_ASSERT(sta);
 
       //apply input signal to controller and update controller
       //InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
-      it->second->SetInputSignal(PidControllerWithThresholds::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
-      tmpTimeAllowance = it->second->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      controller->SetInputSignal(PidControllerWithThresholds::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
+      tmpTimeAllowance = controller->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
       totalTimeAllowance += tmpTimeAllowance;
     }
 
@@ -325,20 +330,21 @@ TimeAllowanceAggregationController::PidControlWithThresholdsUpdate (void)
   //start adjusting output signals to fit in one service interval
   for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
     {
-      tmpTimeAllowance = it->second->UpdateController(adjustment);
+      controller = it->second->GetObject<PidControllerWithThresholds>();
+      tmpTimeAllowance = controller->UpdateController(adjustment);
       sta = m_perStaQInfo->GetByMac(it->first);
       sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
 
 #ifdef SVA_DEBUG
 std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << sta->GetMac()
-    << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
+    << " err= " << controller->GetErrorSignal() << " ctrlSignal= " << controller->GetControlSignal().sig
     << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
     << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
     << " avgServed= " << sta->GetAvgServedPackets()
     << " avgQueue= " << sta->GetAvgSize()
-    << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
-    << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
-    << " reference= " << m_ctrl[sta->GetMac()]->GetReference()
+    << " derivative= " << controller->GetDerivative()
+    << " integral= " << controller->GetIntegral()
+    << " reference= " << controller->GetReference()
     << " totalAllowance= " << totalTimeAllowance
     << " adjust= " << adjustment
     << "\n";
