@@ -55,7 +55,9 @@ public:
       double prevOut; //!< previous output (e.g., time allowance)
       double curOut; //!< Current output (e.g., time allowance)
       double integral; //!< Current value of integral term
-      PidStateType(double prevErr=0, double curErr=0, double prevOut=0, double curOut=0, double integral=0);
+      double errMean; //!< Mean value of error signal used to calculate thresholds
+      double errStdDev; //!< Standard deviation of error signal used to calculate thresholds
+      PidStateType(double prevErr=0, double curErr=0, double prevOut=0, double curOut=0, double integral=0, double errMean=0, double errStdDev=0);
   };
 
   struct PidParamType
@@ -64,35 +66,10 @@ public:
       double ki; //!< integral gain
       double kd; //!< derivative gain
       double wi; //!< recent sample weight for approximating the integral term as a moving average (must be between zero and one)
-      PidParamType(double kp=0, double ki=0, double kd=0, double wi=0);
-  };
-
-  struct InParamType
-  {
-      double dvp; //!< Target delay violation probability
-      double dMax; //!< Maximum tolerable delay
-      double si; //!< Length of service interval in seconds
-      InParamType(double dvp=0, double dMax=0, double si=0);
-  };
-
-  struct InSigType
-  {
-      double avgQ; //!<average queue length in packets
-      double avgQBytes; //!<average queue length in bytes
-      double prEmpty; //!<probability of empty queue
-      InSigType(double avgQ=0, double avgQBytes=0, double prEmpty=0);
-  };
-
-  struct FeedbackSigType
-  {
-      double avgServedPacketes; //!<average served packets in a service interval
-      double avgServedBytes; //!<average served bytes in a service interval
-      FeedbackSigType(double avgServedPacketes=0, double avgServedBytes=0);
-  };
-
-  struct CtrlSigType
-  {
-      double sig; //!<delta that should be applied to current time allowance
+      double thrW; //!< recent sample weight for approximating the error mean and standard variation as a moving average (must be between zero and one)
+      double thrH; //!< standard deviation multiplier for deriving the high threshold (>=0)
+      double thrL; //!< standard deviation multiplier for deriving the low threshold (>=0)
+      PidParamType(double kp=0, double ki=0, double kd=0, double wi=0, double thrW=0, double thrH=0, double thrL=0);
   };
 
   /*
@@ -153,19 +130,21 @@ public:
   double GetDerivative(void);
   double GetIntegral(void);
   double GetReference(void);
+  double GetHighThreshold(void);
+  double GetLowThreshold(void);
 
 protected:
 
   double ComputeErrorSignal(void);
   void UpdateFeedbackSignal(void);
+  bool IsThresholdViolated (double err);
 
   //void DoGetInputSignal(void);
 
 
-  //double m_weightIntegral; //!<recent sample weight for approximating the integral term as a moving average. Will initialize m_pidParam.wi because I didn't know how to directly access that from the attribute system
-  //double m_kp; //!< proportional coefficient. Will initialize m_pidParam.kp because I didn't know how to directly access that from the attribute system
-  //double m_ki; //!< integral coefficient. Will initialize m_pidParam.ki because I didn't know how to directly access that from the attribute system
-  //double m_kd; //!< derivative coefficient. Will initialize m_pidParam.kd because I didn't know how to directly access that from the attribute system
+  double m_thrW;
+  double m_thrH;
+  double m_thrL;
   PidStateType m_state; //!<PID controller state: prevErr,curErr
   PidParamType m_pidParam; //!<PID controller parameters: kp,ki,kd,wi
   InParamType m_inParam; //!<input parametes: dvp, dMax
@@ -173,7 +152,6 @@ protected:
   double m_output; //!<current value of output signal
   FeedbackSigType m_feedback; //!<current value of feedback signal
   CtrlSigType m_ctrl; //!<current value of control signal
-  //Ptr<PerStaQInfo> m_staQ; //!<Pointer to PerStaQInfo element being used by this controller
 };
 
 

@@ -108,6 +108,18 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    DoubleValue (0.0001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kd),
                    MakeDoubleChecker<double> ())
+    .AddAttribute ("ThrWeight", "Recent sample moving average weight for approximating standard deviation of error signal of the threshold based PID controller",
+                   DoubleValue (0.05),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrW),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("ThrHighCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
+                   DoubleValue (2.0),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrH),
+                   MakeDoubleChecker<double> ())
+    .AddAttribute ("ThrLowCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
+                   DoubleValue (2.0),
+                   MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrL),
+                   MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
                    EnumValue (PID_WITH_THRESHOLDS),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
@@ -201,6 +213,9 @@ TimeAllowanceAggregationController::DoInitializePidControlWithThresholds (void)
       pid->SetAttribute("KP",DoubleValue(m_kp));
       pid->SetAttribute("KI",DoubleValue(m_ki));
       pid->SetAttribute("KD",DoubleValue(m_kd));
+      pid->SetAttribute("ThrWeight",DoubleValue(m_thrW));
+      pid->SetAttribute("ThrHighCoef",DoubleValue(m_thrH));
+      pid->SetAttribute("ThrLowCoef",DoubleValue(m_thrL));
       pid->SetStaQInfo ( (*it) );
       pid->SetInputParams(PidControllerWithThresholds::InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
       pid->Init();
@@ -262,9 +277,8 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
       NS_ASSERT(sta);
 
       //apply input signal to controller and update controller
-      //InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
       it->second->SetInputSignal(PidController::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
-      tmpTimeAllowance = it->second->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      tmpTimeAllowance = it->second->ComputeOutput();
       totalTimeAllowance += tmpTimeAllowance;
     }
 
@@ -280,7 +294,7 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
       sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
 
 #ifdef SVA_DEBUG
-std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << sta->GetMac()
+std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidController) " << sta->GetMac()
     << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
     << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
     << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
@@ -317,9 +331,8 @@ TimeAllowanceAggregationController::PidControlWithThresholdsUpdate (void)
       NS_ASSERT(sta);
 
       //apply input signal to controller and update controller
-      //InSigType inSig(sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty());
       controller->SetInputSignal(PidControllerWithThresholds::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
-      tmpTimeAllowance = controller->ComputeOutput();// std::max((double)0,(const double)(*it)->GetTimeAllowance().GetSeconds() + ctrlSignal);
+      tmpTimeAllowance = controller->ComputeOutput();
       totalTimeAllowance += tmpTimeAllowance;
     }
 
@@ -336,7 +349,7 @@ TimeAllowanceAggregationController::PidControlWithThresholdsUpdate (void)
       sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
 
 #ifdef SVA_DEBUG
-std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " << sta->GetMac()
+std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidControllerWithThresholds) " << sta->GetMac()
     << " err= " << controller->GetErrorSignal() << " ctrlSignal= " << controller->GetControlSignal().sig
     << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
     << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
@@ -347,6 +360,8 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PID) " <<
     << " reference= " << controller->GetReference()
     << " totalAllowance= " << totalTimeAllowance
     << " adjust= " << adjustment
+    << " thrHi= " << controller->GetHighThreshold()
+    << " thrLo= " << controller->GetLowThreshold()
     << "\n";
 #endif
 

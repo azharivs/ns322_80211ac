@@ -1,8 +1,11 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_ta_pid.2';
+baseLogName = 'logfiles/log_mimo_channel_ta_pidthr.1';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
+pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
+pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
+pattern3 = {'k.','r.','g.','m.','b.','y.','c.'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
     if (i<16)
@@ -201,12 +204,16 @@ for i=1:nSta
     derivative = data(:,6);
     integral = data(:,7);
     ref = data(:,8);
+    thrHi = data(:,11);
+    thrLo = data(:,12);
     clear data;
     subplot(3,3,4);
     plot(times,err,pattern{i})
     hold on;
+    plot(times,thrHi,pattern3{i});
+    plot(times,thrLo,pattern3{i});
     xlabel('Time (seconds)');
-    ylabel('Error Signal');
+    ylabel('Error (/H/L) Signals');
     grid on;
     subplot(3,3,5);
     plot(times,ctrlSignal,pattern{i})
