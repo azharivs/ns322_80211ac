@@ -147,6 +147,14 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
 //sva for debug    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
   }
 
+  double PidController::ErrorConditioning(double err)
+  {
+    if (err >= 0)
+      return atan(log(1+abs(err)));
+    else
+      return -atan(log(1+abs(err)));
+  }
+
   double
   PidController::ComputeOutput (void)
   {
@@ -217,6 +225,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
     double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
+    err = ErrorConditioning(err);
     return err;
   }
 

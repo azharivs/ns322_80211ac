@@ -97,15 +97,15 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_weightIntegral),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KP", "Proportional coefficient used with the PID controllers",
-                   DoubleValue (0.0002),
+                   DoubleValue (0.002),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kp),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KI", "Integral coefficient used with the PID controllers",
-                   DoubleValue (0.0001),
+                   DoubleValue (0.001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_ki),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KD", "Derivative coefficient used with the PID controllers",
-                   DoubleValue (0.0001),
+                   DoubleValue (0.001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kd),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrWeight", "Recent sample moving average weight for approximating standard deviation of error signal of the threshold based PID controller",
@@ -113,15 +113,15 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrW),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrHighCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
-                   DoubleValue (2.0),
+                   DoubleValue (1.0),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrH),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrLowCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
-                   DoubleValue (2.0),
+                   DoubleValue (1.0),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrL),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
-                   EnumValue (PID_WITH_THRESHOLDS),
+                   EnumValue (PID),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
                    MakeEnumChecker (ns3::NO_CONTROL, "ns3::NO_CONTROL",
                                     ns3::PID_WITH_THRESHOLDS, "ns3::PID_WITH_THRESHOLDS",
