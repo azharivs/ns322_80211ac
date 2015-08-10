@@ -77,27 +77,6 @@ public:
    */
   bool Init (void);
 
-  void SetStaQInfo (const Ptr<PerStaQInfo> sta);
-  /*
-   * sets the input parameters of the controller: dvp,dMax,SI
-   */
-  void SetInputParams (const InParamType &in);
-
-  /*
-   * sets the current value of the input signal to the controller
-   */
-  void SetInputSignal (const InSigType sig);
-
-  /*
-   * returns the current value of the input signal to the controller
-   */
-  InSigType GetInputSignal (void);
-
-  /*
-   * returns current value of the feedback signal
-   */
-  FeedbackSigType GetFeedbackSignal (void);
-
   /*
    * Calculates control and output signals
    * uses adjustment parameter to scale output
@@ -112,31 +91,11 @@ public:
    */
   double ComputeOutput ();
 
-  /*
-   * returns the most recent value of the control signal
-   */
-  CtrlSigType GetControlSignal (void);
-
-  /*
-   * returns the current value of the controller output signal
-   */
-  double GetOutputSignal (void);
-
-  /*
-   * returns the current value of the error signal at the input to the controller
-   * that is: target - actual
-   */
-  double GetErrorSignal(void);
-  double GetDerivative(void);
-  double GetIntegral(void);
-  double GetReference(void);
   double GetHighThreshold(void);
   double GetLowThreshold(void);
 
 protected:
 
-  double ComputeErrorSignal(void);
-  void UpdateFeedbackSignal(void);
   bool IsThresholdViolated (double err);
 
   //void DoGetInputSignal(void);

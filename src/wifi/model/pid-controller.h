@@ -159,6 +159,7 @@ public:
 protected:
 
   double ComputeErrorSignal(void);
+  double ErrorConditioning(double err);
   void UpdateFeedbackSignal(void);
 
   //void DoGetInputSignal(void);

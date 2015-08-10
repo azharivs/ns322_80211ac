@@ -83,12 +83,6 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
     return true;
   }
 
-  void
-  PidControllerWithThresholds::SetStaQInfo (const Ptr<PerStaQInfo> sta)
-  {
-    m_staQ = sta;
-  }
-
   PidControllerWithThresholds::PidControllerWithThresholds ()
   {//TODO
     return ;
@@ -97,39 +91,6 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
   PidControllerWithThresholds::~PidControllerWithThresholds ()
   {//TODO
     return ;
-  }
-
-  void
-  PidControllerWithThresholds::SetInputParams (const InParamType &in)
-  {
-    m_inParam = in;
-  }
-
-  void
-  PidControllerWithThresholds::SetInputSignal (const InSigType sig)
-  {
-    m_input = sig;
-    return ;
-  }
-
-  PidController::InSigType
-  PidControllerWithThresholds::GetInputSignal (void)
-  {
-    return m_input;
-  }
-
-  PidController::FeedbackSigType
-  PidControllerWithThresholds::GetFeedbackSignal (void)
-  {
-    return m_feedback;
-  }
-
-  void
-  PidControllerWithThresholds::UpdateFeedbackSignal (void)
-  {
-    m_feedback.avgServedPacketes = m_staQ->GetAvgServedPackets();
-    m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
-//sva for debug    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
   }
 
   double
@@ -166,53 +127,6 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
     return m_output;
   }
 
-  PidController::CtrlSigType
-  PidControllerWithThresholds::GetControlSignal (void)
-  {
-    return m_ctrl;
-  }
-
-  double
-  PidControllerWithThresholds::GetOutputSignal (void)
-  {
-    return m_output;
-  }
-
-  double
-  PidControllerWithThresholds::GetErrorSignal(void)
-  {
-    return m_state.curErr;
-  }
-
-
-  double
-  PidControllerWithThresholds::GetDerivative(void)
-  {
-    return m_state.curErr-m_state.prevErr;
-  }
-
-
-  double
-  PidControllerWithThresholds::GetIntegral(void)
-  {
-    return m_state.integral;
-  }
-
-  double
-  PidControllerWithThresholds::GetReference(void)
-  {
-    return ComputeErrorSignal() + m_feedback.avgServedPacketes;
-  }
-
-  double PidControllerWithThresholds::ComputeErrorSignal(void)
-  {
-    UpdateFeedbackSignal();
-    double tmpPrEmpty = 0.999;
-    if (m_input.prEmpty != 1) //prevent division by zero
-      tmpPrEmpty = m_input.prEmpty;
-    double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
-    return err;
-  }
 
   bool
   PidControllerWithThresholds::IsThresholdViolated (double err)

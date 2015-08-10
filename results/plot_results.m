@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_ta_pidthr.1';
+baseLogName = 'logfiles/log_mimo_channel_ta_pid.atan.1';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
@@ -204,14 +204,14 @@ for i=1:nSta
     derivative = data(:,6);
     integral = data(:,7);
     ref = data(:,8);
-    thrHi = data(:,11);
-    thrLo = data(:,12);
+    %thrHi = data(:,11);
+    %thrLo = data(:,12);
     clear data;
     subplot(3,3,4);
     plot(times,err,pattern{i})
     hold on;
-    plot(times,thrHi,pattern3{i});
-    plot(times,thrLo,pattern3{i});
+    %plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+    %plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
     xlabel('Time (seconds)');
     ylabel('Error (/H/L) Signals');
     grid on;
