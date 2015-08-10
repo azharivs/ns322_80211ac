@@ -30,6 +30,7 @@
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/mac48-address.h"
 #include "pid-controller.h"
+#include "pid-controller-with-thresholds.h"
 
 namespace ns3 {
 
@@ -45,7 +46,8 @@ class MpduUniversalAggregator;
 typedef enum
 {
   NO_CONTROL,
-  PID
+  PID,
+  PID_WITH_THRESHOLDS
 } ControllerType;
 
 /*
@@ -105,13 +107,24 @@ public:
 
 private:
 
+  void DoInitialize (void);
   /*
    * should be redefined by each subclass to reflect its own specific initialization steps
    */
-  void DoInitialize (void);
-  void NoControlUpdate (void);
-  void PidControlUpdate (void);
 
+  void NoControlUpdate (void);
+  void DoInitializeNoControl (void);
+
+  void PidControlUpdate (void);
+  void DoInitializePidControl (void);
+
+  void PidControlWithThresholdsUpdate (void);
+  void DoInitializePidControlWithThresholds (void);
+
+  /*sva-design should be added for every new type of controller ?
+  void ?Update (void);
+  void DoInitialize? (void);
+  sva-design*/
 
   //service parameters
   double m_targetDvp; //!< Target delay violation probability

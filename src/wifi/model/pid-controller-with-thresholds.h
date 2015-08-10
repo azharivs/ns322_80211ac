@@ -22,33 +22,32 @@
 //TODO: Later, c++ templates can be used to make it support generic
 //TODO: signals such as Time or even a complex struct
 
-#ifndef PID_CONTROLLER_H
-#define PID_CONTROLLER_H
+#ifndef PID_CONTROLLER_WITH_THRESHOLDS_H
+#define PID_CONTROLLER_WITH_THRESHOLDS_H
 
 #include <math.h>
 #include <algorithm>
 #include "per-sta-q-info.h"
+#include "pid-controller.h"
 
 namespace ns3 {
 
 /**
  * \ingroup wifi
- * PID Controller
+ * PID Controller With Thresholds
  *
  */
 
-
-class PidController : public Object
+class PidControllerWithThresholds : public PidController
 {
 public:
   static TypeId GetTypeId (void);
-  PidController (void);
-  ~PidController (void);
+  PidControllerWithThresholds (void);
+  ~PidControllerWithThresholds (void);
 
   /*
-   * Required type and struct definitions
+   * Required struct and type definitions
    */
-
   struct PidStateType
   {
       double prevErr; //!< previous error signal
@@ -95,7 +94,6 @@ public:
   {
       double sig; //!<delta that should be applied to current time allowance
   };
-
 
   /*
    * Initializes controller parameters
@@ -181,4 +179,4 @@ protected:
 
 }  // namespace ns3
 
-#endif /* PID_CONTROLLER_H */
+#endif /* PID_CONTROLLER_WITH_THRESHOLDS_H */

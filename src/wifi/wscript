@@ -83,6 +83,7 @@ def build(bld):
         'model/ideal-wifi-manager-for-markov-channel-model-11n.cc',
         'model/aggregation-controllers.cc',
         'model/pid-controller.cc',
+        'model/pid-controller-with-thresholds.cc',
         ]
 
     obj_test = bld.create_ns3_module_test_library('wifi')
@@ -175,6 +176,7 @@ def build(bld):
         'model/ideal-wifi-manager-for-markov-channel-model-11n.h',
         'model/aggregation-controllers.h',
         'model/pid-controller.h',
+        'model/pid-controller-with-thresholds.h',
         ]
 
     if bld.env['ENABLE_GSL']:
