@@ -68,7 +68,7 @@ PidControllerWithThresholds::FeedbackSigType::FeedbackSigType(double avgServedPa
     static TypeId tid = TypeId ("ns3::PidControllerWithThresholds")
         .SetParent<PidController> ()
         .AddConstructor<PidControllerWithThresholds> ()
-        .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
+/*        .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
                        DoubleValue (0.1),
                        MakeDoubleAccessor (&PidControllerWithThresholds::m_weightIntegral),
                        MakeDoubleChecker<double> ())
@@ -84,6 +84,7 @@ PidControllerWithThresholds::FeedbackSigType::FeedbackSigType(double avgServedPa
                       DoubleValue (1.0),
                       MakeDoubleAccessor (&PidControllerWithThresholds::m_kd),
                       MakeDoubleChecker<double> ())
+*/
         ;
     return tid;
   }
@@ -144,7 +145,8 @@ PidControllerWithThresholds::FeedbackSigType::FeedbackSigType(double avgServedPa
   {
     m_feedback.avgServedPacketes = m_staQ->GetAvgServedPackets();
     m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
-//sva for debug    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
+//sva for debug
+    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
   }
 
   double
@@ -154,7 +156,8 @@ PidControllerWithThresholds::FeedbackSigType::FeedbackSigType(double avgServedPa
     double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
     double output = std::max(0.0,m_state.curOut + ctrl);
-//sva for debug    std::cout << "err= " << err << " computed output = " << output << "\n";
+//sva for debug
+    std::cout << "err= " << err << " computed output = " << output << "\n";
     return output;
   }
 
@@ -166,7 +169,8 @@ PidControllerWithThresholds::FeedbackSigType::FeedbackSigType(double avgServedPa
     m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
     m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
     m_output = std::max(0.0,(m_state.curOut + m_ctrl.sig)) / adjustment;
-//sva for debug    std::cout << "curErr= " << m_state.curErr << " outputBeforeMax= "<< m_state.curOut + m_ctrl.sig << " actual output = " << m_output << " adjusted by " << adjustment << "\n";
+//sva for debug
+    std::cout << "curErr= " << m_state.curErr << " outputBeforeMax= "<< m_state.curOut + m_ctrl.sig << " actual output = " << m_output << " adjusted by " << adjustment << "\n";
     m_state.prevOut = m_state.curOut;
     m_state.curOut = m_output;
     return m_output;
