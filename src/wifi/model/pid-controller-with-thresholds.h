@@ -57,7 +57,8 @@ public:
       double integral; //!< Current value of integral term
       double errMean; //!< Mean value of error signal used to calculate thresholds
       double errStdDev; //!< Standard deviation of error signal used to calculate thresholds
-      PidStateType(double prevErr=0, double curErr=0, double prevOut=0, double curOut=0, double integral=0, double errMean=0, double errStdDev=0);
+      double errCorr; //!< Error signal correlation
+      PidStateType(double prevErr=0, double curErr=0, double prevOut=0, double curOut=0, double integral=0, double errMean=0, double errStdDev=0, double errCorr=0);
   };
 
   struct PidParamType
@@ -102,6 +103,7 @@ public:
 
   double GetHighThreshold(void);
   double GetLowThreshold(void);
+  double GetErrorCorrelation (void);
 
 protected:
 

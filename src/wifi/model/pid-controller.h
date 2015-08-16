@@ -160,6 +160,7 @@ protected:
 
   virtual double ComputeErrorSignal(void);
   virtual double ErrorConditioning(double err);
+  virtual double CtrlConditioning(double ctrl);
   virtual void UpdateFeedbackSignal(void);
 
   //void DoGetInputSignal(void);

@@ -149,10 +149,20 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
 
   double PidController::ErrorConditioning(double err)
   {
+    return err; //sva: for now we have disabled error conditioning
     if (err >= 0)
       return atan(log(1+abs(err)));
     else
       return -atan(log(1+abs(err)));
+  }
+
+  double PidController::CtrlConditioning(double ctrl)
+  {
+    return ctrl;//sva: for now we disable ctrl conditioning
+    if (ctrl >= 0)
+      return (1e-2)*(log(1+abs(ctrl)));
+    else
+      return -(1e-2)*(log(1+abs(ctrl)));
   }
 
   double
@@ -161,6 +171,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double err = ComputeErrorSignal();
     double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
+    ctrl = CtrlConditioning(ctrl);
     double output = std::max(0.0,m_state.curOut + ctrl);
 //sva for debug    std::cout << "err= " << err << " computed output = " << output << "\n";
     return output;
@@ -173,6 +184,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     m_state.curErr = ComputeErrorSignal();
     m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
     m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
+    m_ctrl.sig = CtrlConditioning(m_ctrl.sig);
     m_output = std::max(0.0,(m_state.curOut + m_ctrl.sig)) / adjustment;
 //sva for debug    std::cout << "curErr= " << m_state.curErr << " outputBeforeMax= "<< m_state.curOut + m_ctrl.sig << " actual output = " << m_output << " adjusted by " << adjustment << "\n";
     m_state.prevOut = m_state.curOut;

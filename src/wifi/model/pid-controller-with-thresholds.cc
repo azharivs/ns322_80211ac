@@ -37,8 +37,8 @@ NS_OBJECT_ENSURE_REGISTERED (PidControllerWithThresholds);
  *
  */
 
-PidControllerWithThresholds::PidStateType::PidStateType(double prevErr, double curErr, double prevOut, double curOut, double integral, double errMean, double errStdDev)
-  : prevErr(prevErr), curErr(curErr), prevOut(prevOut), curOut(curOut), integral(integral), errMean(errMean), errStdDev(errStdDev)
+PidControllerWithThresholds::PidStateType::PidStateType(double prevErr, double curErr, double prevOut, double curOut, double integral, double errMean, double errStdDev, double errCorr)
+  : prevErr(prevErr), curErr(curErr), prevOut(prevOut), curOut(curOut), integral(integral), errMean(errMean), errStdDev(errStdDev), errCorr(errCorr)
 {
 }
 
@@ -147,10 +147,11 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
 
     //update mean and standard deviation of error using moving average
     m_state.errMean = m_state.errMean * (1-m_pidParam.thrW) + m_state.curErr * m_pidParam.thrW;
-    m_state.errStdDev = m_state.errStdDev * (1-m_pidParam.thrW) + std::abs(m_state.curErr - m_state.errMean) * m_pidParam.thrW;
+    m_state.errStdDev = m_state.errStdDev * (1-m_pidParam.thrW) + abs(m_state.curErr - m_state.errMean) * m_pidParam.thrW;
 
     m_state.prevOut = m_state.curOut;
     m_state.curOut = m_output;
+    m_state.errCorr = m_state.errCorr * (1-m_pidParam.thrW) + m_state.prevErr*m_state.curErr* m_pidParam.thrW;
     return m_output;
   }
 
@@ -158,6 +159,8 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
   bool
   PidControllerWithThresholds::IsThresholdViolated (double err)
   {
+    if (abs(m_state.errCorr) < 200)
+      return false;
     double thrH = GetHighThreshold();
     double thrL = GetLowThreshold();
     if (thrH < 0 || thrL > 0)
@@ -166,14 +169,22 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
       return false;
   }
 
-  double PidControllerWithThresholds::GetHighThreshold (void)
+  double
+  PidControllerWithThresholds::GetHighThreshold (void)
   {
     return m_state.errMean + m_state.errStdDev * m_pidParam.thrH;
   }
 
-  double PidControllerWithThresholds::GetLowThreshold (void)
+  double
+  PidControllerWithThresholds::GetLowThreshold (void)
   {
     return m_state.errMean - m_state.errStdDev * m_pidParam.thrL;
+  }
+
+  double
+  PidControllerWithThresholds::GetErrorCorrelation (void)
+  {
+    return m_state.errCorr;// /m_state.errStdDev/m_state.errStdDev;
   }
 
 }  // end namespace ns3
