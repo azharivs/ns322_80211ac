@@ -27,6 +27,8 @@
 #include "amsdu-subframe-header.h"
 #include "supported-rates.h"
 #include "ns3/random-variable-stream.h"
+#include "wifi-mac-queue.h"
+#include "ns3/per-sta-q-info-container.h"
 
 namespace ns3 {
 
@@ -95,6 +97,17 @@ public:
    * Start beacon transmission immediately.
    */
   void StartBeaconing (void);
+
+  /**
+   * set PerStaQInfoContainer in EdcaTxopN::PerStaWifiMacQueue
+   * simply initializes a member pointer of PerStaWifiMacQueue to point to this container
+   *
+   * \param c: reference to the container which has been initialized
+   * \param ac: AC to which this is applied
+   * \return true on success
+   *
+   */
+  bool SetPerStaQInfo (PerStaQInfoContainer &c, uint8_t ac);
 
  /**
   * Assign a fixed random variable stream number to the random variables

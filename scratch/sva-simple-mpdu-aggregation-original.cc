@@ -212,7 +212,6 @@ int main (int argc, char *argv[])
     }
 
 
-  //original version
       
   Simulator::Stop (Seconds (simulationTime+1));
 

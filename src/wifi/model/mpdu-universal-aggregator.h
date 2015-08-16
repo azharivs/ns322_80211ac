@@ -15,26 +15,36 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
- * Author: Ghada Badawy <gbadawy@gmail.com>
+ * Author: Seyed Vahid Azhari <azharivs@iust.ac.ir>
  */
-#ifndef MPDU_STANDARD_AGGREGATOR_H
-#define MPDU_STANDARD_AGGREGATOR_H
+#ifndef MPDU_UNIVERSAL_AGGREGATOR_H
+#define MPDU_UNIVERSAL_AGGREGATOR_H
 
 #include "mpdu-aggregator.h"
+#include "ns3/enum.h"
+
 
 namespace ns3 {
 
 /**
  * \ingroup wifi
- * Standard MPDU aggregator
+ * Universal MPDU aggregator
  *
  */
-class MpduStandardAggregator : public MpduAggregator
+
+typedef enum
+{
+  STANDARD,
+  DEADLINE
+} AggregationType;
+
+
+class MpduUniversalAggregator : public MpduAggregator
 {
 public:
   static TypeId GetTypeId (void);
-  MpduStandardAggregator ();
-  ~MpduStandardAggregator ();
+  MpduUniversalAggregator ();
+  ~MpduUniversalAggregator ();
   /**
    * \param packet packet we have to insert into <i>aggregatedPacket</i>.
    * \param aggregatedPacket packet that will contain <i>packet</i>, if aggregation is possible.
@@ -57,7 +67,6 @@ public:
    * This method is used to determine if a packet could be aggregated to an A-MPDU
    */
   virtual bool CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
-
   /**
    * \return padding that must be added to the end of an aggregated packet
    *
@@ -67,7 +76,29 @@ public:
   virtual uint32_t CalculatePadding (Ptr<const Packet> packet);
 
 private:
-  uint32_t m_maxAmpduLength; //!< Maximum length in bytes of A-MPDUs
+  /**
+   * \param peekedPacket the packet we want to insert into <i>aggregatedPacket</i>.
+   * \param aggregatedPacket packet that will contain the packet of size <i>packetSize</i>, if aggregation is possible.
+   * \param blockAckSize size of the piggybacked block ack request
+   * \return true if the packet can be aggregated to <i>aggregatedPacket</i>, false otherwise.
+   *
+   * This method is used to determine if a packet could be aggregated to an A-MPDU such that length does not exceed m_maxAmpduLenth.
+   * it is called by CanBeAggregated() to deal with aggregation when m_aggregationAlgorithm is set to STANDARD
+   */
+  bool StandardCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+
+  /**
+   * This method is used to determine if a packet could be aggregated to an A-MPDU
+   * based on the condition that the packet deadline is going to be expired in
+   * the next m_serviceInterval seconds.
+   * It is called by CanBeAggregated() to deal with aggregation when
+   * m_aggregationAlgorithm is set to DEADLINE
+   */
+  bool DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize);
+
+  AggregationType m_aggregationAlgorithm; //!< Type of aggregation algorithm: STANDARD, DEADLINE, ...
+  uint32_t m_maxAmpduLength; //!< Maximum length in bytes of A-MPDUs (used for STANDARD)
+  double m_serviceInterval; //!< Interval in seconds with which packet queues are guaranteed to be served at least once. (used for DEADLINE)
 };
 
 }  // namespace ns3

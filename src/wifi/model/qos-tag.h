@@ -41,10 +41,10 @@ enum UserPriority
   UP_BK = 1, /**< background  */
   UP_BE = 0, /**< best effort (default) */
   UP_EE = 3, /**< excellent effort  */
-  UP_CL = 4, /**< controlled load */
-  UP_VI = 5, /**< video, < 100ms latency and jitter */
-  UP_VO = 6, /**< voice, < 10ms latency and jitter */
-  UP_NC = 7  /**< network control */
+  UP_CL = 4, /**< controlled load (equivalent of AC_VI) */
+  UP_VI = 5, /**< video, < 100ms latency and jitter (equivalent of AC_VI) */
+  UP_VO = 6, /**< voice, < 10ms latency and jitter (equivalent of AC_VO) */
+  UP_NC = 7  /**< network control (equivalent of AC_VO) */
 };
 
 

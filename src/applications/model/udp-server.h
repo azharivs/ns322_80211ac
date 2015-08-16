@@ -20,6 +20,8 @@
  *
  */
 
+//sva: TODO: Change this to incorporate delay violation rate calculation at the application layer
+//sva: TODO: should later create another application class and migrate changes there
 #ifndef UDP_SERVER_H
 #define UDP_SERVER_H
 
