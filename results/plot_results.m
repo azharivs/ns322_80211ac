@@ -34,6 +34,7 @@ ylabel('milli-seconds');
 grid;
 
 % Process StaQInfo and aggregation data
+rates = [];
 figure;
 for i=1:nSta
     %Sta Q Info
@@ -108,8 +109,12 @@ for i=1:nSta
     hold on;
     xlabel('Time (seconds)');
     ylabel('Data Rate (Mb/s)');
-    grid on;    
+    grid on;
+    
+    %extract bitrates and their probabilities 
+    rates = union(rates,unique(dataRate));
 end
+
 
 % Repeat StaQInfo in separate plots
 figure;
@@ -204,6 +209,7 @@ for i=1:nSta
     derivative = data(:,6);
     integral = data(:,7);
     ref = data(:,8);
+    errCorr = data(:,10)/100;
     thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
     thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
     clear data;
@@ -212,6 +218,7 @@ for i=1:nSta
     hold on;
     plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
     plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+    plot(times,errCorr,pattern1{i});
     xlabel('Time (seconds)');
     ylabel('Error (/H/L) Signals');
     grid on;
@@ -245,6 +252,12 @@ for i=1:nSta
     xlabel('Time (seconds)');
     ylabel('Reference Signal');
     grid on;
+
+    %extract bitrates and their probabilities 
+    for j=1:max(size(rates))
+        prRates(j,i) = sum(dataRate == rates(j))/max(size(dataRate));
+    end
 end
 
+save('params.mat','prRates','rates');
 

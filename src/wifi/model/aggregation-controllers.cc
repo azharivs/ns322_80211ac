@@ -89,7 +89,7 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_maxDelay),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("TimeAllowance", "Fixed Time Allowance (in sec) when NO_CONTROL controller is selected",
-                   TimeValue (MilliSeconds (7.0) ), //sva: the default value should be later changed to beacon interval
+                   TimeValue (MilliSeconds (12.0) ), //sva: the default value should be later changed to beacon interval
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
     .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controllers",
@@ -97,27 +97,27 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_weightIntegral),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KP", "Proportional coefficient used with the PID controllers",
-                   DoubleValue (0.002),
+                   DoubleValue (0.0001),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kp),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KI", "Integral coefficient used with the PID controllers",
-                   DoubleValue (0.001),
+                   DoubleValue (0.000),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_ki),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("KD", "Derivative coefficient used with the PID controllers",
-                   DoubleValue (0.001),
+                   DoubleValue (0.0005),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_kd),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrWeight", "Recent sample moving average weight for approximating standard deviation of error signal of the threshold based PID controller",
-                   DoubleValue (0.05),
+                   DoubleValue (0.5),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrW),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrHighCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
-                   DoubleValue (1.0),
+                   DoubleValue (0.2),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrH),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrLowCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
-                   DoubleValue (1.0),
+                   DoubleValue (0),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrL),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
@@ -292,6 +292,8 @@ TimeAllowanceAggregationController::PidControlUpdate (void)
       tmpTimeAllowance = it->second->UpdateController(adjustment);
       sta = m_perStaQInfo->GetByMac(it->first);
       sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
+      //sva: sta->SetTimeAllowance(m_timeAllowance);
+
 
 #ifdef SVA_DEBUG
 std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidController) " << sta->GetMac()
@@ -346,7 +348,9 @@ TimeAllowanceAggregationController::PidControlWithThresholdsUpdate (void)
       controller = it->second->GetObject<PidControllerWithThresholds>();
       tmpTimeAllowance = controller->UpdateController(adjustment);
       sta = m_perStaQInfo->GetByMac(it->first);
+      //sva: actual line of code
       sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
+      //sva: for fixed time allowance      sta->SetTimeAllowance(m_timeAllowance);
 
 #ifdef SVA_DEBUG
 std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidControllerWithThresholds) " << sta->GetMac()
@@ -359,7 +363,7 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     << " integral= " << controller->GetIntegral()
     << " reference= " << controller->GetReference()
     << " totalAllowance= " << totalTimeAllowance
-    << " adjust= " << adjustment
+    << " errCorr= " << controller->GetErrorCorrelation()
     << " thrHi= " << controller->GetHighThreshold()
     << " thrLo= " << controller->GetLowThreshold()
     << "\n";
