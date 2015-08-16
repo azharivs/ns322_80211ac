@@ -27,6 +27,7 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
+#include "ns3/tag.h"
 
 namespace ns3 {
 
@@ -52,6 +53,12 @@ public:
   UdpClient ();
 
   virtual ~UdpClient ();
+
+  /**
+   * \brief set packet deadlines
+   * \param deadline: deadline in seconds
+   */
+  void SetDeadline (double deadline);
 
   /**
    * \brief set the remote address and port
@@ -88,6 +95,7 @@ private:
   uint32_t m_count; //!< Maximum number of packets the application will send
   Time m_interval; //!< Packet inter-send time
   uint32_t m_size; //!< Size of the sent packet (including the SeqTsHeader)
+  double m_deadline; //!< sva: Packet deadline in seconds
 
   uint32_t m_sent; //!< Counter for sent packets
   Ptr<Socket> m_socket; //!< Socket
@@ -96,6 +104,29 @@ private:
   EventId m_sendEvent; //!< Event to send the next packet
 
 };
+
+//sva:
+class TimestampTag : public Tag {
+public:
+  static TypeId GetTypeId (void);
+  virtual TypeId GetInstanceTypeId (void) const;
+
+  virtual uint32_t GetSerializedSize (void) const;
+  virtual void Serialize (TagBuffer i) const;
+  virtual void Deserialize (TagBuffer i);
+
+  // these are our accessors to our tag structure
+  void SetTimestamp (Time time);
+  Time GetTimestamp (void) const;
+
+  void Print (std::ostream &os) const;
+
+private:
+  Time m_timestamp;
+
+  // end class TimestampTag
+};
+
 
 } // namespace ns3
 

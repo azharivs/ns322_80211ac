@@ -37,6 +37,7 @@
 #include "mac-low.h"
 #include "amsdu-subframe-header.h"
 #include "msdu-aggregator.h"
+#include "edca-txop-n.h"
 
 namespace ns3 {
 
@@ -678,6 +679,16 @@ ApWifiMac::DoInitialize (void)
         }
     }
   RegularWifiMac::DoInitialize ();
+}
+
+bool
+ApWifiMac::SetPerStaQInfo(PerStaQInfoContainer &c, uint8_t ac)
+{
+  NS_ASSERT_MSG(!c.IsEmpty(),"PerStaQInfoContainer empty");
+  Ptr<EdcaTxopN> edca = m_edca.find ((ns3::AcIndex) ac)->second;
+  Ptr<PerStaWifiMacQueue> perStaQueue = edca->GetEdcaQueue()->GetObject<PerStaWifiMacQueue>();
+  perStaQueue->EnablePerStaQInfo(c); //simply initializes a member pointer to point to this container
+  return true;
 }
 
 } // namespace ns3

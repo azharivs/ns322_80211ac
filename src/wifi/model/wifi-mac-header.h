@@ -638,8 +638,8 @@ private:
   uint8_t m_ctrlWep;
   uint8_t m_ctrlOrder;
   uint16_t m_duration;
-  Mac48Address m_addr1;
-  Mac48Address m_addr2;
+  Mac48Address m_addr1;//!< Most probably recipient
+  Mac48Address m_addr2;//!< Most probably sender
   Mac48Address m_addr3;
   uint8_t m_seqFrag;
   uint16_t m_seqSeq;

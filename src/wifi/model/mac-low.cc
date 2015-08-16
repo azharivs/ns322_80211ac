@@ -27,6 +27,8 @@
 #include "ns3/log.h"
 #include "ns3/node.h"
 #include "ns3/double.h"
+#include "ns3/packet.h"
+#include "ns3/ampdu-tag.h"
 
 #include "mac-low.h"
 #include "wifi-phy.h"
@@ -654,6 +656,13 @@ MacLow::IsAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
   size = packet->GetSize () + hdr.GetSize () + fcs.GetSerializedSize ();
   Ptr<Packet> p = AggregateToAmpdu (packet, hdr);
   actualSize = p->GetSize();
+#ifdef SVA_DEBUG_DETAIL
+  AmpduTag ampduTag;
+  if (p->PeekPacketTag(ampduTag))
+    {
+      std::cout << Simulator::Now().GetSeconds() << " A-MPDU to " << hdr.GetAddr1() << " of " << actualSize << " bytes and " << (int) ampduTag.GetNoOfMpdus() << " packets \n";
+    }
+#endif
   if (actualSize > size)
     {
       m_currentPacket = p;
@@ -2600,8 +2609,11 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
     //An HT STA shall not transmit a PPDU that has a duration that is greater than aPPDUMaxTime (10 milliseconds)
     if(m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0) > MilliSeconds(10))
         return true;
-    
+    /* sva: old code
     if (!m_mpduAggregator->CanBeAggregated (peekedPacket->GetSize () + peekedHdr.GetSize () + WIFI_MAC_FCS_LENGTH, aggregatedPacket, size))
+        return true;
+        */
+    if (!m_mpduAggregator->CanBeAggregated (peekedPacket, aggregatedPacket, size))
         return true;
     
     return false;
@@ -2610,6 +2622,7 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
 Ptr<Packet>
 MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
 {
+  //sva: start with an empty aggregation queue (last aggregation should be out by now)
   NS_ASSERT (m_aggregateQueue->GetSize () == 0);
   bool isAmpdu = false;
   Ptr<Packet> newPacket;
@@ -2620,12 +2633,13 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
     {
       Time tstamp;
       uint8_t tid = GetTid (packet, hdr);
-      Ptr<WifiMacQueue> queue;
+      Ptr<PerStaWifiMacQueue> queue;
       AcIndex ac = QosUtilsMapTidToAc (tid);
       //since a blockack agreement always preceeds mpdu aggregation there should always exist blockAck listener
       std::map<AcIndex, MacLowBlockAckEventListener*>::const_iterator listenerIt= m_edcaListeners.find(ac);
       NS_ASSERT (listenerIt != m_edcaListeners.end ());
-      queue = listenerIt->second->GetQueue();
+      //sva TODO: bad design! probably better if I just replace WifiMacQueue with PerStaWifiMacQueue
+      queue = listenerIt->second->GetQueue()->GetObject<PerStaWifiMacQueue>();
       
       if (!hdr.GetAddr1 ().IsBroadcast () && m_mpduAggregator!= 0)
         {
@@ -2656,6 +2670,9 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   WifiMacTrailer fcs;
                   newPacket->AddTrailer (fcs);
 
+                  //sva: newPacket is a copy of the input HoL packet with proper fcs and trailer added
+                  //sva: currentAggregatedPacket is yet null and the following line is just to initialize the first aggregated packet
+                  //sva: this first packet is not aggregated if the header is of type BLOCK_ACK_REQ and will be later aggregated, but WHY?
                   aggregated=m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
 
                   if (aggregated)
@@ -2666,7 +2683,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);
                     }
                 } 
-              else if (hdr.IsBlockAckReq())
+              else if (hdr.IsBlockAckReq())//sva: if not a BLOCK_ACK_REQ packet the blockAckSize will remain zero (size of a piggy backed block ack request)
                 {
                   blockAckSize = packet->GetSize() + hdr.GetSize() + WIFI_MAC_FCS_LENGTH;
                   qosPolicy = 3; //if the last subrame is block ack req then set ack policy of all frames to blockack
@@ -2691,6 +2708,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   currentSequenceNumber = peekedHdr.GetSequenceNumber(); 
                 }
 
+              //sva: now start adding more packets to the A-MPDU until stop condition reached
                while (IsInWindow (currentSequenceNumber, startingSequenceNumber, 64) && !StopAggregation (peekedPacket, peekedHdr, currentAggregatedPacket, blockAckSize))
                 {
                   //for now always send AMPDU with normal ACK
@@ -2707,6 +2725,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   else
                       peekedHdr.SetQosAckPolicy (WifiMacHeader::BLOCK_ACK);
 
+                  //sva: create a copy of next packet and prepare for aggregation
                   newPacket = peekedPacket->Copy ();
                   Ptr<Packet> aggPacket = newPacket->Copy ();
                  
@@ -2714,7 +2733,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   WifiMacTrailer fcs;
                   newPacket->AddTrailer (fcs);
                   aggregated = m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
-                  if (aggregated)
+                  if (aggregated) //sva: if aggregation successfull then put that packet in the book keeping queue as well
                     {
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);
                       if (i == 1 && hdr.IsQosData ())
@@ -2728,11 +2747,11 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       listenerIt->second->CompleteMpduTx (peekedPacket, peekedHdr, tstamp);
                       if (retry)
                           listenerIt->second->RemoveFromBaQueue(tid, hdr.GetAddr1 (), peekedHdr.GetSequenceNumber ());
-                      else
-                          queue->Remove (peekedPacket);
+                      else //sva: if correctly aggregated and sent then remove from EDCA queue (the main one).
+                          queue->Remove (peekedPacket);//sva: This resolves to PreStaWifiMacQueue
                       newPacket = 0;
                     }
-                  else
+                  else //break while loop since it means end of aggregation
                       break;
                   if (retry == true)
                     {
@@ -2762,12 +2781,13 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                           currentSequenceNumber = listenerIt->second->PeekNextSequenceNumberfor (&peekedHdr);
                         }   
                     }
-                }
+                } //end of while
               if (isAmpdu)
                 {
+                  //sva: agregates the original HoL packet that was left behind before the while due to being BLOCK_ACK_REQ, but why?
                   if (hdr.IsBlockAckReq())
                     {
-                      newPacket = packet->Copy();
+                      newPacket = packet->Copy();//sva: again create a copy of the original HoL packet
                       peekedHdr = hdr;
                       Ptr<Packet> aggPacket = newPacket->Copy();
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);

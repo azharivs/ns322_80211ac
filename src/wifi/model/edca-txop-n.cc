@@ -234,7 +234,8 @@ EdcaTxopN::EdcaTxopN ()
   m_transmissionListener = new EdcaTxopN::TransmissionListener (this);
   m_blockAckListener = new EdcaTxopN::BlockAckEventListener (this);
   m_dcf = new EdcaTxopN::Dcf (this);
-  m_queue = CreateObject<WifiMacQueue> ();
+  //sva: PerStaWifiMacQueue instantiated here. The older WifiMacQueue is no longer used
+  m_queue = CreateObject<PerStaWifiMacQueue> ();
   m_rng = new RealRandomStream ();
   m_qosBlockedDestinations = new QosBlockedDestinations ();
   m_baManager = new BlockAckManager ();
@@ -441,11 +442,16 @@ EdcaTxopN::RemoveRetransmitPacket (uint8_t tid, Mac48Address recipient, uint16_t
    m_baManager->RemovePacket (tid, recipient, seqnumber);
 }
 
+/* sva: main function where access arbitration happens within an AC queue
+ * currently it is FCFS but we have to change it to our own arbitration
+ * EDF, etc...
+ *
+ */
 void
 EdcaTxopN::NotifyAccessGranted (void)
 {
   NS_LOG_FUNCTION (this);
-  if (m_currentPacket == 0)
+  if (m_currentPacket == 0)//sva: Currently handling no packet ?? Then pick one
     {
       if (m_queue->IsEmpty () && !m_baManager->HasPackets ())
         {
@@ -458,9 +464,16 @@ EdcaTxopN::NotifyAccessGranted (void)
           return;
         }
       /* check if packets need retransmission are stored in BlockAckManager */
+      //sva: m_currentPacket will point to first packet that needs retx
+      //initializes m_currentPacket and m_currentHdr if ReTx is required otherwise NULL
       m_currentPacket = m_baManager->GetNextPacket (m_currentHdr);
-      if (m_currentPacket == 0)
+      if (m_currentPacket == 0)//No ReTx needed
         {
+    	  //sva: Always need to modify PeekFirstAvailable according to DequeueFirstAvailable
+          //sva: Just checks if queue is empty
+          //also initializes m_currentHdr to the header of the first packet (HoL)
+          //This should be changed for EDF scheduler.
+          //PeekFirstAvailable should return the one that was picked by the scheduler and not FCFS
           if (m_queue->PeekFirstAvailable (&m_currentHdr, m_currentPacketTimestamp, m_qosBlockedDestinations) == 0)
             {
               NS_LOG_DEBUG ("no available packets in the queue");
@@ -473,6 +486,8 @@ EdcaTxopN::NotifyAccessGranted (void)
             {
               return;
             }
+          //sva: There is something to send. This is the first function in the chain of packet
+          //sva: transmission. Should touch this if scheduling is to be done
           m_currentPacket = m_queue->DequeueFirstAvailable (&m_currentHdr, m_currentPacketTimestamp, m_qosBlockedDestinations);
           NS_ASSERT (m_currentPacket != 0);
 
@@ -490,14 +505,21 @@ EdcaTxopN::NotifyAccessGranted (void)
               VerifyBlockAck ();
             }
         }
-    }
+    } // (if (m_currentPacket == 0)) ... otherwise if currently have a packet for handling then ...
+  //When execution reaches this point, we should have a packet that is picked (dequeued) according to
+  //our scheduler policy
   MacLowTransmissionParameters params;
   params.DisableOverrideDurationId ();
-  if (m_currentHdr.GetAddr1 ().IsGroup ())
+  //if broadcast packet
+  if (m_currentHdr.GetAddr1 ().IsGroup ())//sva: This part is for broadcast packets
     {
       params.DisableRts ();
       params.DisableAck ();
       params.DisableNextData ();
+      //sva: This function is called when current packet is not NULL
+      //sva: This packet has already been selected by DequeueFirstAvailable
+      //sva: unless current packet was NULL in the first place when this function was called
+      // I don't think we need to touch this
       m_low->StartTransmission (m_currentPacket,
                                 &m_currentHdr,
                                 params,
@@ -505,20 +527,23 @@ EdcaTxopN::NotifyAccessGranted (void)
 
       NS_LOG_DEBUG ("tx broadcast");
     }
+  //if block ack request packet
   else if (m_currentHdr.GetType () == WIFI_MAC_CTL_BACKREQ)
     {
       SendBlockAckRequest (m_currentBar);
     }
+  //sva: Or just ordinary data packets. Our case of interest
   else
-    {
+    {//sva: Other data packets. Our case of interest
         if (m_currentHdr.IsQosData () && m_currentHdr.IsQosBlockAck ())
         {
-          params.DisableAck ();
+          params.DisableAck (); //sva: don't send an ACK for an ACK
         }
       else
         {
-          params.EnableAck ();
+          params.EnableAck (); //sva: otherwise packet needs to be ACKed
         }
+        //if fragmentation: I think this should never be executed when we have aggregation
       if (NeedFragmentation () && ((m_currentHdr.IsQosData ()
                                     && !m_currentHdr.IsQosAmsdu ())
                                    || 
@@ -544,17 +569,29 @@ EdcaTxopN::NotifyAccessGranted (void)
           m_low->StartTransmission (fragment, &hdr, params,
                                     m_transmissionListener);
         }
+      //sva: No Fragmentation: Hopefully our case of interest
       else
-        {
+        {//sva: No Fragmentation: Hopefully our case of interest
+    	  //sva: I think this is where the action is taking place
           WifiMacHeader peekedHdr;
           Time tstamp;
+          //see if AMSDU aggregation is required. Not our business.
+          //we should not touch PeekByTid or DequeueByTid because they are sticking together
+          //packets for the same station. We only have to control the first packet
+          //that is selected which we (hopefully) have already done in
+          //PeakFirstAvailable() and DequeueFirstAvailable()
           if (m_currentHdr.IsQosData ()
               && m_queue->PeekByTidAndAddress (&peekedHdr, m_currentHdr.GetQosTid (),
                                                WifiMacHeader::ADDR1, m_currentHdr.GetAddr1 (), &tstamp)
               && !m_currentHdr.GetAddr1 ().IsBroadcast ()
               && m_aggregator != 0 && !m_currentHdr.IsRetry ())
             {
+              //sva-debug: std::cout << "A-MSDU AGGREGATION \n";
               /* here is performed aggregation */
+        	  //sva: This is MSDU aggregation
+        	  //sva: Probably we don't need to touch anything here because we have
+        	  //sva: already selected the desired m_currentHdr above when
+        	  //sva: m_currentPacket was NULL using peekFirst...
               Ptr<Packet> currentAggregatedPacket = Create<Packet> ();
               m_aggregator->Aggregate (m_currentPacket, currentAggregatedPacket,
                                        MapSrcAddressForAggregation (peekedHdr),
@@ -589,7 +626,7 @@ EdcaTxopN::NotifyAccessGranted (void)
                   currentAggregatedPacket = 0;
                   NS_LOG_DEBUG ("tx unicast A-MSDU");
                 }
-            }
+            }//end of MSDU aggregation
           if (NeedRts ())
             {
               params.EnableRts ();
@@ -600,9 +637,17 @@ EdcaTxopN::NotifyAccessGranted (void)
               params.DisableRts ();
               NS_LOG_DEBUG ("tx unicast");
             }
+
+          //sva: These two are always run for data packets
+          //So eventually we get to this point where the packet is ready to leave
+          //unless AMPDU aggregation is required, in which case StartTransmission()
+          //will eventually lead to the call of Aggregate() through MacLow::IsAmpdu() function call
           params.DisableNextData ();
           m_low->StartTransmission (m_currentPacket, &m_currentHdr,
                                     params, m_transmissionListener);
+          //sva: If no need for MPDU aggregation then announce the end of TX
+          //sva: what if we have MPDU agg? Then who will call CompleteTx()?
+
           if(!GetAmpduExist())
             CompleteTx ();
         }
@@ -1237,6 +1282,8 @@ EdcaTxopN::SetupBlockAckIfNeeded ()
 void
 EdcaTxopN::SendBlockAckRequest (const struct Bar &bar)
 {
+  //sf
+  //std::cout<<"EdcaTxopN::SendBlockAckRequestK"<<std::endl<<std::endl<<std::endl;
   NS_LOG_FUNCTION (this << &bar);
   WifiMacHeader hdr;
   hdr.SetType (WIFI_MAC_CTL_BACKREQ);
@@ -1259,11 +1306,15 @@ EdcaTxopN::SendBlockAckRequest (const struct Bar &bar)
     {
       if (m_blockAckType == BASIC_BLOCK_ACK)
         {
-          params.EnableBasicBlockAck ();
+          //sf
+    	  //std::cout<<"m_blockAckType = BASIC_BLOCK_ACK"<<std::endl<<std::endl<<std::endl;
+    	  params.EnableBasicBlockAck ();
         }
       else if (m_blockAckType == COMPRESSED_BLOCK_ACK)
         {
-          params.EnableCompressedBlockAck ();
+    	  //sf
+    	  //std::cout<<"m_blockAckType = COMPRESSED_BLOCK_ACK"<<std::endl<<std::endl<<std::endl;
+    	  params.EnableCompressedBlockAck ();
         }
       else if (m_blockAckType == MULTI_TID_BLOCK_ACK)
         {
@@ -1272,7 +1323,9 @@ EdcaTxopN::SendBlockAckRequest (const struct Bar &bar)
     }
   else
     {
-      //Delayed block ack
+	  //sf
+	  //std::cout<<"m_blockAckType = Delayed block ack"<<std::endl<<std::endl<<std::endl;
+	  //Delayed block ack
       params.EnableAck ();
     }
   m_low->StartTransmission (m_currentPacket, &m_currentHdr, params, m_transmissionListener);
@@ -1334,11 +1387,15 @@ EdcaTxopN::SendAddBaRequest (Mac48Address dest, uint8_t tid, uint16_t startSeq,
   reqHdr.SetAmsduSupport (true);
   if (immediateBAck)
     {
-      reqHdr.SetImmediateBlockAck ();
+      //sf
+	  //std::cout<<"it is ImmediateBlockAck" <<std::endl<<std::endl<<std::endl<<std::endl;
+	  reqHdr.SetImmediateBlockAck ();
     }
   else
     {
-      reqHdr.SetDelayedBlockAck ();
+      //sf
+	  //std::cout<<"it is DelayedBlockAck" <<std::endl<<std::endl<<std::endl<<std::endl;
+	  reqHdr.SetDelayedBlockAck ();
     }
   reqHdr.SetTid (tid);
   /* For now we don't use buffer size field in the ADDBA request frame. The recipient
