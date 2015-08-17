@@ -26,6 +26,9 @@
 #include <list>
 #include <deque>
 #include <utility>
+#include <map>
+#include <string>
+#include <vector>
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
@@ -48,19 +51,18 @@ public:
   PerBitrateTimeAllowance ();
   ~PerBitrateTimeAllowance ();
 
+  /*
+   * Initializes the class run once after perStaQInfo is initialized
+   * returns true upon success
+   */
+  bool Init (Ptr<PerStaQInfo> staQInfo);
+
   /**
    * Get MAC address associated to this time allowance
    *
    * \return reference to MAC address
    */
   Mac48Address& GetMac (void);
-
-  /**
-   * Get Traffic Indication Map associated to this time allowance
-   *
-   * \return TID
-   */
-  uint8_t GetTid (void);
 
   /*
    * returns the nominal amount of time allowance for this service interval for a particular bitrate
@@ -101,7 +103,7 @@ public:
    * re-initializes the amount of remaining time allowance to m_timeAllowance
    * This is called at the beginning of a new service interval
    */
-  void ResetTimeAllowance (void);
+  void ResetTimeAllowance (uint32_t bitrate);
 
   /*
    * Sets m_timeAllowance to the provided parameter and
@@ -115,6 +117,9 @@ private:
   std::map<uint32_t,Time> m_timeAllowance; //!< Nominal amount of time allowance for the current service interval per bitrate. Used by PER_BITRATE_TIME_ALLOWANCE aggregation algorithm.
   std::map<uint32_t,Time> m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval per bitrate. Used by PER_BITRATE_TIME_ALLOWANCE aggregation algorithm.
   std::map<uint32_t,bool> m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access for this bitrate
+  Ptr<PerStaQInfo> m_staQInfo; //!< Pointer to PerStaQInfo instance corresponding to this object
+  std::string m_filename; //!< String containing filename for fixed time allowance values per bitrate for all stations MAC_ADDRESS t1 t2 t3 ... \n
+  std::vector<uint32_t> m_bitrates; //!< List of supported bitrates
 };
 
 } // namespace ns3
