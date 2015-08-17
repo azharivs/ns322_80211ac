@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
  * Author: Seyed Vahid Azhari <azharivs@iust.ac.ir>
+ * Iran University of Science & Technology
  */
 #ifndef MPDU_UNIVERSAL_AGGREGATOR_H
 #define MPDU_UNIVERSAL_AGGREGATOR_H
@@ -46,10 +47,11 @@ typedef enum
 {
   STANDARD,
   DEADLINE,
+  TIME_ALLOWANCE, //to be used with PerStaWifiMacQueue::ServicePolicyType MAX_REMAINING_TIME_ALLOWANCE
   /*sva-design: add for new aggregation algorithm AGG_ALG
   AGG_ALG,
   sva-design*/
-  TIME_ALLOWANCE //to be used with PerStaWifiMacQueue::ServicePolicyType MAX_REMAINING_TIME_ALLOWANCE
+  PER_BITRATE_TIMEALLOWANCE //TODO to be used with PerStaWifiMacQueue::ServicePolicyType ???
 } AggregationType;
 
 /*

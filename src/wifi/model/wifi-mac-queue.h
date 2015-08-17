@@ -18,6 +18,9 @@
  *
  * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  * Author: Mirko Banchi <mk.banchi@gmail.com>
+ * Added support for PerStaWifiMacQueue by,
+ * Author: SEYED VAHID AZHARI <azharivs@iust.ac.ir>
+ * Iran University of Science & Technology
  */
 #ifndef WIFI_MAC_QUEUE_H
 #define WIFI_MAC_QUEUE_H
