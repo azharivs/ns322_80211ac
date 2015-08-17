@@ -18,6 +18,9 @@
  *
  * Author: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  * Author: Mirko Banchi <mk.banchi@gmail.com>
+ * Added support for PerStaWifiMacQueue by,
+ * Author: SEYED VAHID AZHARI <azharivs@iust.ac.ir>
+ * Iran University of Science & Technology
  */
 
 #include "ns3/simulator.h"
@@ -912,7 +915,7 @@ PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBl
         {
           if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
             {
-              rta = (*sta)->GetRemainingTimeAllowance();
+              rta = (*sta)->GetRemainingTimeAllowance();//TODO: suport for time allowance should be moved from PerStaQInfo to the specific type of aggregator or just put in its own separate class
               if (rta > maxRta)
                 { //update selected STA for service
                   qiServed = qi;
