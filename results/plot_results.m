@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_perRateTa.3';
+baseLogName = 'logfiles/log_mimo_channel_perRateTa.8';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
@@ -259,6 +259,7 @@ for i=1:nSta
     for j=1:max(size(rates))
         totalTxTime = sum(aggTxTime);
         prRates(j,i) = sum(aggTxTime(dataRate == rates(j)))/totalTxTime;
+        %prRates(j,i) = sum((dataRate == rates(j)))/max(size(dataRate));
     end
 end
 
@@ -276,9 +277,11 @@ for i=1:nSta
         dataRate = data(:,4);
         aggTxTime = data(:,5);
         clear data;
+        busy(i)=0;
         for j=1:max(size(rates))
             usedAllowance(j,:)=cumsum(aggTxTime.*(dataRate == rates(j)))';
             ratesActualProb(j,i) = usedAllowance(j,end)/sum(aggTxTime);
+            busy(i) = busy(i)+usedAllowance(j,end);
             %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
             %semilogy(times(indexes),rta,pattern{j});
             subplot(2,2,i);
@@ -294,3 +297,4 @@ for i=1:nSta
 end
 
 ratesActualProb
+busy

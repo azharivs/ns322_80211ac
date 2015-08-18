@@ -16,7 +16,7 @@
 clear all;
 
 global avgIdle;
-avgIdle = 0.5;
+avgIdle = 1;
 global rates;
 %rates = [10 20 30 40]'*1e6;
 global prRates;
@@ -38,13 +38,13 @@ ratesMat = repmat(rates,1,nSta);
 global pkt;
 pkt = 1500*8; %MPDU size in bits
 global targetDvp;
-targetDvp = [0.1 0.1 0.1 0.1];
+targetDvp = [0.01 0.01 0.01 0.01];
 global dMax;
 dMax = [1 1 1 1]; %in seconds
 global SI;
 SI = 0.1; %length of service interval in seconds
 global lambda;
-lambda = [6.7 6.7 6.7 6.7]*1e6/pkt; % packet (MPDU) arrival rate (pps)
+lambda = [6 6 6 6]*1e6/pkt; % packet (MPDU) arrival rate (pps)
 global const;
 const = pkt*SI*log(targetDvp)./dMax;
 global avgS;
