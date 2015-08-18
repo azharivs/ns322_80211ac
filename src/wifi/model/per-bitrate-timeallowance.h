@@ -68,59 +68,67 @@ public:
   /*
    * returns the nominal amount of time allowance for this service interval for a particular bitrate
    */
-  Time GetTimeAllowance(uint32_t bitrate);
+  Time GetTimeAllowance(uint64_t bitrate);
 
   /*
    * returns the remaining time allowance up to now for a particular bitrate
    */
-  Time GetRemainingTimeAllowance(uint32_t bitrate);
+  Time GetRemainingTimeAllowance(uint64_t bitrate);
 
   /*
    *
    */
-  bool IsInsufficientTimeAllowanceEncountered (uint32_t bitrate);
+  bool IsInsufficientTimeAllowanceEncountered (uint64_t bitrate);
 
   /*
    *
    */
-  void SetInsufficientTimeAllowanceEncountered (uint32_t bitrate);
+  void SetInsufficientTimeAllowanceEncountered (uint64_t bitrate);
 
   /*
    * deduct input parameter from remaining time allowance to new value
    */
-  Time DeductTimeAllowance(Time allowance, uint32_t bitrate);
+  Time DeductTimeAllowance(Time allowance, uint64_t bitrate);
 
   /*
    * set remaining time allowance to new value
    */
-  void SetRemainingTimeAllowance(Time allowance, uint32_t bitrate);
+  void SetRemainingTimeAllowance(Time allowance, uint64_t bitrate);
 
   /*
    * set time allowance and do not touch remaining time allowance
    */
-  void SetTimeAllowance(Time allowance, uint32_t bitrate);
+  void SetTimeAllowance(Time allowance, uint64_t bitrate);
 
   /*
    * re-initializes the amount of remaining time allowance to m_timeAllowance
    * This is called at the beginning of a new service interval
    */
-  void ResetTimeAllowance (uint32_t bitrate);
+  void ResetTimeAllowance (uint64_t bitrate);
 
   /*
    * Sets m_timeAllowance to the provided parameter and
    * re-initializes the amount of remaining time allowance to m_timeAllowance
    * This is called at the beginning of a new service interval
    */
-  void ResetTimeAllowance(Time allowance, uint32_t bitrate);
+  void ResetTimeAllowance(Time allowance, uint64_t bitrate);
+
+  /*
+   * re-initializes the amount of remaining time allowance to m_timeAllowance
+   * for all bitrates
+   * This is called at the beginning of a new service interval
+   */
+  void ResetAllTimeAllowances (void);
+
 
 private:
 
-  std::map<uint32_t,Time> m_timeAllowance; //!< Nominal amount of time allowance for the current service interval per bitrate. Used by PER_BITRATE_TIME_ALLOWANCE aggregation algorithm.
-  std::map<uint32_t,Time> m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval per bitrate. Used by PER_BITRATE_TIME_ALLOWANCE aggregation algorithm.
-  std::map<uint32_t,bool> m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access for this bitrate
+  std::map<uint64_t,Time> m_timeAllowance; //!< Nominal amount of time allowance for the current service interval per bitrate. Used by PER_BITRATE_TIME_ALLOWANCE aggregation algorithm.
+  std::map<uint64_t,Time> m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval per bitrate. Used by PER_BITRATE_TIME_ALLOWANCE aggregation algorithm.
+  std::map<uint64_t,bool> m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access for this bitrate
   Ptr<PerStaQInfo> m_staQInfo; //!< Pointer to PerStaQInfo instance corresponding to this object
   std::string m_filename; //!< String containing filename for fixed time allowance values per bitrate for all stations MAC_ADDRESS t1 t2 t3 ... \n
-  std::vector<uint32_t> m_bitrates; //!< List of supported bitrates
+  std::vector<uint64_t> m_bitrates; //!< List of supported bitrates
 };
 
 

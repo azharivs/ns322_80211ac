@@ -48,7 +48,7 @@ namespace ns3 {
 /*        .AddAttribute ("TID", "Traffic Indication Map of Interest.",
                        UintegerValue (UP_VI),
                        MakeUintegerAccessor (&PerBitrateTimeAllowance::m_tid),
-                       MakeUintegerChecker<uint32_t> ())
+                       MakeUintegerChecker<uint64_t> ())
 */
         ;
     return tid;
@@ -144,19 +144,19 @@ namespace ns3 {
   }
 
   Time
-  PerBitrateTimeAllowance::GetTimeAllowance(uint32_t bitrate)
+  PerBitrateTimeAllowance::GetTimeAllowance(uint64_t bitrate)
   {
     return m_timeAllowance[bitrate];
   }
 
   Time
-  PerBitrateTimeAllowance::GetRemainingTimeAllowance(uint32_t bitrate)
+  PerBitrateTimeAllowance::GetRemainingTimeAllowance(uint64_t bitrate)
   {
     return m_remainingTimeAllowance[bitrate];
   }
 
   bool
-  PerBitrateTimeAllowance::IsInsufficientTimeAllowanceEncountered (uint32_t bitrate)
+  PerBitrateTimeAllowance::IsInsufficientTimeAllowanceEncountered (uint64_t bitrate)
   {
     if (m_timeAllowance[bitrate] == 0)
       m_insufficientTimeAllowance[bitrate] = true;
@@ -165,13 +165,13 @@ namespace ns3 {
 
 
   void
-  PerBitrateTimeAllowance::SetInsufficientTimeAllowanceEncountered (uint32_t bitrate)
+  PerBitrateTimeAllowance::SetInsufficientTimeAllowanceEncountered (uint64_t bitrate)
   {
     m_insufficientTimeAllowance[bitrate] = true;
   }
 
   Time
-  PerBitrateTimeAllowance::DeductTimeAllowance(Time allowance, uint32_t bitrate)
+  PerBitrateTimeAllowance::DeductTimeAllowance(Time allowance, uint64_t bitrate)
   {
     m_remainingTimeAllowance[bitrate] -= allowance;
     if (m_remainingTimeAllowance[bitrate] <= 0)
@@ -182,13 +182,13 @@ namespace ns3 {
   }
 
   void
-  PerBitrateTimeAllowance::SetRemainingTimeAllowance(Time allowance, uint32_t bitrate)
+  PerBitrateTimeAllowance::SetRemainingTimeAllowance(Time allowance, uint64_t bitrate)
   {
     m_remainingTimeAllowance[bitrate] = allowance;
   }
 
   void
-  PerBitrateTimeAllowance::SetTimeAllowance(Time allowance, uint32_t bitrate)
+  PerBitrateTimeAllowance::SetTimeAllowance(Time allowance, uint64_t bitrate)
   {
     m_timeAllowance[bitrate] = allowance;
     if (m_timeAllowance[bitrate] == 0)
@@ -198,42 +198,49 @@ namespace ns3 {
   }
 
   void
-  PerBitrateTimeAllowance::ResetTimeAllowance(Time allowance, uint32_t bitrate)
+  PerBitrateTimeAllowance::ResetTimeAllowance(Time allowance, uint64_t bitrate)
   {
-    m_timeAllowance[bitrate] = allowance;
-    //in this version we carry the unused part of the time allowance to the next service interval
-    if (m_remainingTimeAllowance[bitrate] > 0)
-      {
-        m_timeAllowance[bitrate] += m_remainingTimeAllowance[bitrate];
-      }
+    m_timeAllowance[bitrate] = allowance;//set value for per SI allowance
 #ifdef SVA_DEBUG_DETAIL
     std::cout << Simulator::Now().GetSeconds() << " " << this->GetMac() << " PerBitrateTimeAllowance::ResetTimeAllowance last remaining " <<
-        m_remainingTimeAllowance[bitrate].GetSeconds()*1000 << " msec, Reset to " << m_timeAllowance[bitrate].GetSeconds()*1000 <<
+        m_remainingTimeAllowance[bitrate].GetSeconds()*1000 << " msec, Updated to " <<
+        (m_timeAllowance[bitrate]+m_remainingTimeAllowance[bitrate]).GetSeconds()*1000 <<
         " msec bitrate=" << bitrate <<"\n";
 #endif
-    m_remainingTimeAllowance[bitrate] = m_timeAllowance[bitrate];
-    if (m_timeAllowance[bitrate] == 0)
+    //in this version we carry the unused part of the time allowance to the next service interval
+    m_remainingTimeAllowance[bitrate] += m_timeAllowance[bitrate]; //update allowance for next SI
+    if (m_remainingTimeAllowance[bitrate] == 0)
       m_insufficientTimeAllowance[bitrate] = true;
     else
       m_insufficientTimeAllowance[bitrate] = false;
   }
 
   void
-  PerBitrateTimeAllowance::ResetTimeAllowance(uint32_t bitrate)
+  PerBitrateTimeAllowance::ResetTimeAllowance(uint64_t bitrate)
   {
     //in this version we carry the unused part of the time allowance to the next service interval
-    Time leftOver(Seconds(0));
-    if (m_remainingTimeAllowance[bitrate] > 0)
-      {
-        leftOver = m_remainingTimeAllowance[bitrate];
-      }
 #ifdef SVA_DEBUG_DETAIL
     std::cout << Simulator::Now().GetSeconds() << " " << this->GetMac() << " PerBitrateTimeAllowance::ResetTimeAllowance last remaining " <<
-        m_remainingTimeAllowance[bitrate].GetSeconds()*1000 << " msec, Reset to " << (m_timeAllowance[bitrate] + leftOver).GetSeconds()*1000 <<
+        m_remainingTimeAllowance[bitrate].GetSeconds()*1000 << " msec, Updated to " <<
+        (m_timeAllowance[bitrate]+m_remainingTimeAllowance[bitrate]).GetSeconds()*1000 <<
         " msec bitrate=" << bitrate <<"\n";
 #endif
-    m_remainingTimeAllowance[bitrate] = m_timeAllowance[bitrate] + leftOver;
-    m_insufficientTimeAllowance[bitrate] = false;
+    m_remainingTimeAllowance[bitrate] += m_timeAllowance[bitrate]; //update allowance for next SI
+    if (m_remainingTimeAllowance[bitrate] == 0)
+      m_insufficientTimeAllowance[bitrate] = true;
+    else
+      m_insufficientTimeAllowance[bitrate] = false;
+  }
+
+  void
+  PerBitrateTimeAllowance::ResetAllTimeAllowances(void)
+  {
+    //in this version we carry the unused part of the time allowance to the next service interval
+    std::vector<uint64_t>::iterator it;
+    for ( it = m_bitrates.begin(); it != m_bitrates.end(); ++it)
+      {
+        ResetTimeAllowance((*it));
+      }
   }
 
   PerBitrateTimeAllowanceHelper::PerBitrateTimeAllowanceHelper(void)

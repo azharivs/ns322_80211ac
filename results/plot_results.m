@@ -1,7 +1,7 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_ta_pid.atan.1';
+baseLogName = 'logfiles/log_mimo_channel_perRateTa.1';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
