@@ -44,6 +44,7 @@
 #include "wifi-tx-vector.h"
 #include "mpdu-aggregator.h"
 #include "mpdu-universal-aggregator.h"
+#include "wifi-mac-queue.h"
 
 namespace ns3 {
 
@@ -483,12 +484,13 @@ public:
    * TODO:
    * Maybe a better approach is to define a friend class CrossLayer
    * that includes many many methods for extracting various information
-   * that can be layer accessed by the object using it.
+   * that can be later accessed by the object using it.
    * class CrossLayer can be aggregated to MacLow, etc. or it
    * can only hold a pointer to all of them which is initialized
    * if cross-layer features are to be used.
    */
   friend class MpduUniversalAggregator;
+  friend class PerStaWifiMacQueue;
   /**
    * typedef for a callback for MacLowRx
    */

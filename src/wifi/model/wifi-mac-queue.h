@@ -34,10 +34,12 @@
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/enum.h"
 #include "mpdu-universal-aggregator.h"
+#include "mac-low.h"
 
 namespace ns3 {
 class QosBlockedDestinations;
 class MpduUniversalAggregator;
+class MacLow;
 //sva: added support for multiple q per station. Currently not using call backs
 //sva: how do I get a pointer to PerStaQInfoContainer initialized?
 //sva: May be I can add a new method to WifiMacQueue to do this and if not called
@@ -314,7 +316,8 @@ typedef enum
   FCFS,
   EDF,
   EDF_RR,
-  MAX_REMAINING_TIME_ALLOWANCE//to be used in conjunction with TIME_ALLOWANCE aggregation algorithm
+  MAX_REMAINING_TIME_ALLOWANCE,//to be used in conjunction with TIME_ALLOWANCE aggregation algorithm
+  PER_BITRATE_TIME_ALLOWANCE_RR//to be used in conjunction with PER_BITRATE_TIME_ALLOWANCE aggregation algorithm
 } ServicePolicyType;
 
 class PerStaWifiMacQueue : public WifiMacQueue
@@ -465,6 +468,11 @@ public:
   bool SetMpduAggregator (Ptr<MpduUniversalAggregator> agg);
 
   /*
+   * Sets pointer to MacLow
+   */
+  bool SetMacLow (Ptr<MacLow> low);
+
+  /*
    * Event handler that is called at the beginning of a service interval
    */
   void PendingServiceInterval (void);
@@ -541,6 +549,16 @@ private:
   bool PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
   /*
+   * Called to implement the Per Bitrate Time Allowance Round Robin service policy
+   * Iterates over stations in a round robin fashion and selects a station if
+   * it has enough remaining time allowance for its current bitrate.
+   * Needs to check current bitrate.
+   * Should be optimized to choose station with largest time allowance and queue
+   * so that channel is efficiently used.
+   */
+  bool PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
+
+  /*
    * Return iterator pointing to queue location holding packet with
    * appropriate tid destined to certain dest STA which is ready to be sent.
    *
@@ -566,9 +584,11 @@ private:
   //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
   PerStaQInfoContainer *m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
   Ptr<MpduUniversalAggregator> m_mpduAggregator; //!< Pointer to aggregator operating on this queue
+  Ptr<MacLow> m_low; //!< Pointer to MacLow instance
   Time m_currentServiceIntervalStart; //!< Actual beginning of current service interval
   Time m_pendingServiceIntervalStart; //!< Pending beginning of current service interval
   bool m_serviceIntervalPending; //!< flag that shows the status of current service interval as pending or actually started. m_currentServiceInterval will be valid only if this flag is false.
+  PerStaQInfoContainer::Iterator m_lastServed; //!< used for RR service policy
 };
 
 

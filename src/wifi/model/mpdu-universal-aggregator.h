@@ -51,7 +51,7 @@ typedef enum
   /*sva-design: add for new aggregation algorithm AGG_ALG
   AGG_ALG,
   sva-design*/
-  PER_BITRATE_TIMEALLOWANCE //TODO to be used with PerStaWifiMacQueue::ServicePolicyType ???
+  PER_BITRATE_TIME_ALLOWANCE //TODO to be used with PerStaWifiMacQueue::ServicePolicyType ???
 } AggregationType;
 
 /*
@@ -168,6 +168,12 @@ private:
    */
   bool TimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
 
+  /* Called for PER_BITRATE_TIME_ALLOWANCE aggregation algorithm
+   * It is called by CanBeAggregated() to deal with aggregation when
+   * m_aggregationAlgorithm is set to PER_BITRATE_TIME_ALLOWANCE
+   */
+  bool PerBitrateTimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
+
   /*sva-design: add for new aggregation algorithm AGG_ALG
    * Called for AGG_ALG aggregation algorithm
    * It is called by CanBeAggregated() to deal with aggregation when
@@ -191,6 +197,11 @@ private:
    */
   void ResetTimeAllowance (void);
 
+  /* Called for PER_BITRATE_TIME_ALLOWANCE aggregation algorithm
+   * Does book keeping/etc. at beginning of new service interval
+   */
+  void ResetPerBitrateTimeAllowance (void);
+
   /*sva-design: add for new aggregation algorithm AGG_ALG
    * Called for AGG_ALG aggregation algorithm
    * Does book keeping/etc. at beginning of new service interval
@@ -205,6 +216,8 @@ private:
    * Called by PendingServiceInterval()
    */
   bool IsReadyForNextServiceIntervalTimeAllowance (void);
+
+  bool IsReadyForNextServiceIntervalPerBitrateTimeAllowance (void);
 
   /*sva-design: add for new aggregation algorithm ???
    *

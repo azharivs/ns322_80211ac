@@ -693,6 +693,7 @@ ApWifiMac::SetPerStaQInfo(PerStaQInfoContainer &c, uint8_t ac)
   if (agg)
     {
       perStaQueue->SetMpduAggregator(agg); //set pointer to aggregator
+      perStaQueue->SetMacLow(m_low); //set pointer to MacLow required for getting current bitrate, etc for aggregation related service policies
       agg->EnablePerStaQInfo(c,perStaQueue,m_low,m_phy);
     }
   return true;
