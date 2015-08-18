@@ -36,6 +36,7 @@
 #include "wifi-mac-header.h"
 #include "ns3/simulator.h"
 #include "per-sta-q-info.h"
+#include "ns3/per-sta-q-info-container.h"
 
 namespace ns3 {
 
@@ -55,7 +56,7 @@ public:
    * Initializes the class run once after perStaQInfo is initialized
    * returns true upon success
    */
-  bool Init (Ptr<PerStaQInfo> staQInfo);
+  bool Init (Ptr<PerStaQInfo> staQInfo, std::string bitrate);
 
   /**
    * Get MAC address associated to this time allowance
@@ -120,6 +121,15 @@ private:
   Ptr<PerStaQInfo> m_staQInfo; //!< Pointer to PerStaQInfo instance corresponding to this object
   std::string m_filename; //!< String containing filename for fixed time allowance values per bitrate for all stations MAC_ADDRESS t1 t2 t3 ... \n
   std::vector<uint32_t> m_bitrates; //!< List of supported bitrates
+};
+
+
+class PerBitrateTimeAllowanceHelper
+{
+  public:
+    PerBitrateTimeAllowanceHelper (void);
+    ~PerBitrateTimeAllowanceHelper (void);
+    void Install (PerStaQInfoContainer c, std::string filename);
 };
 
 } // namespace ns3
