@@ -381,7 +381,7 @@ PerStaWifiMacQueue::GetTypeId (void)
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (PER_BITRATE_TIME_ALLOWANCE_RR),
+                   EnumValue (EDF_RR),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
@@ -993,6 +993,8 @@ PerStaWifiMacQueue::PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, con
   if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
     {
       ++m_lastServed;
+      if (m_lastServed == m_perStaQInfo->End())
+        m_lastServed = m_perStaQInfo->Begin();
       for (sta = m_lastServed; sta != m_perStaQInfo->End(); ++sta)
         {
           ta = (*sta)->GetObject<PerBitrateTimeAllowance>();

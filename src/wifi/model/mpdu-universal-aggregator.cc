@@ -55,7 +55,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Algorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
-                   EnumValue (PER_BITRATE_TIME_ALLOWANCE),
+                   EnumValue (DEADLINE),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE",
@@ -593,7 +593,7 @@ sva-design*/
 void
 MpduUniversalAggregator::DoUpdate(void)
 {
-  if (m_aggregationAlgorithm == PER_BITRATE_TIME_ALLOWANCE) //for now, don't apply a controller for this type
+  if (m_aggregationAlgorithm == PER_BITRATE_TIME_ALLOWANCE || m_aggregationAlgorithm == DEADLINE) //for now, don't apply a controller for this type
     return ;
   if (m_controller)
     m_controller->Update();
