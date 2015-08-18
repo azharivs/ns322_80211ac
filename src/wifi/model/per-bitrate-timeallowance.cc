@@ -219,11 +219,11 @@ namespace ns3 {
   PerBitrateTimeAllowance::ResetTimeAllowance(uint64_t bitrate)
   {
     //in this version we carry the unused part of the time allowance to the next service interval
-#ifdef SVA_DEBUG_DETAIL
+#ifdef SVA_DEBUG
     std::cout << Simulator::Now().GetSeconds() << " " << this->GetMac() << " PerBitrateTimeAllowance::ResetTimeAllowance last remaining " <<
         m_remainingTimeAllowance[bitrate].GetSeconds()*1000 << " msec, Updated to " <<
         (m_timeAllowance[bitrate]+m_remainingTimeAllowance[bitrate]).GetSeconds()*1000 <<
-        " msec bitrate=" << bitrate <<"\n";
+        " msec bitrate= " << (double)bitrate/1e6 <<" Mbps\n";
 #endif
     m_remainingTimeAllowance[bitrate] += m_timeAllowance[bitrate]; //update allowance for next SI
     if (m_remainingTimeAllowance[bitrate] == 0)

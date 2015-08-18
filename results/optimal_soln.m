@@ -79,6 +79,11 @@ cvx_end
 
 T
 sum(sum(T.*prRates))/SI
+TT = T';
+ratesT = rates';
+
+save T.txt ratesT '-ascii'
+save T.txt TT '-ascii' '-append'
 
 % iterative approach: incomplete
 % TT = SI*ones(nRates,nSta)/nRates/nSta;

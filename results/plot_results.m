@@ -1,8 +1,8 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_perRateTa.1';
-pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs'};
+baseLogName = 'logfiles/log_mimo_channel_perRateTa.3';
+pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
 pattern3 = {'k.','r.','g.','m.','b.','y.','c.'};
@@ -16,6 +16,7 @@ for i=1:nSta
     staQInfoLogName{i} = sprintf('%s.StaQInfo.%s',baseLogName,mac);
     staAggLogName{i} = sprintf('%s.StaAgg.%s',baseLogName,mac);
     staAggCtrlLogName{i} = sprintf('%s.StaAggCtrl.%s',baseLogName,mac);
+    staAggPerBitrateTaLogName{i} = sprintf('%s.StaAggPerBitrateTa.%s',baseLogName,mac);
     legendStr{i} = sprintf('STA %d',i);
 end
 
@@ -201,63 +202,95 @@ for i=1:nSta
     grid on;
     %controller info
     data = load(staAggCtrlLogName{i});
-    times = data(:,1);
-    err = data(:,2);
-    ctrlSignal = data(:,3);
-    curTimeAllowance = data(:,4);
-    newTimeAllowance = data(:,5);
-    derivative = data(:,6);
-    integral = data(:,7);
-    ref = data(:,8);
-    errCorr = data(:,10)/100;
-    thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
-    thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
-    clear data;
-    subplot(3,3,4);
-    plot(times,err,pattern{i})
-    hold on;
-    plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
-    plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
-    plot(times,errCorr,pattern1{i});
-    xlabel('Time (seconds)');
-    ylabel('Error (/H/L) Signals');
-    grid on;
-    subplot(3,3,5);
-    plot(times,ctrlSignal,pattern{i})
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Control Signal');
-    grid on;
-    subplot(3,3,6);
-    plot(times,newTimeAllowance,pattern{i})
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('New Time Allowance (msec)');
-    grid on;
-    subplot(3,3,7);
-    plot(times,derivative,pattern{i})
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Derivative Term');
-    grid on;
-    subplot(3,3,8);
-    plot(times,integral,pattern{i})
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Integral Term');
-    grid on;
-    subplot(3,3,9);
-    plot(times,ref,pattern{i})
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Reference Signal');
-    grid on;
-
-    %extract bitrates and their probabilities 
+    if (~isempty(data))
+        times = data(:,1);
+        err = data(:,2);
+        ctrlSignal = data(:,3);
+        curTimeAllowance = data(:,4);
+        newTimeAllowance = data(:,5);
+        derivative = data(:,6);
+        integral = data(:,7);
+        ref = data(:,8);
+        errCorr = data(:,10)/100;
+        thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
+        thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
+        clear data;
+        subplot(3,3,4);
+        plot(times,err,pattern{i})
+        hold on;
+        plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+        plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+        plot(times,errCorr,pattern1{i});
+        xlabel('Time (seconds)');
+        ylabel('Error (/H/L) Signals');
+        grid on;
+        subplot(3,3,5);
+        plot(times,ctrlSignal,pattern{i})
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Control Signal');
+        grid on;
+        subplot(3,3,6);
+        plot(times,newTimeAllowance,pattern{i})
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('New Time Allowance (msec)');
+        grid on;
+        subplot(3,3,7);
+        plot(times,derivative,pattern{i})
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Derivative Term');
+        grid on;
+        subplot(3,3,8);
+        plot(times,integral,pattern{i})
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Integral Term');
+        grid on;
+        subplot(3,3,9);
+        plot(times,ref,pattern{i})
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Reference Signal');
+        grid on;
+    end %if
+    %extract bitrates and their (time averaged) probabilities 
     for j=1:max(size(rates))
-        prRates(j,i) = sum(dataRate == rates(j))/max(size(dataRate));
+        totalTxTime = sum(aggTxTime);
+        prRates(j,i) = sum(aggTxTime(dataRate == rates(j)))/totalTxTime;
     end
 end
 
 save('params.mat','prRates','rates');
 
+
+figure;
+%Per Bitrate TimeAlowance Aggregation info
+for i=1:nSta
+    data = load(staAggLogName{i});
+    if (~isempty(data))
+        %remainingTimeAllowance = data(:,2);
+        times = data(:,1);
+        aggPkts = data(:,3);
+        dataRate = data(:,4);
+        aggTxTime = data(:,5);
+        clear data;
+        for j=1:max(size(rates))
+            usedAllowance(j,:)=cumsum(aggTxTime.*(dataRate == rates(j)))';
+            ratesActualProb(j,i) = usedAllowance(j,end)/sum(aggTxTime);
+            %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
+            %semilogy(times(indexes),rta,pattern{j});
+            subplot(2,2,i);
+            semilogy(times,usedAllowance(j,:),pattern{j});
+            hold on;
+            legend('6.5Mbps','13Mbps','26Mbps','39Mbps','52Mbps','58Mbps','65Mbps','78Mbps','104Mbps','117Mbps','130Mbps');
+        end
+        clear usedAllowance;
+        xlabel('Time (seconds)');
+        ylabel('Used Time Allowance (msec)');
+        grid on;
+    end
+end
+
+ratesActualProb
