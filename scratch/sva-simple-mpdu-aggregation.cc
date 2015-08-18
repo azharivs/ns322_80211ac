@@ -145,6 +145,10 @@ int main (int argc, char *argv[])
   apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
       SetPerStaQInfo(perStaQueue,AC_VI);
 
+  // initialize per station time allowances
+  PerBitrateTimeAllowanceHelper taHelper;
+  taHelper.Install(perStaQueue,"./TimeAllowance.txt");
+
   //Initialize BssPhyMacStats for statistic collection on the medium
 
   std::ostringstream path;
