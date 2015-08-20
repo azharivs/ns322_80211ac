@@ -1,7 +1,16 @@
 close all;
 clear all;
 nSta = 4;
-baseLogName = 'logfiles/log_mimo_channel_perRateTa.8';
+baseLogName = 'logfiles/timeallowance_pid_dMax3.1';
+% for time allowance based scheduler and aggregation with PID controller
+% and delay of 1 second use:
+%baseLogName = 'logfiles/timeallowance_pid.3';
+% for edf_RR (deadline) scheduler and deadline based aggregation with a max end to end
+% delay of 1 second use:
+%baseLogName = 'logfiles/edfrr_deadline_agg.1';
+% for edf scheduler and deadline based aggregation with a max end to end
+% delay of 1 second use:
+%baseLogName = 'logfiles/edf_deadline_agg.1';
 pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
@@ -88,32 +97,34 @@ for i=1:nSta
     
     %Aggregation info
     data = load(staAggLogName{i});
-    times = data(:,1);
-    aggPkts = data(:,3);
-    dataRate = data(:,4);
-    aggTxTime = data(:,5);
-    clear data;
-    subplot(3,3,6);
-    plot(times,aggPkts,pattern{i});
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Size of A-MPDU (packets)');
-    grid on;
-    subplot(3,3,7);
-    plot(times,aggTxTime,pattern{i});
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Tx Time of A-MPDU (msec)');
-    grid on;
-    subplot(3,3,8);
-    plot(times,dataRate,pattern{i});
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Data Rate (Mb/s)');
-    grid on;
-    
-    %extract bitrates and their probabilities 
-    rates = union(rates,unique(dataRate));
+    if (~isempty(data))
+        times = data(:,1);
+        aggPkts = data(:,3);
+        dataRate = data(:,4);
+        aggTxTime = data(:,5);
+        clear data;
+        subplot(3,3,6);
+        plot(times,aggPkts,pattern{i});
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Size of A-MPDU (packets)');
+        grid on;
+        subplot(3,3,7);
+        plot(times,aggTxTime,pattern{i});
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Tx Time of A-MPDU (msec)');
+        grid on;
+        subplot(3,3,8);
+        plot(times,dataRate,pattern{i});
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Data Rate (Mb/s)');
+        grid on;
+        
+        %extract bitrates and their probabilities
+        rates = union(rates,unique(dataRate));
+    end
 end
 
 
@@ -176,30 +187,32 @@ figure;
 for i=1:nSta
     %Aggregation info
     data = load(staAggLogName{i});
-    times = data(:,1);
-    aggPkts = data(:,3);
-    dataRate = data(:,4);
-    aggTxTime = data(:,5);
-    clear data;
-    subplot(3,3,1);
-    plot(times,aggPkts,pattern{i});
-    hold on;
-    legend(legendStr);
-    xlabel('Time (seconds)');
-    ylabel('Size of A-MPDU (packets)');
-    grid on;
-    subplot(3,3,2);
-    plot(times,aggTxTime,pattern{i});
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Tx Time of A-MPDU (msec)');
-    grid on;
-    subplot(3,3,3);
-    plot(times,dataRate,pattern{i});
-    hold on;
-    xlabel('Time (seconds)');
-    ylabel('Data Rate (Mb/s)');
-    grid on;
+    if (~isempty(data))
+        times = data(:,1);
+        aggPkts = data(:,3);
+        dataRate = data(:,4);
+        aggTxTime = data(:,5);
+        clear data;
+        subplot(3,3,1);
+        plot(times,aggPkts,pattern{i});
+        hold on;
+        legend(legendStr);
+        xlabel('Time (seconds)');
+        ylabel('Size of A-MPDU (packets)');
+        grid on;
+        subplot(3,3,2);
+        plot(times,aggTxTime,pattern{i});
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Tx Time of A-MPDU (msec)');
+        grid on;
+        subplot(3,3,3);
+        plot(times,dataRate,pattern{i});
+        hold on;
+        xlabel('Time (seconds)');
+        ylabel('Data Rate (Mb/s)');
+        grid on;
+    end
     %controller info
     data = load(staAggCtrlLogName{i});
     if (~isempty(data))
@@ -212,14 +225,20 @@ for i=1:nSta
         integral = data(:,7);
         ref = data(:,8);
         errCorr = data(:,10)/100;
-        thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
-        thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
+        flag = 0;
+        if (size(data,2) > 10) %more columns 
+            flag = 1;
+            thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
+            thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
+        end
         clear data;
         subplot(3,3,4);
         plot(times,err,pattern{i})
         hold on;
-        plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
-        plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+        if (flag)
+            plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+            plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+        end
         plot(times,errCorr,pattern1{i});
         xlabel('Time (seconds)');
         ylabel('Error (/H/L) Signals');
@@ -263,7 +282,9 @@ for i=1:nSta
     end
 end
 
-save('params.mat','prRates','rates');
+if (exist('prRates') && exist('rates'))
+    save('params.mat','prRates','rates');
+end
 
 
 figure;

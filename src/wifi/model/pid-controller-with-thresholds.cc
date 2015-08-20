@@ -159,8 +159,8 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
   bool
   PidControllerWithThresholds::IsThresholdViolated (double err)
   {
-    if (abs(m_state.errCorr) < 200)
-      return false;
+    //if (abs(m_state.errCorr) < 200) //sva: to be enabled for error correlation based triggering
+    //  return false;  //sva: to be enabled for ...
     double thrH = GetHighThreshold();
     double thrL = GetLowThreshold();
     if (thrH < 0 || thrL > 0)

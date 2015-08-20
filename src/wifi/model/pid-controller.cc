@@ -142,8 +142,8 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   void
   PidController::UpdateFeedbackSignal (void)
   {
-    m_feedback.avgServedPacketes = m_staQ->GetAvgServedPackets();
-    m_feedback.avgServedBytes = m_staQ->GetAvgServedBytes();
+    m_feedback.avgServedPacketes = m_staQ->GetAvgArrivalRate();  //sva original: m_staQ->GetAvgServedPackets();
+    m_feedback.avgServedBytes = m_staQ->GetAvgArrivalRateBytes(); //sva original: m_staQ->GetAvgServedBytes();
 //sva for debug    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
   }
 
@@ -236,7 +236,9 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double tmpPrEmpty = 0.999;
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
-    double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
+    //sva original: double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
+    double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
+    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
     return err;
   }
