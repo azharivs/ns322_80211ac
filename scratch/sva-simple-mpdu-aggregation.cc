@@ -74,6 +74,7 @@ int main (int argc, char *argv[])
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
   uint32_t nSta = 4;
+  double dMax = 1.0;//maximum tolerable delay
   bool enableRts = 0;
     
   CommandLine cmd;
@@ -82,6 +83,7 @@ int main (int argc, char *argv[])
   cmd.AddValue("payloadSize", "Payload size in bytes", payloadSize);
   cmd.AddValue("enableRts", "Enable RTS/CTS", enableRts);
   cmd.AddValue("simulationTime", "Simulation time in seconds", simulationTime);
+  cmd.AddValue("dMax", "maximum tolerable end to end delay in seconds", dMax);
   cmd.Parse (argc, argv);
     
   if(!enableRts)
@@ -146,8 +148,8 @@ int main (int argc, char *argv[])
       SetPerStaQInfo(perStaQueue,AC_VI);
 
   // initialize per station time allowances
-  PerBitrateTimeAllowanceHelper taHelper;
-  taHelper.Install(perStaQueue,"./TimeAllowance.txt");
+  //PerBitrateTimeAllowanceHelper taHelper;
+  //taHelper.Install(perStaQueue,"./TimeAllowance.txt");
 
   //Initialize BssPhyMacStats for statistic collection on the medium
 
@@ -211,7 +213,7 @@ int main (int argc, char *argv[])
 	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
 	  //sva: set dealine for each stations traffic
 	  //sva: 0.5 sec, 0.7sec, 0.9sec, 1.2 sec
-	  myClient.SetAttribute("Deadline",DoubleValue(1.0));
+	  myClient.SetAttribute("Deadline",DoubleValue(dMax)); //set deadline
 	  //sva: this is not the correct way of doing it.
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this

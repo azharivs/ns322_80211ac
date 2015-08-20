@@ -85,7 +85,7 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("MaxDelay", "Maximum tolerable single hop delay in seconds",
-                   DoubleValue (1.0), //sva: the default value should be later changed to beacon interval
+                   DoubleValue (3.0), //sva: the default value should be later changed to beacon interval
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_maxDelay),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("TimeAllowance", "Fixed Time Allowance (in sec) when NO_CONTROL controller is selected",
@@ -113,15 +113,15 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrW),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrHighCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
-                   DoubleValue (0.2),
+                   DoubleValue (1.0),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrH),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ThrLowCoef", "Mean error multiplier for defining high threshold of the threshold based PID controller",
-                   DoubleValue (0),
+                   DoubleValue (1.0),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrL),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
-                   EnumValue (PID_WITH_THRESHOLDS),
+                   EnumValue (PID),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
                    MakeEnumChecker (ns3::NO_CONTROL, "ns3::NO_CONTROL",
                                     ns3::PID_WITH_THRESHOLDS, "ns3::PID_WITH_THRESHOLDS",
