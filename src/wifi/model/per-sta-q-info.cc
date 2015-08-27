@@ -40,7 +40,7 @@ namespace ns3 {
         .SetParent<Object> ()
         .AddConstructor<PerStaQInfo> ()
         .AddAttribute ("HistorySize", "Number of Samples Kept for Calculating Statistics.",
-                       UintegerValue (50),
+                       UintegerValue (25),
                        MakeUintegerAccessor (&PerStaQInfo::m_histSize),
                        MakeUintegerChecker<uint32_t> ())
         .AddAttribute ("TID", "Traffic Indication Map of Interest.",

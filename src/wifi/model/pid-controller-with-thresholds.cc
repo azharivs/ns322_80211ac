@@ -126,6 +126,7 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
     double err = ComputeErrorSignal();
     double integral = m_state.integral * (1-m_pidParam.wi) + err * m_pidParam.wi;
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
+    ctrl = CtrlConditioning(ctrl);
     if (!IsThresholdViolated(err))
       ctrl = 0;
     double output = std::max(0.0,m_state.curOut + ctrl);
@@ -140,6 +141,7 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
     m_state.curErr = ComputeErrorSignal();
     m_state.integral = m_state.integral * (1-m_pidParam.wi) + m_state.curErr * m_pidParam.wi;
     m_ctrl.sig = m_pidParam.kp * m_state.curErr + m_pidParam.ki * m_state.integral + m_pidParam.kd * (m_state.curErr - m_state.prevErr);
+    m_ctrl.sig = CtrlConditioning(m_ctrl.sig);
     if (!IsThresholdViolated(m_state.curErr))
       m_ctrl.sig = 0.0;
     m_output = std::max(0.0,(m_state.curOut + m_ctrl.sig)) / adjustment;
@@ -147,7 +149,7 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
 
     //update mean and standard deviation of error using moving average
     m_state.errMean = m_state.errMean * (1-m_pidParam.thrW) + m_state.curErr * m_pidParam.thrW;
-    m_state.errStdDev = m_state.errStdDev * (1-m_pidParam.thrW) + abs(m_state.curErr - m_state.errMean) * m_pidParam.thrW;
+    m_state.errStdDev = m_state.errStdDev * (1-m_pidParam.thrW) + fabs(m_state.curErr - m_state.errMean) * m_pidParam.thrW;
 
     m_state.prevOut = m_state.curOut;
     m_state.curOut = m_output;
