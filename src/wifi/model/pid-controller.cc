@@ -149,20 +149,20 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
 
   double PidController::ErrorConditioning(double err)
   {
-    return err; //sva: for now we have disabled error conditioning
+    //return err; //sva: for now we have disabled error conditioning
     if (err >= 0)
-      return atan(log(1+abs(err)));
+      return atan(log(1+fabs(err)));
     else
-      return -atan(log(1+abs(err)));
+      return -atan(log(1+fabs(err)));
   }
 
   double PidController::CtrlConditioning(double ctrl)
   {
     return ctrl;//sva: for now we disable ctrl conditioning
     if (ctrl >= 0)
-      return (1e-2)*(log(1+abs(ctrl)));
+      return atan(log(1+fabs(ctrl)));
     else
-      return -(1e-2)*(log(1+abs(ctrl)));
+      return -atan(log(1+fabs(ctrl)));
   }
 
   double
@@ -227,7 +227,11 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   double
   PidController::GetReference(void)
   {
-    return ComputeErrorSignal() + m_feedback.avgServedPacketes;
+    double tmpPrEmpty = 0.999;
+    if (m_input.prEmpty != 1) //prevent division by zero
+      tmpPrEmpty = m_input.prEmpty;
+    double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
+    return rho*m_feedback.avgServedPacketes; //-log(m_inParam.dvp)/m_inParam.dMax;
   }
 
   double PidController::ComputeErrorSignal(void)
@@ -238,7 +242,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
       tmpPrEmpty = m_input.prEmpty;
     //sva original: double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
-    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
+    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
     return err;
   }

@@ -1,7 +1,7 @@
 close all;
 clear all;
-nSta = 4;
-baseLogName = 'logfiles/timeallowance_pid_dMax3.1';
+nSta = 1;
+baseLogName = 'logfiles/timeallowance_pid_thr_nocond.test1';
 % for time allowance based scheduler and aggregation with PID controller
 % and delay of 1 second use:
 %baseLogName = 'logfiles/timeallowance_pid.3';
@@ -235,11 +235,12 @@ for i=1:nSta
         subplot(3,3,4);
         plot(times,err,pattern{i})
         hold on;
+        %flag = 0; %remove line for threshold based PID control
         if (flag)
             plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
             plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+            %plot(times,errCorr,pattern1{i});
         end
-        plot(times,errCorr,pattern1{i});
         xlabel('Time (seconds)');
         ylabel('Error (/H/L) Signals');
         grid on;
@@ -287,35 +288,35 @@ if (exist('prRates') && exist('rates'))
 end
 
 
-figure;
-%Per Bitrate TimeAlowance Aggregation info
-for i=1:nSta
-    data = load(staAggLogName{i});
-    if (~isempty(data))
-        %remainingTimeAllowance = data(:,2);
-        times = data(:,1);
-        aggPkts = data(:,3);
-        dataRate = data(:,4);
-        aggTxTime = data(:,5);
-        clear data;
-        busy(i)=0;
-        for j=1:max(size(rates))
-            usedAllowance(j,:)=cumsum(aggTxTime.*(dataRate == rates(j)))';
-            ratesActualProb(j,i) = usedAllowance(j,end)/sum(aggTxTime);
-            busy(i) = busy(i)+usedAllowance(j,end);
-            %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
-            %semilogy(times(indexes),rta,pattern{j});
-            subplot(2,2,i);
-            semilogy(times,usedAllowance(j,:),pattern{j});
-            hold on;
-            legend('6.5Mbps','13Mbps','26Mbps','39Mbps','52Mbps','58Mbps','65Mbps','78Mbps','104Mbps','117Mbps','130Mbps');
-        end
-        clear usedAllowance;
-        xlabel('Time (seconds)');
-        ylabel('Used Time Allowance (msec)');
-        grid on;
-    end
-end
-
-ratesActualProb
-busy
+% figure;
+% %Per Bitrate TimeAlowance Aggregation info
+% for i=1:nSta
+%     data = load(staAggLogName{i});
+%     if (~isempty(data))
+%         %remainingTimeAllowance = data(:,2);
+%         times = data(:,1);
+%         aggPkts = data(:,3);
+%         dataRate = data(:,4);
+%         aggTxTime = data(:,5);
+%         clear data;
+%         busy(i)=0;
+%         for j=1:max(size(rates))
+%             usedAllowance(j,:)=cumsum(aggTxTime.*(dataRate == rates(j)))';
+%             ratesActualProb(j,i) = usedAllowance(j,end)/sum(aggTxTime);
+%             busy(i) = busy(i)+usedAllowance(j,end);
+%             %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
+%             %semilogy(times(indexes),rta,pattern{j});
+%             subplot(2,2,i);
+%             semilogy(times,usedAllowance(j,:),pattern{j});
+%             hold on;
+%             legend('6.5Mbps','13Mbps','26Mbps','39Mbps','52Mbps','58Mbps','65Mbps','78Mbps','104Mbps','117Mbps','130Mbps');
+%         end
+%         clear usedAllowance;
+%         xlabel('Time (seconds)');
+%         ylabel('Used Time Allowance (msec)');
+%         grid on;
+%     end
+% end
+% 
+% ratesActualProb
+% busy
