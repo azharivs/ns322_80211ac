@@ -31,6 +31,7 @@
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/bss-phy-mac-stats.h"
 #include "ns3/uinteger.h"
+#include "ns3/per-sta-aggregation-helper.h"
 
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
@@ -141,23 +142,73 @@ int main (int argc, char *argv[])
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
-  //sva: AP and STAs initialized, time to initialize PerStaQInfo
+  PerStaAggregationHelper bss(nSta);
 
-  PerStaQInfoContainer perStaQueue = wifi.InitPerStaQInfo(staDevice, AC_VI);
-  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
-      SetPerStaQInfo(perStaQueue,AC_VI);
+  //Initialize PerStaQInfo after AP and STA's initialized
 
-  // initialize per station time allowances
+//  PerStaQInfoContainer perStaQueue = wifi.InitPerStaQInfo(staDevice, AC_VI);//TODO take this out of the WifiHelper and put it in mine
+//  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
+//      SetPerStaQInfo(perStaQueue,AC_VI);
+
+  PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI);
+
+  //Initialize per station time allowances
   //PerBitrateTimeAllowanceHelper taHelper;
   //taHelper.Install(perStaQueue,"./TimeAllowance.txt");
 
   //Initialize BssPhyMacStats for statistic collection on the medium
 
-  std::ostringstream path;
-  path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
-  Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
-  bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(10)); //keep history of the last 10 beacons (i.e. two seconds)
-  NS_ASSERT(bssPhyMacStats->SetPerStaQInfo(&perStaQueue));
+//  std::ostringstream path;
+//  path << "/NodeList/"<< nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
+//  Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
+//  bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(10)); //keep history of the last 10 beacons (i.e. one seconds)
+//  NS_ASSERT(bssPhyMacStats->SetPerStaQInfo(&perStaQueue));
+
+  Ptr<BssPhyMacStats> bssPhyMacStats = bss.InstallBssPhyMacStats(10,perStaQueue);
+
+  //Initialize PerStaWifiMacQueue. Only need to care about the AP
+
+  Ptr<PerStaWifiMacQueue> macQueue;
+  ServicePolicyType QueueServicePolicy = EDF;
+  uint32_t MaxPacketNumber=30000;
+  double ServiceInterval = 0.1; //seconds
+  double MaxDelay = 10.0; //seconds
+  macQueue->SetAttribute("ServicePolicy",EnumValue(QueueServicePolicy));
+  macQueue->SetAttribute("MaxPacketNumber",UintegerValue(MaxPacketNumber));
+  macQueue->SetAttribute("MaxDelay",DoubleValue(MaxDelay));
+  macQueue->SetAttribute("ServiceInterval",DoubleValue(ServiceInterval));
+
+  //Initialize MpduUniversalAggregator.  Only need to care about the AP
+
+  Ptr<MpduUniversalAggregator> aggregator;
+  AggregationType AggregationAlgorithm = STANDARD;
+  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
+  aggregator->SetAttribute("Algorithm",EnumValue(AggregationAlgorithm));
+  aggregator->SetAttribute("ServiceInterval",DoubleValue(ServiceInterval));
+  aggregator->SetAttribute("MaxAmpduSize",UintegerValue(MaxAmpduSize));
+
+  //Initialize AggregationController. Only need to care about the AP
+  Ptr<TimeAllowanceAggregationController> aggCtrl;
+  double dvp = 0.02;
+  double MovingIntegralWeight = 0.05;
+  double kp = 0.01;
+  double ki = 0.02;
+  double kd = 0.05;
+  double thrW = 0.5;
+  double thrH = 2.5;
+  double thrL = 2.5;
+  ControllerType controller = PID;
+  aggCtrl->SetAttribute("DVP",DoubleValue(dvp));
+  aggCtrl->SetAttribute("ServiceInterval",DoubleValue());
+  aggCtrl->SetAttribute("MaxDelay",DoubleValue(dMax));
+  aggCtrl->SetAttribute("MovingIntegralWeight",DoubleValue(MovingIntegralWeight));
+  aggCtrl->SetAttribute("KP",DoubleValue(kp));
+  aggCtrl->SetAttribute("KI",DoubleValue(ki));
+  aggCtrl->SetAttribute("KD",DoubleValue(kd));
+  aggCtrl->SetAttribute("ThrWeight",DoubleValue(thrW));
+  aggCtrl->SetAttribute("ThrHighCoef",DoubleValue(thrH));
+  aggCtrl->SetAttribute("ThrLowCoef",DoubleValue(thrL));
+  aggCtrl->SetAttribute("Controller",EnumValue(controller));
 
   /* Setting mobility model */
   MobilityHelper mobility;
