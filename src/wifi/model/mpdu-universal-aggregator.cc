@@ -55,7 +55,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Algorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
-                   EnumValue (TIME_ALLOWANCE),
+                   EnumValue (STANDARD),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE",
