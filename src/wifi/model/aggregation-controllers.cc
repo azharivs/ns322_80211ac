@@ -92,7 +92,7 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    TimeValue (MilliSeconds (12.0) ), //sva: the default value should be later changed to beacon interval
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
-    .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controllers",
+    .AddAttribute ("MovingIntegralWeight", "Recent sample moving average weight for approximating the integral term of the PID controllers",
                    DoubleValue (0.05),
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_weightIntegral),
                    MakeDoubleChecker<double> ())
