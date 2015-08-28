@@ -1,7 +1,11 @@
 close all;
 clear all;
-nSta = 1;
-baseLogName = 'logfiles/timeallowance_pid_thr_nocond.test1';
+nSta = 6;
+baseLogName = 'logfiles/timeallowance_edf.test6';
+dirName = baseLogName(find(baseLogName == '/',1, 'last')+1:end);
+matOutputName = sprintf('./plots/%s/%s.mat',dirName,dirName);
+dirName = sprintf('./plots/%s',dirName);
+mkdir(dirName);
 % for time allowance based scheduler and aggregation with PID controller
 % and delay of 1 second use:
 %baseLogName = 'logfiles/timeallowance_pid.3';
@@ -49,47 +53,47 @@ figure;
 for i=1:nSta
     %Sta Q Info
     data = load(staQInfoLogName{i});
-    times = data(:,1);
-    qPkt = data(:,2);
-    avgQPkt = data(:,4);
-    avgQWait = data(:,6);
-    avgQArrivalMbps = data(:,8);
-    avgQDvp = data(:,9);
-    probEmpty = data(:,10);
+    timesStaQ{i} = data(:,1);
+    qPkt{i} = data(:,2);
+    avgQPkt{i} = data(:,4);
+    avgQWait{i} = data(:,6);
+    avgQArrivalMbps{i} = data(:,8);
+    avgQDvp{i} = data(:,9);
+    probEmpty{i} = data(:,10);
     clear data;
     subplot(3,3,1);
-    plot(times,avgQPkt,pattern{i});
+    plot(timesStaQ{i},avgQPkt{i},pattern{i});
     hold on;
     legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Avg. Queue Length (pkt)');
     grid on;
     subplot(3,3,9);
-    plot(times,qPkt,pattern{i});
+    plot(timesStaQ{i},qPkt{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Instantaneous Queue Length (pkt)');
     grid on;
     subplot(3,3,2);
-    plot(times,avgQWait,pattern{i});
+    plot(timesStaQ{i},avgQWait{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Waiting Time (msec)');
     grid on;
     subplot(3,3,3);
-    plot(times,avgQArrivalMbps,pattern{i});
+    plot(timesStaQ{i},avgQArrivalMbps{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Arrival Rate (Mb/s)');
     grid on;
     subplot(3,3,4);
-    plot(times,avgQDvp,pattern{i});
+    plot(timesStaQ{i},avgQDvp{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Delay Violation Prob.');
     grid on;
     subplot(3,3,5);
-    plot(times,probEmpty,pattern{i});
+    plot(timesStaQ{i},probEmpty{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Prob. of Empty Queue');
@@ -98,32 +102,32 @@ for i=1:nSta
     %Aggregation info
     data = load(staAggLogName{i});
     if (~isempty(data))
-        times = data(:,1);
-        aggPkts = data(:,3);
-        dataRate = data(:,4);
-        aggTxTime = data(:,5);
+        timesStaAgg{i} = data(:,1);
+        aggPkts{i} = data(:,3);
+        dataRate{i} = data(:,4);
+        aggTxTime{i} = data(:,5);
         clear data;
         subplot(3,3,6);
-        plot(times,aggPkts,pattern{i});
+        plot(timesStaAgg{i},aggPkts{i},pattern{i});
         hold on;
         xlabel('Time (seconds)');
         ylabel('Size of A-MPDU (packets)');
         grid on;
         subplot(3,3,7);
-        plot(times,aggTxTime,pattern{i});
+        plot(timesStaAgg{i},aggTxTime{i},pattern{i});
         hold on;
         xlabel('Time (seconds)');
         ylabel('Tx Time of A-MPDU (msec)');
         grid on;
         subplot(3,3,8);
-        plot(times,dataRate,pattern{i});
+        plot(timesStaAgg{i},dataRate{i},pattern{i});
         hold on;
         xlabel('Time (seconds)');
         ylabel('Data Rate (Mb/s)');
         grid on;
         
         %extract bitrates and their probabilities
-        rates = union(rates,unique(dataRate));
+        rates = union(rates,unique(dataRate{i}));
     end
 end
 
@@ -134,46 +138,46 @@ for i=1:nSta
     %Sta Q Info
     data = load(staQInfoLogName{i});
     times = data(:,1);
-    avgQPkt = data(:,4);
-    avgQWait = data(:,6);
-    avgQArrivalMbps = data(:,8);
-    avgQDvp = data(:,9);
-    avgServedPkts = data(:,11);
-    avgServedBytes = data(:,12)*1e3;
+    avgQPkt{i} = data(:,4);
+    avgQWait{i} = data(:,6);
+    avgQArrivalMbps{i} = data(:,8);
+    avgQDvp{i} = data(:,9);
+    avgServedPkts{i} = data(:,11);
+    avgServedBytes{i} = data(:,12)*1e3;
     clear data;
     subplot(2,3,1);
-    plot(times,avgQPkt,pattern{i});
+    plot(times,avgQPkt{i},pattern{i});
     hold on;
     legend(legendStr);
     xlabel('Time (seconds)');
     ylabel('Avg. Queue Length (pkt)');
     grid on;
     subplot(2,3,2);
-    plot(times,avgQWait,pattern{i});
+    plot(times,avgQWait{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Waiting Time (msec)');
     grid on;
     subplot(2,3,3);
-    plot(times,avgQArrivalMbps,pattern{i});
+    plot(times,avgQArrivalMbps{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Arrival Rate (Mb/s)');
     grid on;
     subplot(2,3,4);
-    plot(times,avgQDvp,pattern{i});
+    plot(times,avgQDvp{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Delay Violation Prob.');
     grid on;
     subplot(2,3,5);
-    plot(times,avgServedPkts,pattern{i});
+    plot(times,avgServedPkts{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Served Pkts /SI');
     grid on;
     subplot(2,3,6);
-    plot(times,avgServedBytes,pattern{i});
+    plot(times,avgServedBytes{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Served Bytes /SI (KB)');
@@ -189,25 +193,25 @@ for i=1:nSta
     data = load(staAggLogName{i});
     if (~isempty(data))
         times = data(:,1);
-        aggPkts = data(:,3);
-        dataRate = data(:,4);
-        aggTxTime = data(:,5);
+        aggPkts{i} = data(:,3);
+        dataRate{i} = data(:,4);
+        aggTxTime{i} = data(:,5);
         clear data;
         subplot(3,3,1);
-        plot(times,aggPkts,pattern{i});
+        plot(times,aggPkts{i},pattern{i});
         hold on;
         legend(legendStr);
         xlabel('Time (seconds)');
         ylabel('Size of A-MPDU (packets)');
         grid on;
         subplot(3,3,2);
-        plot(times,aggTxTime,pattern{i});
+        plot(times,aggTxTime{i},pattern{i});
         hold on;
         xlabel('Time (seconds)');
         ylabel('Tx Time of A-MPDU (msec)');
         grid on;
         subplot(3,3,3);
-        plot(times,dataRate,pattern{i});
+        plot(times,dataRate{i},pattern{i});
         hold on;
         xlabel('Time (seconds)');
         ylabel('Data Rate (Mb/s)');
@@ -216,71 +220,71 @@ for i=1:nSta
     %controller info
     data = load(staAggCtrlLogName{i});
     if (~isempty(data))
-        times = data(:,1);
-        err = data(:,2);
-        ctrlSignal = data(:,3);
-        curTimeAllowance = data(:,4);
-        newTimeAllowance = data(:,5);
-        derivative = data(:,6);
-        integral = data(:,7);
-        ref = data(:,8);
-        errCorr = data(:,10)/100;
+        timesAggCtrl{i} = data(:,1);
+        err{i} = data(:,2);
+        ctrlSignal{i} = data(:,3);
+        curTimeAllowance{i} = data(:,4);
+        newTimeAllowance{i} = data(:,5);
+        derivative{i} = data(:,6);
+        integral{i} = data(:,7);
+        ref{i} = data(:,8);
+        errCorr{i} = data(:,10)/100;
         flag = 0;
         if (size(data,2) > 10) %more columns 
             flag = 1;
-            thrHi = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
-            thrLo = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
+            thrHi{i} = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
+            thrLo{i} = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
         end
         clear data;
         subplot(3,3,4);
-        plot(times,err,pattern{i})
+        plot(timesAggCtrl{i},err{i},pattern{i})
         hold on;
         %flag = 0; %remove line for threshold based PID control
         if (flag)
-            plot(times,thrHi,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
-            plot(times,thrLo,pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+            plot(timesAggCtrl{i},thrHi{i},pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
+            plot(timesAggCtrl{i},thrLo{i},pattern3{i}); %sva: lines to be commented when no hi/low threshold value exists
             %plot(times,errCorr,pattern1{i});
         end
         xlabel('Time (seconds)');
         ylabel('Error (/H/L) Signals');
         grid on;
         subplot(3,3,5);
-        plot(times,ctrlSignal,pattern{i})
+        plot(timesAggCtrl{i},ctrlSignal{i},pattern{i})
         hold on;
         xlabel('Time (seconds)');
         ylabel('Control Signal');
         grid on;
         subplot(3,3,6);
-        plot(times,newTimeAllowance,pattern{i})
+        plot(timesAggCtrl{i},newTimeAllowance{i},pattern{i})
         hold on;
         xlabel('Time (seconds)');
         ylabel('New Time Allowance (msec)');
         grid on;
         subplot(3,3,7);
-        plot(times,derivative,pattern{i})
+        plot(timesAggCtrl{i},derivative{i},pattern{i})
         hold on;
         xlabel('Time (seconds)');
         ylabel('Derivative Term');
         grid on;
         subplot(3,3,8);
-        plot(times,integral,pattern{i})
+        plot(timesAggCtrl{i},integral{i},pattern{i})
         hold on;
         xlabel('Time (seconds)');
         ylabel('Integral Term');
         grid on;
         subplot(3,3,9);
-        plot(times,ref,pattern{i})
+        plot(timesAggCtrl{i},ref{i},pattern{i})
         hold on;
         xlabel('Time (seconds)');
         ylabel('Reference Signal');
         grid on;
     end %if
     %extract bitrates and their (time averaged) probabilities 
-    for j=1:max(size(rates))
-        totalTxTime = sum(aggTxTime);
-        prRates(j,i) = sum(aggTxTime(dataRate == rates(j)))/totalTxTime;
-        %prRates(j,i) = sum((dataRate == rates(j)))/max(size(dataRate));
-    end
+%     for j=1:max(size(rates))
+%         totalTxTime = sum(aggTxTime);
+%         prRates(j,i) = sum(aggTxTime(dataRate == rates(j)))/totalTxTime;
+%         %prRates(j,i) = sum((dataRate == rates(j)))/max(size(dataRate));
+%     end
 end
 
 if (exist('prRates') && exist('rates'))
@@ -320,3 +324,5 @@ end
 % 
 % ratesActualProb
 % busy
+
+save(matOutputName);
