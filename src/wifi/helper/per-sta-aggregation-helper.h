@@ -45,17 +45,18 @@ public:
    * particular service policy and aggregation algorithm at the
    * access point. Uses the PerStaQInfo class.
    */
-    PerStaAggregationHelper (uint8_t nSta = 1);
+    PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac);
     ~PerStaAggregationHelper ();
 
     PerStaQInfoContainer InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac);
 
     Ptr<BssPhyMacStats> InstallBssPhyMacStats (uint32_t hist, PerStaQInfoContainer &c);
 
+    void FinalizeSetup (PerStaQInfoContainer &c);
+
     void SetPerStaWifiMacQueue (std::string n0 = "", const AttributeValue &v0 = EmptyAttributeValue (),
                                 std::string n1 = "", const AttributeValue &v1 = EmptyAttributeValue (),
-                                std::string n2 = "", const AttributeValue &v2 = EmptyAttributeValue (),
-                                std::string n3 = "", const AttributeValue &v3 = EmptyAttributeValue ());
+                                std::string n2 = "", const AttributeValue &v2 = EmptyAttributeValue ());
 
     void SetMpduUniversalAggregator (std::string n0 = "", const AttributeValue &v0 = EmptyAttributeValue (),
                                      std::string n1 = "", const AttributeValue &v1 = EmptyAttributeValue (),
@@ -76,6 +77,7 @@ public:
 protected:
 
     uint8_t m_nSta; //!< Number of Stations
+    Ptr<MacLow> m_low; //!< Pointer to MacLow related to the AP
     Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to PerStaWifiMacQueue related to the AP
     Ptr<MpduUniversalAggregator> m_aggregator; //!< Pointer to MpduUniversalAggregator related to the AP
     Ptr<TimeAllowanceAggregationController> m_aggCtrl; //!< Pointer to TimeAllowanceAggregationController related to the AP //TODO make it generic <AggregationController>

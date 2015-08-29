@@ -78,6 +78,12 @@ MpduUniversalAggregator::~MpduUniversalAggregator ()
 {
 }
 
+Ptr<AggregationController>
+MpduUniversalAggregator::GetAggregationController (void)
+{
+  return m_controller;
+}
+
 bool
 MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<PerStaWifiMacQueue> queue, Ptr<MacLow> low, Ptr<WifiPhy> phy)
 {

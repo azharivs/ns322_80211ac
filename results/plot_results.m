@@ -1,7 +1,7 @@
 close all;
 clear all;
-nSta = 6;
-baseLogName = 'logfiles/timeallowance_edf.test6';
+nSta = 4;
+baseLogName = 'logfiles/timeallowance_pid.test4';
 dirName = baseLogName(find(baseLogName == '/',1, 'last')+1:end);
 matOutputName = sprintf('./plots/%s/%s.mat',dirName,dirName);
 dirName = sprintf('./plots/%s',dirName);

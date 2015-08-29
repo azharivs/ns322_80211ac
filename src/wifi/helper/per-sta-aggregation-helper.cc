@@ -33,9 +33,41 @@
 
 namespace ns3 {
 
-  PerStaAggregationHelper::PerStaAggregationHelper (uint8_t nSta)
+  PerStaAggregationHelper::PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac)
   : m_nSta (nSta)
   {
+    Ptr<ApWifiMac> apWifiMac = ap->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>();
+    NS_ASSERT(apWifiMac);
+    Ptr<EdcaTxopN> edca;
+
+    switch (ac)
+    {
+      case AC_VO:
+        edca = apWifiMac->GetVOQueue();//TODO I had to make these methods public in RegularWifiMac. Is there another way to do this?
+        break;
+      case AC_VI:
+        edca = apWifiMac->GetVIQueue();
+        break;
+      case AC_BE:
+        edca = apWifiMac->GetBEQueue();
+        break;
+      case AC_BK:
+        edca = apWifiMac->GetBKQueue();
+        break;
+      default:
+        NS_ASSERT_MSG(0,"Invalid AC type used: " << ac);
+    }
+
+    NS_ASSERT(edca);
+    m_low = edca->Low();
+    m_queue = edca->GetEdcaQueue()->GetObject<PerStaWifiMacQueue>(); //set pointer to queue
+    m_aggregator = edca->Low()->GetMpduAggregator()->GetObject<MpduUniversalAggregator>(); //set pointer to aggregator
+    m_aggCtrl = m_aggregator->GetAggregationController()->GetObject<TimeAllowanceAggregationController>(); //set pointer to aggregation controller
+    NS_ASSERT(m_queue);
+    NS_ASSERT(m_aggregator);
+    NS_ASSERT(m_aggCtrl);
+    m_queue->SetMpduAggregator(m_aggregator); //set pointer to aggregator
+    m_queue->SetMacLow(edca->Low()); //set pointer to MacLow required for getting current bitrate, etc for aggregation related service policies
   }
 
   PerStaAggregationHelper::~PerStaAggregationHelper ()
@@ -55,7 +87,8 @@ namespace ns3 {
         staDevice = device->GetObject<WifiNetDevice>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
         c.Add(staDevice);
       }
-    apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->SetPerStaQInfo(c,ac);
+    m_queue->EnablePerStaQInfo(c); //simply initializes a member pointer to point to this container
+    //sva: old code: apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->SetPerStaQInfo(c,ac);//TODO remove from ApWifiMac and do in helper
     return c;
   }
 
@@ -63,7 +96,7 @@ namespace ns3 {
   PerStaAggregationHelper::InstallBssPhyMacStats (uint32_t hist, PerStaQInfoContainer &c)
   {
     std::ostringstream path;
-    path << "/NodeList/"<< m_nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
+    path << "/NodeList/"<< (int) m_nSta << "/DeviceList/0/$ns3::WifiNetDevice/Phy/State";
     Ptr<BssPhyMacStats> bssPhyMacStats = CreateObject<BssPhyMacStats> (path.str());
     bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(hist)); //keep history of the last hist beacons (i.e. one seconds)
     NS_ASSERT(bssPhyMacStats->SetPerStaQInfo(&c));
@@ -71,15 +104,19 @@ namespace ns3 {
   }
 
   void
+  PerStaAggregationHelper::FinalizeSetup (PerStaQInfoContainer &c)
+  {
+    m_aggregator->EnablePerStaQInfo (c,m_queue,m_low,m_low->GetPhy());
+  }
+
+  void
   PerStaAggregationHelper::SetPerStaWifiMacQueue (std::string n0, const AttributeValue &v0,
                                                   std::string n1, const AttributeValue &v1,
-                                                  std::string n2, const AttributeValue &v2,
-                                                  std::string n3, const AttributeValue &v3)
+                                                  std::string n2, const AttributeValue &v2)
   {
-    m_queue->SetAttribute (n0, v0);
-    m_queue->SetAttribute (n1, v1);
-    m_queue->SetAttribute (n2, v2);
-    m_queue->SetAttribute (n3, v3);
+    if (n0 != "") m_queue->SetAttribute (n0, v0);
+    if (n1 != "") m_queue->SetAttribute (n1, v1);
+    if (n2 != "") m_queue->SetAttribute (n2, v2);
   }
 
   void
@@ -87,9 +124,9 @@ namespace ns3 {
                                                        std::string n1, const AttributeValue &v1,
                                                        std::string n2, const AttributeValue &v2)
   {
-    m_aggregator->SetAttribute (n0, v0);
-    m_aggregator->SetAttribute (n1, v1);
-    m_aggregator->SetAttribute (n2, v2);
+    if (n0 != "") m_aggregator->SetAttribute (n0, v0);
+    if (n1 != "") m_aggregator->SetAttribute (n1, v1);
+    if (n2 != "") m_aggregator->SetAttribute (n2, v2);
   }
 
   void
@@ -105,16 +142,17 @@ namespace ns3 {
                                                      std::string n9, const AttributeValue &v9,
                                                      std::string n10, const AttributeValue &v10)
   {
-    m_aggCtrl->SetAttribute (n1, v1);
-    m_aggCtrl->SetAttribute (n2, v2);
-    m_aggCtrl->SetAttribute (n3, v3);
-    m_aggCtrl->SetAttribute (n4, v4);
-    m_aggCtrl->SetAttribute (n5, v5);
-    m_aggCtrl->SetAttribute (n6, v6);
-    m_aggCtrl->SetAttribute (n7, v7);
-    m_aggCtrl->SetAttribute (n8, v8);
-    m_aggCtrl->SetAttribute (n9, v9);
-    m_aggCtrl->SetAttribute (n10, v10);
+    if (n0 != "") m_aggCtrl->SetAttribute (n0, v0);
+    if (n1 != "") m_aggCtrl->SetAttribute (n1, v1);
+    if (n2 != "") m_aggCtrl->SetAttribute (n2, v2);
+    if (n3 != "") m_aggCtrl->SetAttribute (n3, v3);
+    if (n4 != "") m_aggCtrl->SetAttribute (n4, v4);
+    if (n5 != "") m_aggCtrl->SetAttribute (n5, v5);
+    if (n6 != "") m_aggCtrl->SetAttribute (n6, v6);
+    if (n7 != "") m_aggCtrl->SetAttribute (n7, v7);
+    if (n8 != "") m_aggCtrl->SetAttribute (n8, v8);
+    if (n9 != "") m_aggCtrl->SetAttribute (n9, v9);
+    if (n10 != "") m_aggCtrl->SetAttribute (n10, v10);
   }
 
 
