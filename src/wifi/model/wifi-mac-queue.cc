@@ -27,7 +27,7 @@
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
 #include "ns3/double.h"
-
+#include "ns3/string.h"
 #include "wifi-mac-queue.h"
 #include "wifi-tx-vector.h"
 #include "per-bitrate-timeallowance.h"
@@ -376,7 +376,7 @@ PerStaWifiMacQueue::GetTypeId (void)
   static TypeId tid = TypeId ("ns3::PerStaWifiMacQueue")
     .SetParent<WifiMacQueue> ()
     .AddConstructor<PerStaWifiMacQueue> ()
-    .AddAttribute ("Service Interval", "Service interval period in seconds with which queues are served.",
+    .AddAttribute ("ServiceInterval", "Service interval period in seconds with which queues are served.",
                    DoubleValue (0.1),
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())

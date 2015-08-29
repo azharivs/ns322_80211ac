@@ -75,6 +75,8 @@ public:
   MpduUniversalAggregator ();
   ~MpduUniversalAggregator ();
 
+  Ptr<AggregationController> GetAggregationController (void);
+
   /*
    * Enables access to container by initializing member pointer
    */

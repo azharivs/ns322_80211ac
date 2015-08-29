@@ -142,7 +142,7 @@ int main (int argc, char *argv[])
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
-  PerStaAggregationHelper bss(nSta);
+  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI);
 
   //Initialize PerStaQInfo after AP and STA's initialized
 
@@ -168,27 +168,22 @@ int main (int argc, char *argv[])
 
   //Initialize PerStaWifiMacQueue. Only need to care about the AP
 
-  Ptr<PerStaWifiMacQueue> macQueue;
-  ServicePolicyType QueueServicePolicy = EDF;
+  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=30000;
   double ServiceInterval = 0.1; //seconds
-  double MaxDelay = 10.0; //seconds
-  macQueue->SetAttribute("ServicePolicy",EnumValue(QueueServicePolicy));
-  macQueue->SetAttribute("MaxPacketNumber",UintegerValue(MaxPacketNumber));
-  macQueue->SetAttribute("MaxDelay",DoubleValue(MaxDelay));
-  macQueue->SetAttribute("ServiceInterval",DoubleValue(ServiceInterval));
+  bss.SetPerStaWifiMacQueue("ServicePolicy",EnumValue(QueueServicePolicy),
+                            "MaxPacketNumber",UintegerValue(MaxPacketNumber),
+                            "ServiceInterval",DoubleValue(ServiceInterval));
 
   //Initialize MpduUniversalAggregator.  Only need to care about the AP
 
-  Ptr<MpduUniversalAggregator> aggregator;
-  AggregationType AggregationAlgorithm = STANDARD;
+  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
-  aggregator->SetAttribute("Algorithm",EnumValue(AggregationAlgorithm));
-  aggregator->SetAttribute("ServiceInterval",DoubleValue(ServiceInterval));
-  aggregator->SetAttribute("MaxAmpduSize",UintegerValue(MaxAmpduSize));
+  bss.SetMpduUniversalAggregator("Algorithm",EnumValue(AggregationAlgorithm),
+                                 "ServiceInterval",DoubleValue(ServiceInterval),
+                                 "MaxAmpduSize",UintegerValue(MaxAmpduSize));
 
   //Initialize AggregationController. Only need to care about the AP
-  Ptr<TimeAllowanceAggregationController> aggCtrl;
   double dvp = 0.02;
   double MovingIntegralWeight = 0.05;
   double kp = 0.01;
@@ -197,18 +192,20 @@ int main (int argc, char *argv[])
   double thrW = 0.5;
   double thrH = 2.5;
   double thrL = 2.5;
-  ControllerType controller = PID;
-  aggCtrl->SetAttribute("DVP",DoubleValue(dvp));
-  aggCtrl->SetAttribute("ServiceInterval",DoubleValue());
-  aggCtrl->SetAttribute("MaxDelay",DoubleValue(dMax));
-  aggCtrl->SetAttribute("MovingIntegralWeight",DoubleValue(MovingIntegralWeight));
-  aggCtrl->SetAttribute("KP",DoubleValue(kp));
-  aggCtrl->SetAttribute("KI",DoubleValue(ki));
-  aggCtrl->SetAttribute("KD",DoubleValue(kd));
-  aggCtrl->SetAttribute("ThrWeight",DoubleValue(thrW));
-  aggCtrl->SetAttribute("ThrHighCoef",DoubleValue(thrH));
-  aggCtrl->SetAttribute("ThrLowCoef",DoubleValue(thrL));
-  aggCtrl->SetAttribute("Controller",EnumValue(controller));
+  ControllerType controller = PID;//NO_CONTROL;//
+  bss.SetAggregationController("DVP",DoubleValue(dvp),
+                               "ServiceInterval",DoubleValue(ServiceInterval),
+                               "MaxDelay",DoubleValue(dMax),
+                               "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
+                               "KP",DoubleValue(kp),
+                               "KI",DoubleValue(ki),
+                               "KD",DoubleValue(kd),
+                               "ThrWeight",DoubleValue(thrW),
+                               "ThrHighCoef",DoubleValue(thrH),
+                               "ThrLowCoef",DoubleValue(thrL),
+                               "Controller",EnumValue(controller));
+
+  bss.FinalizeSetup(perStaQueue);
 
   /* Setting mobility model */
   MobilityHelper mobility;
