@@ -62,6 +62,8 @@ namespace ns3 {
       double avgArrivalBytes; //!< average arrival rate in Bytes per second
       double dvp; //!< Delay violation probability measured right before transmission
       double prEmpty; //!< Probability of the queue being empty
+      double avgResidualServiceTime;
+      double avgServiceTime;
   };
 
 
@@ -333,7 +335,6 @@ private:
   std::deque<uint32_t> m_servedBytesHistory; //!<Array of samples of served bytes during a service interval
   std::deque<uint32_t> m_servedPacketsHistory; //!<Array of samples of served packets during a service interval
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
-  //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
   uint32_t m_queueSize; //!< Current queue size in packets
   uint32_t m_queueBytes; //!< Current queue size in bytes
@@ -350,6 +351,18 @@ private:
   double m_avgServedBytes; //!<Average number of served bytes during a service interval
   double m_avgServedPackets; //!<Average number of served packets during a service interval
 
+  //average residual service time variables
+  std::deque<Time> m_arrivalsSinceLastDeparture; //!< List of arrival times since last departure used to calculate average residual service time as seen by an arbitrary arriving packet
+  double m_avgResidualServiceTime; //!< last updated average residual service time as experienced by an arbitrary arriving packet
+  std::deque<double> m_residualServiceTimeHistory; //!< Array of samples of residual service time
+
+  //average service time variables
+  Time m_recentServiceStartTime; //!< Time of starting service for most recent packet
+  Time m_recentServiceFinishTime; //!< Time of finishing service for most recent packet
+  double m_avgServiceTime; //!< last updated average packet service time
+  std::deque<double> m_serviceTimeHistory; //<! Array of samples of service time
+
+  //time allowance variables
   Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   bool m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access

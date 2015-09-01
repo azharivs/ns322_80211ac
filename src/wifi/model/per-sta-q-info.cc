@@ -59,6 +59,8 @@ namespace ns3 {
     m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
     m_dvp (0.0), m_prEmpty (0),
     m_avgServedBytes (0.0), m_avgServedPackets(0.0),
+    m_avgResidualServiceTime(0),
+    m_recentServiceStartTime (Seconds(0)), m_recentServiceFinishTime(Seconds(0)), m_avgServiceTime(0),
     m_insufficientTimeAllowance (false)
 
   {
@@ -73,6 +75,9 @@ namespace ns3 {
     m_queueDelayViolationHistory.clear();
     m_servedBytesHistory.clear();
     m_servedPacketsHistory.clear();
+    m_arrivalsSinceLastDeparture.clear();
+    m_residualServiceTimeHistory.clear();
+    m_serviceTimeHistory.clear();
   }
 
   PerStaQInfo::Item::Item(uint32_t bytes, Time tstamp)
@@ -186,7 +191,7 @@ namespace ns3 {
 
   struct PerStaStatType
   PerStaQInfo::GetAllStats (void)
-  {
+  {//TODO set added variables as well
     struct PerStaStatType stats;
     stats.avgArrival = GetAvgArrivalRate();
     stats.avgArrivalBytes = GetAvgArrivalRateBytes();
@@ -335,12 +340,20 @@ namespace ns3 {
       }
     m_arrivalHistory.push_back(Item(bytes,tstamp));
 
+    //take care of residual service time logging
+    if (!IsEmpty())//residual service time is time from an arrival to service completion IF there is a packet in service
+        m_arrivalsSinceLastDeparture.push_back(tstamp);
+
+    //take care of service time logging
+    if (IsEmpty())//an arrival marks the beginning of a service time if the queue was otherwise empty
+        m_recentServiceStartTime = tstamp;
+
     Update();
   }
 
   void
   PerStaQInfo::Departure (uint32_t bytes, Time wait, Time deadline)
-  {
+  {//TODO: this method should be called when the departure finishes
     m_queueSize --;
     m_queueBytes -= bytes;
     m_servedPackets ++;
@@ -400,6 +413,11 @@ namespace ns3 {
     m_prEmpty = 0;
     m_avgServedBytes = 0;
     m_avgServedPackets = 0;
+    m_avgResidualServiceTime = 0.0;
+    m_recentServiceStartTime = Seconds(0);
+    m_recentServiceFinishTime = Seconds(0);
+    m_avgServiceTime = 0;
+
     m_insufficientTimeAllowance = false;
 
     m_queueSizeHistory.clear();
@@ -409,6 +427,9 @@ namespace ns3 {
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
     m_queueDelayViolationHistory.clear();
+    m_arrivalsSinceLastDeparture.clear();
+    m_residualServiceTimeHistory.clear();
+    m_serviceTimeHistory.clear();
 
   }
 
