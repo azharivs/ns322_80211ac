@@ -272,7 +272,7 @@ int main (int argc, char *argv[])
 	  //myClient.setStopTime(Seconds (simulatioTime+1));
 	  tempApp.Start (Seconds (1.0));
 	  tempApp.Stop (Seconds (simulationTime+1));
-	  clientApp.Add(* tempApp.Begin());// add to container
+	  clientApp.Add( *(tempApp.Begin()) );// add to container
     }
 
   double rateAdaptInterval = 2.0; //seconds;

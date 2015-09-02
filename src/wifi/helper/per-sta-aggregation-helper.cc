@@ -109,7 +109,8 @@ namespace ns3 {
   PerStaAggregationHelper::InstallSourceRateAdaptor (const PerStaQInfoContainer &staQInfo, const ApplicationContainer &clientApps, double interval)
   {//TODO
     NS_ASSERT_MSG(staQInfo.GetN()!=0,"No PerStaQInfo Initialized.");
-    NS_ASSERT_MSG(staQInfo.GetN()!= clientApps.GetN(),"Mismatch between number of PerStaQInfo and Application Container Entries.");
+    NS_ASSERT_MSG(staQInfo.GetN() == clientApps.GetN(),"Mismatch between number of PerStaQInfo and Application Container Entries.");
+    NS_ASSERT(m_aggCtrl);
 
     ApplicationContainer::Iterator cit = clientApps.Begin();
     for (PerStaQInfoContainer::Iterator it = staQInfo.Begin(); it != staQInfo.End(); ++it)
@@ -121,8 +122,10 @@ namespace ns3 {
         sra->DoInit();
         (*cit)->AggregateObject(sra);
         (*it)->AggregateObject(sra);
+        (*it)->SetController(m_aggCtrl->GetController((*it)->GetMac()) );//TODO bad way of relating controller to per sta q info
         (*it)->SetAttribute("ObservationInterval",DoubleValue(interval));
         Simulator::Schedule(Seconds(interval), &CbrRateAdapt::UpdateSourceRate, sra);
+        ++cit;
       }
   }
 

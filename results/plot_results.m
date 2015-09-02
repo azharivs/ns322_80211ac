@@ -144,7 +144,7 @@ for i=1:nSta
     avgQArrivalMbps{i} = data(:,8);
     avgQDvp{i} = data(:,9);
     avgServedPkts{i} = data(:,11);
-    avgServedBytes{i} = data(:,12)*1e3;
+    avgServedBytes{i} = data(:,13);%data(:,12)*1e3;
     clear data;
     subplot(2,3,1);
     plot(times,avgQPkt{i},pattern{i});
