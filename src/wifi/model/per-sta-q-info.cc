@@ -104,9 +104,9 @@ namespace ns3 {
   }
 
   void
-  PerStaQInfo::SetTargetQueueSize (double target)
+  PerStaQInfo::SetController (Ptr<PidController> ctrl)
   {
-    m_targetQueueSize = target;
+    m_ctrl = ctrl; //TODO: bad code design
   }
 
   double
@@ -376,6 +376,10 @@ namespace ns3 {
       }
 
     Update();
+
+    if (m_ctrl)
+      m_targetQueueSize = m_ctrl->GetReference();
+
   }
 
   void
@@ -429,6 +433,8 @@ namespace ns3 {
       }
 
     Update();
+    if (m_ctrl)
+      m_targetQueueSize = m_ctrl->GetReference();
   }
 
   bool

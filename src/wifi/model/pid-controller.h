@@ -30,6 +30,7 @@
 #include "per-sta-q-info.h"
 
 namespace ns3 {
+  class PerStaQInfo;
 
 /**
  * \ingroup wifi

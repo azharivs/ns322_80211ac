@@ -99,7 +99,6 @@ public:
   double GetErrorSignal(void);
   double GetDerivative(void);
   double GetIntegral(void);
-  double GetReference(void);
 
   double GetHighThreshold(void);
   double GetLowThreshold(void);

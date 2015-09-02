@@ -228,13 +228,14 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   double
   PidController::GetReference(void)
   {//for now it returns the reference queue size
+    UpdateFeedbackSignal();
     double tmpPrEmpty = 0.999;
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
-    return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp) - rho/2;
+    //return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp) - rho/2;
     //sva accurate but fluctuating:
-    //return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
+    return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
   }
 
   double PidController::ComputeErrorSignal(void)
@@ -245,9 +246,9 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
       tmpPrEmpty = m_input.prEmpty;
     //sva original: double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
-    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
+    //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
     //sva should be this but changed to make it smoother:
-    //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
+    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
     return err;
   }

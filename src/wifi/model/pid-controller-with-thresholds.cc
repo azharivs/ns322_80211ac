@@ -115,12 +115,6 @@ PidControllerWithThresholds::PidParamType::PidParamType(double kp, double ki, do
   }
 
   double
-  PidControllerWithThresholds::GetReference(void)
-  {
-    return ComputeErrorSignal() + m_feedback.avgServedPacketes;
-  }
-
-  double
   PidControllerWithThresholds::ComputeOutput (void)
   {
     double err = ComputeErrorSignal();
