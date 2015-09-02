@@ -34,6 +34,8 @@
 #include "ns3/wifi-mac-queue.h"
 #include "ns3/mpdu-universal-aggregator.h"
 #include "ns3/aggregation-controllers.h"
+#include "ns3/source-rate-adapt.h"
+#include "ns3/application-container.h"
 
 namespace ns3 {
 
@@ -51,6 +53,8 @@ public:
     PerStaQInfoContainer InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac);
 
     Ptr<BssPhyMacStats> InstallBssPhyMacStats (uint32_t hist, PerStaQInfoContainer &c);
+
+    void InstallSourceRateAdaptor (const PerStaQInfoContainer &staQInfo, const ApplicationContainer &clientApps, double interval);
 
     void FinalizeSetup (PerStaQInfoContainer &c);
 

@@ -30,6 +30,8 @@
 #include "ns3/per-sta-q-info.h"
 #include "per-sta-aggregation-helper.h"
 #include "ns3/ap-wifi-mac.h"
+#include "ns3/simulator.h"
+#include "ns3/double.h"
 
 namespace ns3 {
 
@@ -101,6 +103,27 @@ namespace ns3 {
     bssPhyMacStats->SetAttribute("HistorySize",UintegerValue(hist)); //keep history of the last hist beacons (i.e. one seconds)
     NS_ASSERT(bssPhyMacStats->SetPerStaQInfo(&c));
     return bssPhyMacStats;
+  }
+
+  void
+  PerStaAggregationHelper::InstallSourceRateAdaptor (const PerStaQInfoContainer &staQInfo, const ApplicationContainer &clientApps, double interval)
+  {//TODO
+    NS_ASSERT_MSG(staQInfo.GetN()!=0,"No PerStaQInfo Initialized.");
+    NS_ASSERT_MSG(staQInfo.GetN()!= clientApps.GetN(),"Mismatch between number of PerStaQInfo and Application Container Entries.");
+
+    ApplicationContainer::Iterator cit = clientApps.Begin();
+    for (PerStaQInfoContainer::Iterator it = staQInfo.Begin(); it != staQInfo.End(); ++it)
+      {//assuming order of stations and clients in both containers correspond to each other.
+        Ptr<SourceRateAdapt> sra = CreateObject<SourceRateAdapt>();
+        sra->SetApplication(*cit);
+        sra->SetStaQ(*it);
+        sra->SetInterval(interval);
+        sra->DoInit();
+        (*cit)->AggregateObject(sra);
+        (*it)->AggregateObject(sra);
+        (*it)->SetAttribute("ObservationInterval",DoubleValue(interval));
+        Simulator::Schedule(Seconds(interval), &SourceRateAdapt::UpdateSourceRate, sra);
+      }
   }
 
   void

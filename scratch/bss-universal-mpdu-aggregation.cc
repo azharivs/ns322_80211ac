@@ -253,6 +253,7 @@ int main (int argc, char *argv[])
   myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
 
   ApplicationContainer clientApp;//sva: my empty application container for UDP clients
+  ApplicationContainer tempApp;//sva: my temporary application container for UDP clients
   uint32_t j;
   //sva: figuring out how to do the iterations.
   for ( j = 0 ; j < nSta ; j ++)
@@ -266,14 +267,18 @@ int main (int argc, char *argv[])
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this
 	  //sva: needs a new Install method
-	  clientApp = myClient.Install (wifiApNode.Get (0));
+	  tempApp = myClient.Install (wifiApNode.Get (0));
 	  //myClient.setStartTime(Seconds (1.0));
 	  //myClient.setStopTime(Seconds (simulatioTime+1));
-	  clientApp.Start (Seconds (1.0));
-	  clientApp.Stop (Seconds (simulationTime+1));
+	  tempApp.Start (Seconds (1.0));
+	  tempApp.Stop (Seconds (simulationTime+1));
+	  clientApp.Add(* tempApp.Begin());// add to container
     }
 
+  double rateAdaptInterval = 2.0; //seconds;
+  bss.InstallSourceRateAdaptor(perStaQueue, clientApp, rateAdaptInterval);
 
+  //sva: just for test: (*tempApp.Begin())->SetAttribute ("Interval", TimeValue (Time ("0.02")));
       
   Simulator::Stop (Seconds (simulationTime+1));
 
