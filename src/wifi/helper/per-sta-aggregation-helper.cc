@@ -114,7 +114,7 @@ namespace ns3 {
     ApplicationContainer::Iterator cit = clientApps.Begin();
     for (PerStaQInfoContainer::Iterator it = staQInfo.Begin(); it != staQInfo.End(); ++it)
       {//assuming order of stations and clients in both containers correspond to each other.
-        Ptr<SourceRateAdapt> sra = CreateObject<SourceRateAdapt>();
+        Ptr<CbrRateAdapt> sra = CreateObject<CbrRateAdapt>();
         sra->SetApplication(*cit);
         sra->SetStaQ(*it);
         sra->SetInterval(interval);
@@ -122,7 +122,7 @@ namespace ns3 {
         (*cit)->AggregateObject(sra);
         (*it)->AggregateObject(sra);
         (*it)->SetAttribute("ObservationInterval",DoubleValue(interval));
-        Simulator::Schedule(Seconds(interval), &SourceRateAdapt::UpdateSourceRate, sra);
+        Simulator::Schedule(Seconds(interval), &CbrRateAdapt::UpdateSourceRate, sra);
       }
   }
 
