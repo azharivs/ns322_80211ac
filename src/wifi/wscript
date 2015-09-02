@@ -86,6 +86,7 @@ def build(bld):
         'model/pid-controller-with-thresholds.cc',
         'model/per-bitrate-timeallowance.cc',
         'helper/per-sta-aggregation-helper.cc',
+        'model/source-rate-adapt.cc',
         ]
 
     obj_test = bld.create_ns3_module_test_library('wifi')
@@ -181,6 +182,7 @@ def build(bld):
         'model/pid-controller-with-thresholds.h',
         'model/per-bitrate-timeallowance.h',
         'helper/per-sta-aggregation-helper.h',
+        'model/source-rate-adapt.h',
         ]
 
     if bld.env['ENABLE_GSL']:

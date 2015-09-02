@@ -95,6 +95,23 @@ public:
   void SetTid (uint8_t tid);
 
   /**
+   * Set target queue size in packets above which, arrivals
+   * will be considered excessive arrivals and below which, departures
+   * will be considered arrival deficit.
+   */
+  void SetTargetQueueSize (double target);
+
+  /*
+   * Get current value of target queue size in packets
+   */
+  double GetTargetQueueSize (void);
+
+  /*
+   * Returns last calculated value for arrival rate surplus in pps
+   */
+  double GetArrivalRateSurplus (void);
+
+  /**
    * Get MAC address associated to this queue
    *
    * \return reference to MAC address
@@ -332,6 +349,8 @@ private:
   std::deque<double> m_queueDelayViolationHistory; //!< Array of samples of queue deadline violations in seconds (pos. value means no violation)
   std::deque<uint32_t> m_servedBytesHistory; //!<Array of samples of served bytes during a service interval
   std::deque<uint32_t> m_servedPacketsHistory; //!<Array of samples of served packets during a service interval
+  std::deque<Time> m_arrivalSurplus;
+  std::deque<Time> m_arrivalDeficit;
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
@@ -349,6 +368,10 @@ private:
   double m_prEmpty; //!< Probability of the queue being empty
   double m_avgServedBytes; //!<Average number of served bytes during a service interval
   double m_avgServedPackets; //!<Average number of served packets during a service interval
+  double m_observationInterval; //!< Length of observation interval in seconds
+  double m_curArrivalRateSurplus; //!< in packets per second
+  double m_curArrivalSurplus; //!< in packets
+  double m_targetQueueSize;
 
   Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.

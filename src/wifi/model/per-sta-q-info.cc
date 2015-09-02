@@ -21,10 +21,12 @@
 #include <list>
 #include <deque>
 #include <utility>
+#include <math.h>
 #include "ns3/packet.h"
 #include "ns3/nstime.h"
 #include "ns3/object.h"
 #include "ns3/uinteger.h"
+#include "ns3/double.h"
 //#include "wifi-mac-header.h"
 //#include "wifi-mac-queue.h"
 #include "per-sta-q-info.h"
@@ -43,6 +45,10 @@ namespace ns3 {
                        UintegerValue (25),
                        MakeUintegerAccessor (&PerStaQInfo::m_histSize),
                        MakeUintegerChecker<uint32_t> ())
+        .AddAttribute ("ObservationInterval", "Length of Interval in Seconds Over Which Some Parameters Such as Arrival Rate Deficit/Excess Are Monitored.",
+                       DoubleValue (2.0),
+                       MakeDoubleAccessor (&PerStaQInfo::m_observationInterval),
+                       MakeDoubleChecker<double> ())
         .AddAttribute ("TID", "Traffic Indication Map of Interest.",
                        UintegerValue (UP_VI),
                        MakeUintegerAccessor (&PerStaQInfo::m_tid),
@@ -59,8 +65,8 @@ namespace ns3 {
     m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
     m_dvp (0.0), m_prEmpty (0),
     m_avgServedBytes (0.0), m_avgServedPackets(0.0),
+    m_curArrivalRateSurplus (0), m_targetQueueSize(0),
     m_insufficientTimeAllowance (false)
-
   {
   }
 
@@ -73,6 +79,9 @@ namespace ns3 {
     m_queueDelayViolationHistory.clear();
     m_servedBytesHistory.clear();
     m_servedPacketsHistory.clear();
+    m_arrivalSurplus.clear();
+    m_arrivalDeficit.clear();
+
   }
 
   PerStaQInfo::Item::Item(uint32_t bytes, Time tstamp)
@@ -92,6 +101,24 @@ namespace ns3 {
   PerStaQInfo::SetTid(uint8_t tid)
   {
     m_tid = tid;
+  }
+
+  void
+  PerStaQInfo::SetTargetQueueSize (double target)
+  {
+    m_targetQueueSize = target;
+  }
+
+  double
+  PerStaQInfo::GetTargetQueueSize (void)
+  {
+    return m_targetQueueSize;
+  }
+
+  double
+  PerStaQInfo::GetArrivalRateSurplus (void)
+  {
+    return m_curArrivalRateSurplus;
   }
 
   Mac48Address&
@@ -335,6 +362,19 @@ namespace ns3 {
       }
     m_arrivalHistory.push_back(Item(bytes,tstamp));
 
+    if (m_queueSize > m_targetQueueSize)
+      {
+        m_arrivalSurplus.push_back(tstamp);
+        m_curArrivalSurplus ++;
+      }
+    Time observationStartTime = Simulator::Now() - Seconds(m_observationInterval);
+    //remove old samples
+    while (!m_arrivalSurplus.empty() && m_arrivalSurplus.front() < observationStartTime )
+      {
+        m_arrivalSurplus.pop_front();
+        m_curArrivalSurplus --;
+      }
+
     Update();
   }
 
@@ -375,6 +415,19 @@ namespace ns3 {
     std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
 #endif
 
+    if (m_queueSize < m_targetQueueSize)
+      {
+        m_arrivalDeficit.push_back(Simulator::Now());
+        m_curArrivalSurplus --;
+      }
+    Time observationStartTime = Simulator::Now() - Seconds(m_observationInterval);
+    //remove old samples
+    while (!m_arrivalDeficit.empty() && m_arrivalDeficit.front() < observationStartTime )
+      {
+        m_arrivalDeficit.pop_front();
+        m_curArrivalSurplus ++;
+      }
+
     Update();
   }
 
@@ -400,6 +453,7 @@ namespace ns3 {
     m_prEmpty = 0;
     m_avgServedBytes = 0;
     m_avgServedPackets = 0;
+    m_curArrivalRateSurplus = 0;
     m_insufficientTimeAllowance = false;
 
     m_queueSizeHistory.clear();
@@ -409,6 +463,8 @@ namespace ns3 {
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
     m_queueDelayViolationHistory.clear();
+    m_arrivalSurplus.clear();
+    m_arrivalDeficit.clear();
 
   }
 
@@ -516,6 +572,26 @@ namespace ns3 {
         m_dvp = tmp / m_queueDelayViolationHistory.size();
       }
 
+    tmp = 0;
+    Time start = Seconds(0);
+    Time stop = Seconds(0);
+    if (!m_arrivalSurplus.empty())
+      {
+        start = m_arrivalSurplus.front();
+        stop = m_arrivalSurplus.back();
+      }
+    if (!m_arrivalDeficit.empty())
+      {
+        start = std::min(start, m_arrivalDeficit.front());
+        stop = std::max(stop,m_arrivalDeficit.back());
+      }
+
+    if (stop > start)
+      m_curArrivalRateSurplus = m_curArrivalSurplus / (stop-start).GetSeconds();
+    else
+      m_curArrivalRateSurplus = 0;
+
+
 #ifdef SVA_DEBUG
     std::cout << Simulator::Now().GetSeconds() << " PerStaQInfo::Update " << GetMac() << " [TID " << (int) m_tid << "] " ;
     std::cout << "Q= " << m_queueSize << " Pkts( " << (double)m_queueBytes/1000000 << " MB) " ;
@@ -523,7 +599,8 @@ namespace ns3 {
     std::cout << "avgW= " << m_avgQueueWait*1000 << " msec arrRate= " << m_avgArrivalRate << " pps( "
         << m_avgArrivalRateBytes*8/1000000 << " Mbps) DVP= " << m_dvp
         << " History= " << m_queueSizeHistory.size() << " ProbEmpty= " << m_prEmpty
-        << " avgServedPackets= " << m_avgServedPackets << " avgServedBytes= " << m_avgServedBytes/1000000 << "\n" ;
+        << " avgServedPackets= " << m_avgServedPackets << " avgServedBytes= " << m_avgServedBytes/1000000
+        << " arrivalRateSurplus= " << m_curArrivalRateSurplus << " pps" << "\n" ;
 #endif
 
   }

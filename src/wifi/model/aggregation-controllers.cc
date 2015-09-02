@@ -121,7 +121,7 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_thrL),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Controller", "The aggregation controller used for adjusting parameters.",
-                   EnumValue (NO_CONTROL),
+                   EnumValue (PID),
                    MakeEnumAccessor (&TimeAllowanceAggregationController::m_type),
                    MakeEnumChecker (ns3::NO_CONTROL, "ns3::NO_CONTROL",
                                     ns3::PID_WITH_THRESHOLDS, "ns3::PID_WITH_THRESHOLDS",
@@ -304,7 +304,7 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     << " avgQueue= " << sta->GetAvgSize()
     << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
     << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
-    << " reference= " << m_ctrl[sta->GetMac()]->GetReference()
+    << " reference= " << sta->GetSize() - m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
     << " totalAllowance= " << totalTimeAllowance
     << " adjust= " << adjustment
     << "\n";
