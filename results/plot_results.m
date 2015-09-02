@@ -85,6 +85,7 @@ for i=1:nSta
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Arrival Rate (Mb/s)');
+    ylim([0 10]);
     grid on;
     subplot(3,3,4);
     plot(timesStaQ{i},avgQDvp{i},pattern{i});
