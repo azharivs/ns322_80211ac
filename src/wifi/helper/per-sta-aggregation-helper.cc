@@ -166,7 +166,8 @@ namespace ns3 {
                                                      std::string n7, const AttributeValue &v7,
                                                      std::string n8, const AttributeValue &v8,
                                                      std::string n9, const AttributeValue &v9,
-                                                     std::string n10, const AttributeValue &v10)
+                                                     std::string n10, const AttributeValue &v10,
+                                                     std::string n11, const AttributeValue &v11)
   {
     if (n0 != "") m_aggCtrl->SetAttribute (n0, v0);
     if (n1 != "") m_aggCtrl->SetAttribute (n1, v1);
@@ -179,6 +180,7 @@ namespace ns3 {
     if (n8 != "") m_aggCtrl->SetAttribute (n8, v8);
     if (n9 != "") m_aggCtrl->SetAttribute (n9, v9);
     if (n10 != "") m_aggCtrl->SetAttribute (n10, v10);
+    if (n11 != "") m_aggCtrl->SetAttribute (n11, v11);
   }
 
 

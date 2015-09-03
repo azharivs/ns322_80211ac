@@ -45,6 +45,10 @@ namespace ns3 {
                        UintegerValue (25),
                        MakeUintegerAccessor (&PerStaQInfo::m_histSize),
                        MakeUintegerChecker<uint32_t> ())
+        .AddAttribute ("LargeHistorySize", "Number of Samples Kept for Calculating Statistics Over Larger Range of Samples (e.g., DVP).",
+                       UintegerValue (1000),
+                       MakeUintegerAccessor (&PerStaQInfo::m_histSizeLarge),
+                       MakeUintegerChecker<uint32_t> ())
         .AddAttribute ("ObservationInterval", "Length of Interval in Seconds Over Which Some Parameters Such as Arrival Rate Deficit/Excess Are Monitored.",
                        DoubleValue (2.0),
                        MakeDoubleAccessor (&PerStaQInfo::m_observationInterval),
@@ -362,7 +366,7 @@ namespace ns3 {
       }
     m_arrivalHistory.push_back(Item(bytes,tstamp));
 
-    if (m_queueSize > m_targetQueueSize)
+    if (m_ctrl && m_queueSize > m_targetQueueSize)
       {
         m_arrivalSurplus.push_back(tstamp);
         m_curArrivalSurplus ++;
@@ -409,7 +413,7 @@ namespace ns3 {
     m_queueWaitHistory.push_back(wait.GetSeconds());
 
 
-    if (m_queueDelayViolationHistory.size() == m_histSize)
+    if (m_queueDelayViolationHistory.size() == m_histSizeLarge)
       {//make sure old samples are discarded
         m_queueDelayViolationHistory.pop_front();
       }
@@ -419,7 +423,7 @@ namespace ns3 {
     std::cout << m_queueDelayViolationHistory.front()*1000 << ".......... Time to deadline (msec)\n";
 #endif
 
-    if (m_queueSize < m_targetQueueSize)
+    if (m_ctrl && m_queueSize < m_targetQueueSize)
       {
         m_arrivalDeficit.push_back(Simulator::Now());
         m_curArrivalSurplus --;
@@ -606,7 +610,9 @@ namespace ns3 {
         << m_avgArrivalRateBytes*8/1000000 << " Mbps) DVP= " << m_dvp
         << " History= " << m_queueSizeHistory.size() << " ProbEmpty= " << m_prEmpty
         << " avgServedPackets= " << m_avgServedPackets << " avgServedBytes= " << m_avgServedBytes/1000000
-        << " arrivalRateSurplus= " << m_curArrivalRateSurplus << " pps" << "\n" ;
+        << " arrivalRateSurplus= " << m_curArrivalRateSurplus
+        << " arrivalSurplus= " << m_curArrivalSurplus
+        << " interval= " << (stop-start).GetSeconds() << "\n" ;
 #endif
 
   }

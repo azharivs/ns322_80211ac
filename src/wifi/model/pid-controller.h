@@ -103,6 +103,13 @@ public:
    */
   virtual bool Init (void);
 
+  /*
+   * forces output and previous output to a certain value.
+   * can be used for initialization as well.
+   */
+  virtual void ForceOutput (double output);
+
+
   virtual void SetStaQInfo (const Ptr<PerStaQInfo> sta);
   /*
    * sets the input parameters of the controller: dvp,dMax,SI

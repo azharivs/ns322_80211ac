@@ -185,15 +185,17 @@ int main (int argc, char *argv[])
 
   //Initialize AggregationController. Only need to care about the AP
   double dvp = 0.02;
+  Time initialTimeAllowance = MicroSeconds(13000);
   double MovingIntegralWeight = 0.05;
-  double kp = 0.01;
-  double ki = 0.02;
-  double kd = 0.05;
+  double kp = 0.00; //0.01;
+  double ki = 0.00 ;//0.02;
+  double kd = 0.00; //0.05;
   double thrW = 0.5;
   double thrH = 2.5;
   double thrL = 2.5;
   ControllerType controller = PID;//NO_CONTROL;//
   bss.SetAggregationController("DVP",DoubleValue(dvp),
+                               "TimeAllowance", TimeValue(initialTimeAllowance),
                                "ServiceInterval",DoubleValue(ServiceInterval),
                                "MaxDelay",DoubleValue(dMax),
                                "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
@@ -275,8 +277,8 @@ int main (int argc, char *argv[])
 	  clientApp.Add( *(tempApp.Begin()) );// add to container
     }
 
-  double rateAdaptInterval = 2.0; //seconds;
-  bss.InstallSourceRateAdaptor(perStaQueue, clientApp, rateAdaptInterval);
+  //double rateAdaptInterval = 10.0; //seconds;
+  //bss.InstallSourceRateAdaptor(perStaQueue, clientApp, rateAdaptInterval);
 
   //sva: just for test: (*tempApp.Begin())->SetAttribute ("Interval", TimeValue (Time ("0.02")));
       

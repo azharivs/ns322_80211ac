@@ -89,7 +89,7 @@ TimeAllowanceAggregationController::GetTypeId (void)
                    MakeDoubleAccessor (&TimeAllowanceAggregationController::m_maxDelay),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("TimeAllowance", "Fixed Time Allowance (in sec) when NO_CONTROL controller is selected",
-                   TimeValue (MilliSeconds (12.0) ), //sva: the default value should be later changed to beacon interval
+                   TimeValue (MilliSeconds (13.5) ),
                    MakeTimeAccessor (&TimeAllowanceAggregationController::m_timeAllowance),
                    MakeTimeChecker ())
     .AddAttribute ("MovingIntegralWeight", "Recent sample moving average weight for approximating the integral term of the PID controllers",
@@ -203,6 +203,8 @@ TimeAllowanceAggregationController::DoInitializePidControl (void)
       pid->SetInputParams(PidController::InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
       pid->Init();
       m_ctrl[(*it)->GetMac()] = pid;
+      (*it)->SetTimeAllowance(m_timeAllowance);// set initial value
+      pid->ForceOutput(m_timeAllowance.GetSeconds());
     }
 }
 
@@ -226,6 +228,8 @@ TimeAllowanceAggregationController::DoInitializePidControlWithThresholds (void)
       pid->SetInputParams(PidControllerWithThresholds::InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
       pid->Init();
       m_ctrl[(*it)->GetMac()] = pid;
+      (*it)->SetTimeAllowance(m_timeAllowance);// set initial value
+      pid->ForceOutput(m_timeAllowance.GetSeconds());
     }
 }
 void
@@ -310,7 +314,7 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     << " avgQueue= " << sta->GetAvgSize()
     << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
     << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
-    << " reference= " << m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
+    << " reference= " << sta->GetAvgSize() - m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
     << " totalAllowance= " << totalTimeAllowance
     << " adjust= " << adjustment
     << "\n";
@@ -367,7 +371,7 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     << " avgQueue= " << sta->GetAvgSize()
     << " derivative= " << controller->GetDerivative()
     << " integral= " << controller->GetIntegral()
-    << " reference= " << controller->GetReference()
+    << " reference= " << sta->GetAvgSize() - controller->GetReference()
     << " totalAllowance= " << totalTimeAllowance
     << " errCorr= " << controller->GetErrorCorrelation()
     << " thrHi= " << controller->GetHighThreshold()
