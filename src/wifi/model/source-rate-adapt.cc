@@ -167,7 +167,7 @@ namespace ns3{
   void
   CbrRateAdapt::DoSetSourceRate (double pps)
   {//TODO could be redundant
-    if (Simulator::Now() < Seconds(6.0)) //skip warm up
+    if (Simulator::Now() < Seconds(10.0)) //allow for warm up
       return;
     Time pktGenInterval = Seconds(1.0/pps);
     m_app->GetObject<UdpClient>()->SetAttribute("Interval", TimeValue (pktGenInterval));

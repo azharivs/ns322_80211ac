@@ -360,6 +360,7 @@ private:
   uint32_t m_servedBytes; //!<Number of served bytes from the beginning of current service interval
   uint32_t m_servedPackets; //!<Number of served packets from the beginning of current service interval
   uint32_t m_histSize; //!< Sample history size
+  uint32_t m_histSizeLarge; //!< Sample history size for larger history (DVP)
   double m_avgQueueSize; //!< Last updated average queue size in packets
   double m_avgQueueBytes; //!< Last updated average queue size in bytes
   double m_avgQueueWait; //!< Last updated average queue waiting time in seconds

@@ -99,6 +99,12 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     return true;
   }
 
+  void PidController::ForceOutput (double output)
+  {
+    m_state.prevOut = output;
+    m_state.curOut = output;
+  }
+
   void
   PidController::SetStaQInfo (const Ptr<PerStaQInfo> sta)
   {

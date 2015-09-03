@@ -76,7 +76,8 @@ public:
                                    std::string n7 = "", const AttributeValue &v7 = EmptyAttributeValue (),
                                    std::string n8 = "", const AttributeValue &v8 = EmptyAttributeValue (),
                                    std::string n9 = "", const AttributeValue &v9 = EmptyAttributeValue (),
-                                   std::string n10 = "", const AttributeValue &v10 = EmptyAttributeValue ());
+                                   std::string n10 = "", const AttributeValue &v10 = EmptyAttributeValue (),
+                                   std::string n11 = "", const AttributeValue &v11 = EmptyAttributeValue ());
 
 protected:
 
