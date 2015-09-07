@@ -23,6 +23,7 @@
 #include "ns3/ptr.h"
 #include "ns3/packet.h"
 #include "ns3/object.h"
+#include "ns3/nstime.h"
 
 #include "ampdu-subframe-header.h"
 
@@ -64,13 +65,17 @@ public:
   virtual void AddHeaderAndPad (Ptr<Packet> packet,bool last) = 0;
   /**
    * \param peekedPacket the packet we want to insert into <i>aggregatedPacket</i>.
+   * \param peekedHeader the header that will eventually be added to this packet. Can not be obtained from packet because it is probably not AddHeader()'ed yet
    * \param aggregatedPacket packet that will contain the packet of size <i>packetSize</i>, if aggregation is possible.
    * \param blockAckSize size of the piggybacked block ack request
+   * \param duration is the duration of the transmission. This has to be provided as input to prevent
+   *        additional call to WifiPhy::CalculateTsDuration() as it will cause state inconsistency
+   *        TODO: find a better remedy in the future
    * \return true if the packet can be aggregated to <i>aggregatedPacket</i>, false otherwise.
    *
    * This method is used to determine if a packet could be aggregated to an A-MPDU
    */
-  virtual bool CanBeAggregated (Ptr<const Packet> peekedPacket, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize) = 0;
+  virtual bool CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration) = 0;
   /**
    * \return padding that must be added to the end of an aggregated packet
    *

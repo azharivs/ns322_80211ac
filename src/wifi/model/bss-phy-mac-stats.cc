@@ -32,6 +32,8 @@
 #include "ns3/simulator.h"
 #include "bss-phy-mac-stats.h"
 #include "per-sta-q-info.h"
+#include "ampdu-tag.h"
+#include "ampdu-subframe-header.h"
 
 namespace ns3 {
 
@@ -53,17 +55,22 @@ namespace ns3 {
   }
 
   BssPhyMacStats::BssPhyMacStats()
-  : m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval(0),
+  : m_recordTx (false),
+    m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval(0),
     m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0), m_avgBeaconInterval (0),
     m_samples (0)
   {//TODO make trace sinks null
+    m_perStaQInfo = NULL;
   }
 
   BssPhyMacStats::BssPhyMacStats(std::string path)
-  : m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval (0),
+  : m_recordTx (false),
+    m_idle (0), m_busy (0), m_lastBeacon (0), m_beaconInterval (0),
     m_avgIdleTimePerBeacon (0), m_avgBusyTimePerBeacon (0),  m_avgBeaconInterval (0),
     m_samples (0)
   {
+    m_perStaQInfo = NULL;
+
     Ptr<WifiPhyStateHelper> wifiPhyStateHelper;
     std::ostringstream stateLoggerPath;
     stateLoggerPath << path << "/State";
@@ -80,6 +87,17 @@ namespace ns3 {
     m_idleTimeHistory.clear();
     m_busyTimeHistory.clear();
     m_beaconIntervalHistory.clear();
+  }
+
+  bool
+  BssPhyMacStats::SetPerStaQInfo (PerStaQInfoContainer *c)
+  {
+    if (!c)
+      {
+        return false;
+      }
+    m_perStaQInfo = c;
+    return true;
   }
 
   Time
@@ -114,6 +132,11 @@ namespace ns3 {
         break;
       case WifiPhy::TX:
         RecordBusy(duration);
+        if (m_recordTx)
+          {
+            m_recordTx = false;
+            RecordTx(duration);
+          }
         break;
       case WifiPhy::RX:
         RecordBusy(duration);
@@ -133,13 +156,47 @@ namespace ns3 {
   BssPhyMacStats::PhyTxStartSink (const Ptr<const Packet> packet, const WifiMode mode,
                                   const WifiPreamble preamble, const uint8_t power)
   {
+    m_recordTx = false;
     Time now = Simulator::Now();
+    m_curPacket = packet;
     WifiMacHeader hdr;
-    packet->PeekHeader(hdr);
+    AmpduTag ampduTag;
+    uint32_t start = 0;
+    if (packet->PeekPacketTag(ampduTag))
+      {
+        if (ampduTag.GetAmpdu())
+          {//TODO extract WifiMacHeader
+            AmpduSubframeHeader ampduHdr;
+            start = packet->PeekHeader(ampduHdr);
+          }
+      }
+    packet->PeekHeader(hdr,start);
+
+#ifdef SVA_PACKET_TRACE
+    std::ostringstream os;
+    hdr.Print(os);
+    std::cout << Simulator::Now().GetSeconds() << " sva_packet_trace::PhyTxStartSink "
+        << "---PACKET---> " << packet->ToString()
+        << "---HEADER---> " << os.str() << "\n";
+#endif
     if (hdr.IsBeacon())
       {
         //std::cout << "@ " << now.GetSeconds() << " BEACON TX \n";
         RecordBeacon(now);
+      }
+    else if ((hdr.IsData() || hdr.IsQosData()) && !hdr.GetAddr1().IsBroadcast() ) //update time allowance for that station's queue
+      {
+        m_recordTx = true;
+      }
+    else
+      {
+#ifdef SVA_DEBUG_DETAIL
+        std::ostringstream os;
+        hdr.Print(os);
+        std::cout << Simulator::Now().GetSeconds() << " RTA BssPhyMacStats::PhyTxStartSink m_recordTx=false "
+            << "PACKET: " << packet->ToString()
+            << "Header : " << os.str() << "\n";
+#endif
       }
   }
 
@@ -153,6 +210,51 @@ namespace ns3 {
   BssPhyMacStats::RecordBusy (Time duration)
   {
     m_busy += duration;
+  }
+
+  void
+  BssPhyMacStats::RecordTx (Time duration)
+  {
+    if (!m_perStaQInfo)//return if no PerStaQInfo capability is defined (probably a station)
+      {
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << "BssPhyMacStats::RecordTx No PerStaQInfo Capability Defined \n";
+#endif
+        return ;
+      }
+    WifiMacHeader hdr;
+    AmpduTag ampduTag;
+    uint32_t start = 0;
+    if (m_curPacket->PeekPacketTag(ampduTag))
+      {
+        if (ampduTag.GetAmpdu())
+          {//TODO extract WifiMacHeader
+            AmpduSubframeHeader ampduHdr;
+            start = m_curPacket->PeekHeader(ampduHdr);
+          }
+      }
+    m_curPacket->PeekHeader(hdr,start);
+
+    std::ostringstream os;
+    hdr.Print(os);
+    //find PerStaQ related to this packet
+    Ptr<PerStaQInfo> staQInfo = m_perStaQInfo->GetByMac(hdr.GetAddr1());
+    NS_ASSERT_MSG(staQInfo, "BssPhyMacStats::RecordTx, No station found by that MAC address "
+                  << hdr.GetAddr1() << " PACKET: " << m_curPacket->ToString()
+                  << " HEADER: " << os.str());
+    //update time allowance. TODO: is it necessary to do this for all types of aggregators and service disciplines?
+    Time leftOver = staQInfo->DeductTimeAllowance(duration);
+    //Note: updating of total aggeragted MPDUs sent during this time interval is performed upon departure from PerStaWifiMacQueue::Departure
+    //Note: retransmissions are NOT counted, as they are dequeued from PerStaWifiQueue and put into the aggregator's queue at MacLow
+#ifdef SVA_DEBUG_DETAIL
+    std::cout << Simulator::Now().GetSeconds() << " RTA BssPhyMacStats::RecordTx Tx-duration= "
+        << duration.GetSeconds()*1000 << " msec leftover= "
+        << leftOver.GetSeconds()*1000 << " msec\n";
+    if (leftOver < 0)
+      {
+        std::cout << "BssPhyMacStats::RecordTx Negative Time Allowance Left Over \n";
+      }
+#endif
   }
 
   void

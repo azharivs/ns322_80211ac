@@ -36,6 +36,7 @@
 #include "ns3/net-device.h"
 #include "ns3/trace-source-accessor.h"
 #include "ns3/boolean.h"
+#include "ns3/snr-tag.h"
 #include "ampdu-tag.h"
 #include <cmath>
 
@@ -579,7 +580,11 @@ YansWifiPhy::StartReceivePacket (Ptr<Packet> packet,
       break;
     case YansWifiPhy::CCA_BUSY:
     case YansWifiPhy::IDLE:
+      #ifdef sfmacro_AlwaysReceiveWithoutPowerAndsnrCheck
+       if (true)
+      #else
       if (rxPowerW > m_edThresholdW)
+      #endif
         {
           if (IsModeSupported (txMode) || IsMcsSupported(txMode))
             {
@@ -691,6 +696,8 @@ YansWifiPhy::SendPacket (Ptr<const Packet> packet, WifiTxVector txVector, WifiPr
     {
       dataRate500KbpsUnits = txVector.GetMode().GetDataRate () * txVector.GetNss() / 500000;
     }
+
+
   bool isShortPreamble = (WIFI_PREAMBLE_SHORT == preamble);
   NotifyMonitorSniffTx (packet, (uint16_t)GetChannelFrequencyMhz (), GetChannelNumber (), dataRate500KbpsUnits, isShortPreamble, txVector.GetTxPowerLevel());
   m_state->SwitchToTx (txDuration, packet, GetPowerDbm (txVector.GetTxPowerLevel()), txVector, preamble);
@@ -959,7 +966,11 @@ YansWifiPhy::EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> even
 
   NS_LOG_DEBUG ("mode=" << (event->GetPayloadMode ().GetDataRate ()) <<
                 ", snr=" << snrPer.snr << ", per=" << snrPer.per << ", size=" << packet->GetSize ());
+  #ifdef sfmacro_AlwaysReceiveWithoutPowerAndsnrCheck
+   if (true)
+  #else
   if (m_random->GetValue () > snrPer.per)
+  #endif
     {
       NotifyRxEnd (packet);
       uint32_t dataRate500KbpsUnits;
@@ -971,11 +982,28 @@ YansWifiPhy::EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> even
         {
           dataRate500KbpsUnits = event->GetPayloadMode ().GetDataRate () * event->GetTxVector().GetNss()/ 500000;
         }
+
+
       bool isShortPreamble = (WIFI_PREAMBLE_SHORT == event->GetPreambleType ());
       double signalDbm = RatioToDb (event->GetRxPowerW ()) + 30;
       double noiseDbm = RatioToDb (event->GetRxPowerW () / snrPer.snr) - GetRxNoiseFigure () + 30;
       NotifyMonitorSniffRx (packet, (uint16_t)GetChannelFrequencyMhz (), GetChannelNumber (), dataRate500KbpsUnits, isShortPreamble, signalDbm, noiseDbm);
-      m_state->SwitchFromRxEndOk (packet, snrPer.snr, event->GetPayloadMode (), event->GetPreambleType ());
+       
+
+      //NF Add SNR tag
+   
+      // ********** SNR TAG *********** //
+      SnrTag tag;
+      tag.Set(signalDbm - noiseDbm);
+      if (!packet->PeekPacketTag (tag))
+      {
+          packet->AddPacketTag (tag);
+          //NS_LOG_DEBUG("Add SNR Tag with value :" << tag.Get());
+      }
+
+      // ********* SNR TAG *********** //
+
+     m_state->SwitchFromRxEndOk (packet, snrPer.snr, event->GetPayloadMode (), event->GetPreambleType ());
     }
   else
     {
@@ -1103,6 +1131,46 @@ YansWifiPhy::Configure80211n (void)
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate6Mbps ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate12Mbps ());
       m_deviceRateSet.push_back (WifiPhy::GetOfdmRate24Mbps ());
+      //sf adding other rates
+      #ifdef sfmacro_MarkovModel1
+      //MCS0 to MCS7
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate6_5MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate13MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate19_5MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate26MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate39MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate52MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate58_5MbpsBW20MHz ());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate65MbpsBW20MHz ());
+      //MCS8 to MCS15
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate13MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate26MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate39MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate52MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate78MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate104MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate117MbpsBW20MHz2ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate130MbpsBW20MHz2ss());
+      //MCS16 to MCS23
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate19_5MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate39MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate58_5MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate78MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate117MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate156MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate175_5MbpsBW20MHz3ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate195MbpsBW20MHz3ss());
+      //MCS24 to MCS31
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate26MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate52MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate78MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate104MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate156MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate208MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate234MbpsBW20MHz4ss());
+      m_deviceRateSet.push_back (WifiPhy::GetOfdmRate260MbpsBW20MHz4ss());
+
+      #endif
     }
   m_bssMembershipSelectorSet.push_back(HT_PHY);
   for (uint8_t i=0; i <8; i++)

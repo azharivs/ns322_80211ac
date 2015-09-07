@@ -36,6 +36,7 @@
 #include "ns3/qos-tag.h"
 #include "udp-client.h"
 #include "seq-ts-header.h"
+#include "ns3/Timestamp-Tag.h"
 #include <cstdlib>
 #include <cstdio>
 
@@ -173,8 +174,8 @@ UdpClient::Send (void)
   seqTs.SetSeq (m_sent);
   Ptr<Packet> p = Create<Packet> (m_size-(8+4)); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);
-  //sva: added QoS header to make it treated as AC_VI
-  class QosTag tag(UP_VI);
+  //sva: added QoS tag to have it treated as AC_VI
+  QosTag tag=QosTag(UP_VI);//UP_VI
   p->AddPacketTag(tag);
   //sva: add deadline as absolute timestamp
   TimestampTag tsTag;
@@ -216,6 +217,7 @@ UdpClient::Send (void)
 /*
  * TimestampTag implementation
  */
+/*
 
 TypeId
 TimestampTag::GetTypeId (void)
@@ -226,11 +228,17 @@ TimestampTag::GetTypeId (void)
     .AddAttribute ("Timestamp",
                    "Some momentous point in time!",
                    EmptyAttributeValue (),
-                   MakeTimeAccessor (&TimestampTag::GetTimestamp),
-                   MakeTimeChecker ())
+                   MakeTimeAccessor (&TimestampTag::m_timestamp),
+                   MakeTimeChecker())
   ;
   return tid;
 }
+
+//TimestampTag::TimestampTag()
+//:m_timestamp(0)
+//{
+//}
+
 TypeId
 TimestampTag::GetInstanceTypeId (void) const
 {
@@ -271,6 +279,6 @@ void
 TimestampTag::Print (std::ostream &os) const
 {
   os << "t=" << m_timestamp;
-}
+}*/
 
 } // Namespace ns3

@@ -26,10 +26,11 @@
 #define SVA_DEBUG
 //sva: when enabled will send detailed debug info to stdout  (related to my classes)
 //#define SVA_DEBUG_DETAIL
-
+//sva: when enabled will send debug info to stdout regarding all transmitted packets
+//#define SVA_PACKET_TRACE
 //sva: Also produce non detailed output when detailed debug is enabled
 #ifdef SVA_DEBUG_DETAIL
-#define SVA_DEBUG
+  #define SVA_DEBUG
 #endif
 
 #include <list>
@@ -41,7 +42,7 @@
 #include "ns3/qos-tag.h"
 #include "wifi-mac-header.h"
 #include "ns3/simulator.h"
-
+#include "Timestamp-Tag.h"
 namespace ns3 {
 //class WiFiMacQueue;
 
@@ -60,6 +61,7 @@ namespace ns3 {
       double avgArrival; //!< average packet arrival rate in pps
       double avgArrivalBytes; //!< average arrival rate in Bytes per second
       double dvp; //!< Delay violation probability measured right before transmission
+      double prEmpty; //!< Probability of the queue being empty
   };
 
 
@@ -152,11 +154,26 @@ public:
   double GetAvgArrivalRateBytes (void);
 
   /**
-   * Computes and returns delay violation probability
+   * returns delay violation probability
    *
    * \return the DVP in fractions
    */
   double GetDvp (void);
+
+  /**
+   * returns probability of empty queue
+   *
+   * \return probability of empty queue
+   */
+  double GetPrEmpty (void);
+
+  uint32_t GetServedPackets(void);
+
+  double GetAvgServedPackets(void);
+
+  uint32_t GetServedBytes(void);
+
+  double GetAvgServedBytes(void);
 
   /**
    * Computes and returns all statistics
@@ -164,6 +181,68 @@ public:
    * \returns the struct containing all statistics
    */
   struct PerStaStatType GetAllStats (void);
+
+  /*
+   * returns the actual amount of time allowance for this service interval
+   */
+  Time GetTimeAllowance(void);
+
+  /*
+   * returns the remaining time allowance for this service interval
+   */
+  Time GetRemainingTimeAllowance(void);
+
+  /*
+   *
+   */
+  bool IsInsufficientTimeAllowanceEncountered (void);
+
+  /*
+   *
+   */
+  void SetInsufficientTimeAllowanceEncountered (void);
+
+  /*
+   * deduct input parameter from remaining time allowance to new value
+   */
+  Time DeductTimeAllowance(Time allowance);
+
+  /*
+   * set remaining time allowance to new value
+   */
+  void SetRemainingTimeAllowance(Time allowance);
+
+  /*
+   * set time allowance and do not touch remaining time allowance
+   */
+  void SetTimeAllowance(Time allowance);
+
+  /*
+   * re-initializes the amount of remaining time allowance to m_timeAllowance
+   * This is called at the beginning of a new service interval
+   */
+  void ResetTimeAllowance();
+
+  /*
+   * Sets m_timeAllowance to the provided parameter and
+   * re-initializes the amount of remaining time allowance to m_timeAllowance
+   * This is called at the beginning of a new service interval
+   */
+  void ResetTimeAllowance(Time allowance);
+
+  /*
+   * updates the number of packets sent during a service interval
+   * with information provided by the input parameter
+   * \param packet: the packet which is being sent
+   */
+  //void UpdateServedPackets(Ptr<Packet> packet);
+
+  /*
+   * adds number of served packets and bytes to sample history
+   * and resets the number of served packets and bytes to zero at the
+   * beginning of a new service interval
+   */
+  void CollectServedPackets(void);
 
   /**
    * A new packet has arrived: collect statistics and update
@@ -182,6 +261,7 @@ public:
    * \param deadline: absolute time of deadline of the packet
    */
   void Departure (uint32_t bytes, Time wait, Time deadline);
+
   /**
    * Return if the queue is empty.
    *
@@ -194,8 +274,6 @@ public:
    * call chain initiated by PerStaWifiMacQueue::Flush()
    */
   void Reset (void);
-
-private:
 
   /**
    * A struct that holds information about a packet arrival event for putting
@@ -245,16 +323,22 @@ private:
    */
   void Update (void);
 
-  std::deque<uint32_t> m_queueSizeHistory; //!< Array of samples of queue length in packets
+private:
+
+  std::deque<Item> m_queueSizeHistory; //!< Array of samples of queue length in packets along with time stamp
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
   std::deque<Item> m_arrivalHistory; //!< Array of samples of packet arrival times
   std::deque<double> m_queueDelayViolationHistory; //!< Array of samples of queue deadline violations in seconds (pos. value means no violation)
+  std::deque<uint32_t> m_servedBytesHistory; //!<Array of samples of served bytes during a service interval
+  std::deque<uint32_t> m_servedPacketsHistory; //!<Array of samples of served packets during a service interval
   Mac48Address m_addrs; //!< MAC address of STA that is represented by this QInfo element
   //Do I need this? Ipv4Address m_ipv4Addrs; //!< IPv4 address of STA that is represented by this QInfo element
   uint8_t m_tid; //!< (Traffic Indication Map) of STA that is represented by this QInfo element
   uint32_t m_queueSize; //!< Current queue size in packets
   uint32_t m_queueBytes; //!< Current queue size in bytes
+  uint32_t m_servedBytes; //!<Number of served bytes from the beginning of current service interval
+  uint32_t m_servedPackets; //!<Number of served packets from the beginning of current service interval
   uint32_t m_histSize; //!< Sample history size
   double m_avgQueueSize; //!< Last updated average queue size in packets
   double m_avgQueueBytes; //!< Last updated average queue size in bytes
@@ -262,6 +346,13 @@ private:
   double m_avgArrivalRate; //!< Last updated average packet arrival rate in pps
   double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
   double m_dvp; //!< Delay violation probability measured right before transmission
+  double m_prEmpty; //!< Probability of the queue being empty
+  double m_avgServedBytes; //!<Average number of served bytes during a service interval
+  double m_avgServedPackets; //!<Average number of served packets during a service interval
+
+  Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
+  Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
+  bool m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access
 };
 
 } // namespace ns3

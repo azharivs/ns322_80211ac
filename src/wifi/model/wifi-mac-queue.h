@@ -30,9 +30,11 @@
 #include "wifi-mac-header.h"
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/enum.h"
+#include "mpdu-universal-aggregator.h"
 
 namespace ns3 {
 class QosBlockedDestinations;
+class MpduUniversalAggregator;
 //sva: added support for multiple q per station. Currently not using call backs
 //sva: how do I get a pointer to PerStaQInfoContainer initialized?
 //sva: May be I can add a new method to WifiMacQueue to do this and if not called
@@ -291,13 +293,25 @@ protected:
  * to verify whether or not it should be dropped. If
  * dot11EDCATableMSDULifetime has elapsed, it is dropped.
  * Otherwise, it is returned to the caller.
+ *
+ *  _______________________________________________________________
+ *  _____________________ Design Approach _________________________
+ * |                                                               |
+ * | For each arbitration algorithm there will be a new private    |
+ * | method for PerStaWifiMacQueue. These methods are then called  |
+ * | by DequeueFirstAvailable() and PeekFirstAvailable() that will |
+ * | then return the proper packet to be served. The appropriate   |
+ * | arbitration algorithm is selected/configured through a new    |
+ * | Attribute that is introduced into PerStaMacifiQueue class.    |
+ * |_______________________________________________________________|
  */
 
 typedef enum
 {
   FCFS,
   EDF,
-  EDF_RR
+  EDF_RR,
+  MAX_REMAINING_TIME_ALLOWANCE//to be used in conjunction with TIME_ALLOWANCE aggregation algorithm
 } ServicePolicyType;
 
 class PerStaWifiMacQueue : public WifiMacQueue
@@ -436,16 +450,32 @@ public:
 
  /**
    * Initialize pointer to PerStaQInfoContainer if support is required
-   *
+   * TODO: combine EnablePerStaQInfo and SetMpduAggregator
    * \param c: Pointer to the container
    * \returns TRUE if successful and FALSE if container was NULL
    */
   bool EnablePerStaQInfo (PerStaQInfoContainer &c);
 
+  /*
+   * Sets pointer to MpduUniversalAggregator
+   */
+  bool SetMpduAggregator (Ptr<MpduUniversalAggregator> agg);
+
+  /*
+   * Event handler that is called at the beginning of a service interval
+   */
+  void PendingServiceInterval (void);
+
+  /*
+   * called by MpduUniversalAggregator whenever new service interval is
+   * actually started
+   */
+  void BeginServiceInterval (void);
+
 private:
 
   ServicePolicyType m_servicePolicy; //!< type of service policy
-  double m_serviceInterval; //<! service interval period in seconds used for EDF_RR
+  double m_serviceInterval; //<! service interval period in seconds used for EDF_RR and MAX_REMAINING_TIME_ALLOWANCE
 
   /*
    * Called to implement the FCFS service policy
@@ -490,6 +520,24 @@ private:
   bool PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
   /*
+   * Called to implement the Maximum Remaining Time Allowance service policy
+   * Serves the queue which has largest amount of remaining time allowance
+   * for the current service interval.
+   * At this point I have not implemented a guaranteed
+   * way so that the queue will get service periodically every m_serviceInterval.
+   * This feature is going to require modifications to MacLow as it requires the AP
+   * to coordinate access times in a round robin manner.
+   * This function is only called by DequeueFirstAvailable() and PeekFirstAvailable()
+   *
+   * \param it: reference to the queue iterator pointing to the HoL queue according to service policy
+   * \param blockedPackets: exactly passed by caller
+   *
+   * Returns true if a packet was found, false if no packet was found
+   * also assigns it to the correct queue placeholder containing packet to be served
+   */
+  bool PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
+
+  /*
    * Return iterator pointing to queue location holding packet with
    * appropriate tid destined to certain dest STA which is ready to be sent.
    *
@@ -514,6 +562,10 @@ private:
    */
   //sva: should be set to appropriate value by EnablePerStaQInfo () method if support is required
   PerStaQInfoContainer *m_perStaQInfo; //!< pointer to PerStaQInfoContainer NULL if not supported
+  Ptr<MpduUniversalAggregator> m_mpduAggregator; //!< Pointer to aggregator operating on this queue
+  Time m_currentServiceIntervalStart; //!< Actual beginning of current service interval
+  Time m_pendingServiceIntervalStart; //!< Pending beginning of current service interval
+  bool m_serviceIntervalPending; //!< flag that shows the status of current service interval as pending or actually started. m_currentServiceInterval will be valid only if this flag is false.
 };
 
 

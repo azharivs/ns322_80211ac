@@ -38,6 +38,7 @@
 #include "amsdu-subframe-header.h"
 #include "msdu-aggregator.h"
 #include "edca-txop-n.h"
+#include "mpdu-universal-aggregator.h"
 
 namespace ns3 {
 
@@ -688,6 +689,12 @@ ApWifiMac::SetPerStaQInfo(PerStaQInfoContainer &c, uint8_t ac)
   Ptr<EdcaTxopN> edca = m_edca.find ((ns3::AcIndex) ac)->second;
   Ptr<PerStaWifiMacQueue> perStaQueue = edca->GetEdcaQueue()->GetObject<PerStaWifiMacQueue>();
   perStaQueue->EnablePerStaQInfo(c); //simply initializes a member pointer to point to this container
+  Ptr<MpduUniversalAggregator> agg = edca->Low()->GetMpduAggregator()->GetObject<MpduUniversalAggregator>();
+  if (agg)
+    {
+      perStaQueue->SetMpduAggregator(agg); //set pointer to aggregator
+      agg->EnablePerStaQInfo(c,perStaQueue,m_low,m_phy);
+    }
   return true;
 }
 
