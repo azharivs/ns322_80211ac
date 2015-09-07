@@ -59,7 +59,7 @@ WifiMacQueue::GetTypeId (void)
                    MakeUintegerAccessor (&WifiMacQueue::m_maxSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("MaxDelay", "If a packet stays longer than this delay in the queue, it is dropped.",
-                   TimeValue (Seconds (10.0)),
+                   TimeValue (Seconds (40.0)),
                    MakeTimeAccessor (&WifiMacQueue::m_maxDelay),
                    MakeTimeChecker ())
   ;

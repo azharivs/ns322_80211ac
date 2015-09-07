@@ -169,11 +169,10 @@ public:
    * Create one PerStaQInfo and add it to the container
    *
    * \param sta: station net devices pointer
-   * \param ap:  AP net device pointer
    * Currently assumes only one NetDevice per STA and AP
-   * \returns the Container containing vector of pointers to PeStaQInfo objects
+   * \returns a pointer to the currently added PerStaQInfo object
    */
-  void Add (Ptr<WifiNetDevice> sta);//, Ptr<WifiNetDevice> ap);
+  Ptr<PerStaQInfo> Add (Ptr<WifiNetDevice> sta);
 
   /**
    * Takes care of updating queue statistics for appropriate station
