@@ -29,6 +29,7 @@
 #include "ns3/net-device-container.h"
 #include "ns3/wifi-phy-standard.h"
 #include "ns3/trace-helper.h"
+#include "ns3/per-sta-q-info-container.h"
 
 namespace ns3 {
 
@@ -164,6 +165,15 @@ public:
    */
   virtual NetDeviceContainer Install (const WifiPhyHelper &phy,
                               const WifiMacHelper &mac, std::string nodeName) const;
+  /**
+   * SVA: Installs PerStaQInfoContainer and populates its entries
+   * should be explicitly called from main() after WifiHelper::Install()
+   *
+   * \param sta: container of all instantiated station wifi net devices used to get their MAC address
+   * \param ac: AC for which PerStaQInfo is to be enabled
+   * \returns Container
+   */
+  virtual PerStaQInfoContainer InitPerStaQInfo (const NetDeviceContainer sta, uint8_t ac) const;
   /**
    * \param standard the phy standard to configure during installation
    *

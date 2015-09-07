@@ -18,6 +18,10 @@
  * Author: Amine Ismail <amine.ismail@sophia.inria.fr>
  *                      <amine.ismail@udcast.com>
  */
+
+//sva: I am changing UdpClient to include packet deadline.
+//sva: In the future, this needs to be a different class derived from application.
+
 #include "ns3/log.h"
 #include "ns3/ipv4-address.h"
 #include "ns3/nstime.h"
@@ -28,8 +32,11 @@
 #include "ns3/socket-factory.h"
 #include "ns3/packet.h"
 #include "ns3/uinteger.h"
+#include "ns3/double.h"
+#include "ns3/qos-tag.h"
 #include "udp-client.h"
 #include "seq-ts-header.h"
+#include "ns3/Timestamp-Tag.h"
 #include <cstdlib>
 #include <cstdio>
 
@@ -68,6 +75,10 @@ UdpClient::GetTypeId (void)
                    UintegerValue (1024),
                    MakeUintegerAccessor (&UdpClient::m_size),
                    MakeUintegerChecker<uint32_t> (12,1500))
+    .AddAttribute ("Deadline",
+                   "Deadline (Maximum Tolerable Delay) of each packet in seconds.", DoubleValue (1.0),
+                    MakeDoubleAccessor (&UdpClient::m_deadline),
+                    MakeDoubleChecker<double> ())
   ;
   return tid;
 }
@@ -83,6 +94,12 @@ UdpClient::UdpClient ()
 UdpClient::~UdpClient ()
 {
   NS_LOG_FUNCTION (this);
+}
+
+void
+UdpClient::SetDeadline (double deadline)
+{
+  m_deadline = deadline;
 }
 
 void
@@ -157,6 +174,14 @@ UdpClient::Send (void)
   seqTs.SetSeq (m_sent);
   Ptr<Packet> p = Create<Packet> (m_size-(8+4)); // 8+4 : the size of the seqTs header
   p->AddHeader (seqTs);
+  //sva: added QoS tag to have it treated as AC_VI
+  QosTag tag=QosTag(UP_VI);//UP_VI
+  p->AddPacketTag(tag);
+  //sva: add deadline as absolute timestamp
+  TimestampTag tsTag;
+  tsTag.SetTimestamp(Simulator::Now() + Seconds(m_deadline));
+  p->AddByteTag(tsTag);
+
 
   std::stringstream peerAddressStringStream;
   if (Ipv4Address::IsMatchingType (m_peerAddress))
@@ -188,5 +213,72 @@ UdpClient::Send (void)
       m_sendEvent = Simulator::Schedule (m_interval, &UdpClient::Send, this);
     }
 }
+
+/*
+ * TimestampTag implementation
+ */
+/*
+
+TypeId
+TimestampTag::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("TimestampTag")
+    .SetParent<Tag> ()
+    .AddConstructor<TimestampTag> ()
+    .AddAttribute ("Timestamp",
+                   "Some momentous point in time!",
+                   EmptyAttributeValue (),
+                   MakeTimeAccessor (&TimestampTag::m_timestamp),
+                   MakeTimeChecker())
+  ;
+  return tid;
+}
+
+//TimestampTag::TimestampTag()
+//:m_timestamp(0)
+//{
+//}
+
+TypeId
+TimestampTag::GetInstanceTypeId (void) const
+{
+  return GetTypeId ();
+}
+
+uint32_t
+TimestampTag::GetSerializedSize (void) const
+{
+  return 8;
+}
+void
+TimestampTag::Serialize (TagBuffer i) const
+{
+  int64_t t = m_timestamp.GetNanoSeconds ();
+  i.Write ((const uint8_t *)&t, 8);
+}
+void
+TimestampTag::Deserialize (TagBuffer i)
+{
+  int64_t t;
+  i.Read ((uint8_t *)&t, 8);
+  m_timestamp = NanoSeconds (t);
+}
+
+void
+TimestampTag::SetTimestamp (Time time)
+{
+  m_timestamp = time;
+}
+Time
+TimestampTag::GetTimestamp (void) const
+{
+  return m_timestamp;
+}
+
+void
+TimestampTag::Print (std::ostream &os) const
+{
+  os << "t=" << m_timestamp;
+}*/
 
 } // Namespace ns3

@@ -43,6 +43,7 @@
 #include <iomanip>
 #include "ns3/traced-callback.h"
 #include "ns3/address.h"
+#include "ns3/packet-loss-counter.h"
 
 
 using std::ifstream;
@@ -84,11 +85,23 @@ class EvalvidClient : public Application
        * \return the total packet received in this sink app
        */
      uint32_t GetReceived () const;
+     /**
+       * \brief Returns the number of lost packets
+       * \return the number of lost packets
+       */
+     uint32_t GetLost (void) const;
 
      /**
        * \return pointer to listening socket
        */
      Ptr<Socket> GetListeningSocket (void) const;
+     /**
+       * \brief Set the size of the window used for checking loss. This value should
+       *  be a multiple of 8
+       * \param size the size of the window used for checking loss. This value should
+       *  be a multiple of 8
+       */
+  void SetPacketWindowSize (uint16_t size);
 
     /**
       * \return list of pointers to accepted sockets
@@ -107,6 +120,7 @@ class EvalvidClient : public Application
        * \param socket the receiving socket
        */
      void HandleRead (Ptr<Socket> socket);
+     void HandleReadUdp (Ptr<Socket> socket);
      /**
        * \brief Handle an incoming connection
        * \param socket the incoming connection socket
@@ -132,6 +146,7 @@ class EvalvidClient : public Application
      Address         m_local;        //!< Local address to bind to
      uint32_t        m_totalRx;      //!< Total bytes received
      TypeId          m_tid;          //!< Protocol TypeId
+     string          m_clientId;
 
      /// Traced Callback: received packets, source address.
      TracedCallback<Ptr<const Packet>, const Address &> m_rxTrace;
@@ -145,6 +160,7 @@ class EvalvidClient : public Application
      uint32_t    fragment;               //!< The number of packets not received
      uint32_t    m_received;             //!< total packets received
      string      m_sendSizeFileName;
+     PacketLossCounter m_lossCounter; //!< Lost packet counter
  
 };
 

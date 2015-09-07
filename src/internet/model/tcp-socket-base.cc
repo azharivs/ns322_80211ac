@@ -50,7 +50,6 @@
 #include "tcp-option-winscale.h"
 #include "tcp-option-ts.h"
 #include "rtt-estimator.h"
-
 #include <math.h>
 #include <algorithm>
 
@@ -652,6 +651,7 @@ TcpSocketBase::RecvFrom (uint32_t maxSize, uint32_t flags, Address &fromAddress)
 {
   NS_LOG_FUNCTION (this << maxSize << flags);
   Ptr<Packet> packet = Recv (maxSize, flags);
+ 
   // Null packet means no data to read, and an empty packet indicates EOF
   if (packet != 0 && packet->GetSize () != 0)
     {

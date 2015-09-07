@@ -280,6 +280,16 @@ Packet::PeekHeader (Header &header) const
   NS_LOG_FUNCTION (this << header.GetInstanceTypeId ().GetName () << deserialized);
   return deserialized;
 }
+uint32_t
+Packet::PeekHeader (Header &header, uint32_t start) const
+{
+  Buffer::Iterator bufIt = m_buffer.Begin();
+  bufIt.Next(start);
+  uint32_t deserialized = header.Deserialize (bufIt);
+  bufIt.Prev(start);
+  NS_LOG_FUNCTION (this << header.GetInstanceTypeId ().GetName () << deserialized);
+  return deserialized;
+}
 void
 Packet::AddTrailer (const Trailer &trailer)
 {

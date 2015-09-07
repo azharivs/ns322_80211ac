@@ -154,7 +154,7 @@ public:
    */
   void SetBlockAckInactivityTimeoutForAc (enum AcIndex ac, uint16_t timeout);
 protected:
-  ObjectFactory m_mac;
+  ObjectFactory m_mac;//sva: this is of type <WifiMac>
 private:
   /**
    * \returns a newly-created MAC object.

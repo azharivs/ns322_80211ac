@@ -22,6 +22,8 @@
 
 #include "ampdu-subframe-header.h"
 #include "mpdu-standard-aggregator.h"
+#include "wifi-mac-header.h"
+#include "wifi-mac-trailer.h"
 
 NS_LOG_COMPONENT_DEFINE ("MpduStandardAggregator");
 
@@ -51,6 +53,7 @@ MpduStandardAggregator::~MpduStandardAggregator ()
 {
 }
 
+//sva: This is the function where our aggregation algorithm should be implemented
 bool
 MpduStandardAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggregatedPacket)
 {
@@ -61,6 +64,7 @@ MpduStandardAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggrega
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
 
+  //sva: checks whether adding this packet will exceed max aggregation size
   if ((4 + packet->GetSize () + actualSize + padding) <= m_maxAmpduLength)
     {
       if (padding)
@@ -101,10 +105,11 @@ MpduStandardAggregator::AddHeaderAndPad (Ptr<Packet> packet, bool last)
 }
 
 bool
-MpduStandardAggregator::CanBeAggregated (uint32_t packetSize, Ptr<Packet> aggregatedPacket, uint8_t blockAckSize)
+MpduStandardAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
 {
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
+  uint32_t packetSize = peekedPacket->GetSize () + peekedHeader.GetSize () + WIFI_MAC_FCS_LENGTH;
   if (blockAckSize > 0)
     {
       blockAckSize = blockAckSize + 4 + padding;
