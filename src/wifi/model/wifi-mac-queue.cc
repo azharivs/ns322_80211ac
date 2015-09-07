@@ -28,7 +28,7 @@
 #include "wifi-mac-queue.h"
 #include "qos-blocked-destinations.h"
 #include "ns3/per-sta-q-info-container.h"
-
+#include "Timestamp-Tag.h"
 namespace ns3 {
 
 NS_OBJECT_ENSURE_REGISTERED (WifiMacQueue);
@@ -49,7 +49,7 @@ WifiMacQueue::GetTypeId (void)
     .SetParent<Object> ()
     .AddConstructor<WifiMacQueue> ()
     .AddAttribute ("MaxPacketNumber", "If a packet arrives when there are already this number of packets, it is dropped.",
-                   UintegerValue (4000),
+                   UintegerValue (5000),
                    MakeUintegerAccessor (&WifiMacQueue::m_maxSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("MaxDelay", "If a packet stays longer than this delay in the queue, it is dropped.",
@@ -355,7 +355,7 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 
 /**
  * PerStaWifiMacQueue implementation starts here
- * For now service descipline is determined by changing the default value in
+ * For now service discipline is determined by changing the default value in
  * the .AddAttribute line below.
  * TODO: do this by calling a method in the main()
  *
@@ -371,14 +371,15 @@ PerStaWifiMacQueue::GetTypeId (void)
     .SetParent<WifiMacQueue> ()
     .AddConstructor<PerStaWifiMacQueue> ()
     .AddAttribute ("Service Interval", "Service interval period in seconds with which queues are served.",
-                   DoubleValue (0.5),
+                   DoubleValue (0.1),
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (EDF_RR),
+                   EnumValue (MAX_REMAINING_TIME_ALLOWANCE),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
+                                    ns3::MAX_REMAINING_TIME_ALLOWANCE, "ns3::MAX_REMAINING_TIME_ALLOWANCE",
                                     ns3::EDF_RR, "ns3::EDF_RR"))
   ;
   return tid;
@@ -400,13 +401,22 @@ PerStaWifiMacQueue::EnablePerStaQInfo(PerStaQInfoContainer &c)
 {
   if (c.IsEmpty())
     {
-      NS_ASSERT_MSG(true,"Initializing with Empty Container !!");
+      NS_ASSERT_MSG(true,"Initializing with Empty Container !!"); //TODO: this is useless!
       return false;
     }
   m_perStaQInfo = &c;
+  Simulator::Schedule(NanoSeconds(1), &PerStaWifiMacQueue::PendingServiceInterval, this);
+
   return true;
 }
 
+bool
+PerStaWifiMacQueue::SetMpduAggregator(Ptr<MpduUniversalAggregator> agg)
+{
+  NS_ASSERT_MSG(agg,"Initializing with NULL Aggregator !!");
+  m_mpduAggregator = agg;
+  return true;
+}
 
 void
 PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
@@ -630,8 +640,7 @@ PerStaWifiMacQueue::GetStaHol (PacketQueueI &it, uint8_t tid, Mac48Address dest,
 Ptr<const Packet>
 PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                            const QosBlockedDestinations *blockedPackets)
-{//TODO change to reflect queue arbitration algorithm
-  //std::cout << "WifiMacQueue::DequeueFirstAvailable \n";
+{
   Time now = Simulator::Now();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Cleanup ();
@@ -649,6 +658,14 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case EDF_RR:
       found = PeekEdfRoundRobin(it,blockedPackets);
       break;
+    case MAX_REMAINING_TIME_ALLOWANCE:
+      found = PeekMaxRemainingTimeAllowance(it,blockedPackets);
+      break;
+      /*sva-design: add for appropriate service policy ?
+    case ?:
+      found = Peek?(it,blockedPackets);
+      break;
+      sva-design*/
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
   if (found)
@@ -673,8 +690,7 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 Ptr<const Packet>
 PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
                                   const QosBlockedDestinations *blockedPackets)
-{//TODO change to reflect queue arbitration algorithm
-  //std::cout << "PreStaWifiMacQueue::PeekFirstAvailable \n";
+{
   Cleanup ();
   //NS_ASSERT_MSG(m_perStaQInfo,"PerStaQInfoContainer not initialized!");
   Ptr<const Packet> packet = 0;
@@ -691,6 +707,14 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case EDF_RR:
       found = PeekEdfRoundRobin(it,blockedPackets);
       break;
+    case MAX_REMAINING_TIME_ALLOWANCE:
+      found = PeekMaxRemainingTimeAllowance(it,blockedPackets);
+      break;
+      /*sva-design: add for appropriate service policy ?
+    case ?:
+      found = Peek?(it,blockedPackets);
+      break;
+      sva-design*/
     default: NS_FATAL_ERROR("Unrecongnized Queue Arbitration Algorithm : " << m_servicePolicy);
   }
   if (found)
@@ -702,7 +726,7 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
   return packet;
 }
 
-//sva: can be optimized
+//TODO sva: can be optimized
 uint32_t
 PerStaWifiMacQueue::GetNPacketsByTidAndAddress (uint8_t tid, WifiMacHeader::AddressType type,
                                           Mac48Address addr)
@@ -731,6 +755,31 @@ PerStaWifiMacQueue::IsEmpty (void)
 {
   Cleanup ();
   return m_queue.empty ();
+}
+
+//TODO sva: what is the justification for handling service interval scheduling at the WifiMacQueue? Can't it be done at the Aggregator?
+void
+PerStaWifiMacQueue::PendingServiceInterval (void)
+{
+  m_pendingServiceIntervalStart = Simulator::Now();
+  m_serviceIntervalPending = true;
+  if (m_mpduAggregator)//if an aggregator is initialized (for stations there isn't one currently)
+    {
+      //check if aggregator has finished serving the current service interval's quota
+      m_mpduAggregator->PendingServiceInterval();
+    }
+}
+
+void
+PerStaWifiMacQueue::BeginServiceInterval (void)
+{
+  m_currentServiceIntervalStart = Simulator::Now();
+  m_serviceIntervalPending = false;
+  Simulator::Schedule(Seconds(m_serviceInterval), &PerStaWifiMacQueue::PendingServiceInterval, this);
+#ifdef SVA_DEBUG
+  std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::BeginServiceInterval service interval was pending since "
+      << m_pendingServiceIntervalStart.GetSeconds() << "\n";
+#endif
 }
 
 bool
@@ -847,6 +896,66 @@ PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestina
   return false;
 }
 
+bool
+PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{
+  PerStaQInfoContainer::Iterator sta;
+  PacketQueueI qi;
+  PacketQueueI qiServed; //the one that will eventually be served
+  Time maxRta = Seconds(0); //Max Remaining Time Allowance
+  Time rta;
+  bool found=false;
+
+  if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
+    {
+      for (sta = m_perStaQInfo->Begin(); sta != m_perStaQInfo->End(); ++sta)
+        {
+          if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
+            {
+              rta = (*sta)->GetRemainingTimeAllowance();
+              if (rta > maxRta)
+                { //update selected STA for service
+                  qiServed = qi;
+                  maxRta = rta;
+                  found = true;
+                }
+            }
+        }
+      if (found)
+        {
+          it = qiServed;
+#ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PeekMaxRemainingTimeAllowance: STA "
+              << it->hdr.GetAddr1() << " selected with RTA " << maxRta.GetSeconds()*1000 << " msec \n";
+#endif
+          return true;
+        }
+    }
+  //if perStaQInfo not supported then resort to FCFS scheduling
+  else
+    {
+      found = PeekFcfs(qiServed,blockedPackets);
+      if (found)
+        {
+          it = qiServed;
+          return true;
+        }
+    }
+  //otherwise if no packet found then don't service anything.
+  //TODO: This causes a problem as it will sometimes result in an unbounded pending service interval. Should call pending service interval if this happens
+  if (m_mpduAggregator)
+    {
+      if (m_mpduAggregator->IsPendingServiceInterval())
+        {
+          Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, m_mpduAggregator); //make sure current line of execution is finished
+
+          #ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::PeekMaxRemainingTimeAllowance pending service interval, CAN NOT PEEK QUEUE so re-schedule PendingServiceInterval \n";
+          #endif
+        }
+    }
+  return false;
+}
 
 
 } // namespace ns3

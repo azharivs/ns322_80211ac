@@ -326,6 +326,24 @@ public:
    * \returns the number of bytes read from the packet.
    */
   uint32_t PeekHeader (Header &header) const;
+
+  /**
+   * \brief Deserialize from index but does _not_ remove the header from the internal buffer.
+   * s
+   * This method was added by Seyed Vahid azhari (azharivs@iust.ac.ir) to inspect
+   * WifiMacHeader of MPDUs as part of an A-MPDU. The conventional PeekHeader would
+   * not work due to an AmpduSubframeHeader that is inserted before every WifiMacHeader!
+   *
+   * This method invokes Header::Deserialize.
+   * It is assumed that correct starting byte index is provided so knowledge of headers before
+   * the header of interest should be available. Otherwise unwanted behavior would result.
+   *
+   * \param header a reference to the header to read from the internal buffer.
+   * \start start byte index where the header should be found
+   * \returns the number of bytes read from the packet.
+   */
+  uint32_t PeekHeader (Header &header, uint32_t start) const;
+
   /**
    * \brief Add trailer to this packet.
    *

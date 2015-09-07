@@ -79,6 +79,12 @@ def build(bld):
         'helper/per-sta-q-info-container.cc',
         'model/mpdu-universal-aggregator.cc',
         'model/bss-phy-mac-stats.cc',
+        'model/ideal-wifi-manager-for-markov-channel-model.cc',
+        'model/ideal-wifi-manager-for-markov-channel-model-11n.cc',
+        'model/aggregation-controllers.cc',
+        'model/pid-controller.cc',
+        'model/pid-controller-with-thresholds.cc',
+        'model/Timestamp-Tag.cc'
         ]
 
     obj_test = bld.create_ns3_module_test_library('wifi')
@@ -167,6 +173,12 @@ def build(bld):
         'helper/per-sta-q-info-container.h',
         'model/mpdu-universal-aggregator.h',
         'model/bss-phy-mac-stats.h',
+        'model/ideal-wifi-manager-for-markov-channel-model.h',
+        'model/ideal-wifi-manager-for-markov-channel-model-11n.h',
+        'model/aggregation-controllers.h',
+        'model/pid-controller.h',
+        'model/Timestamp-Tag.h',
+        'model/pid-controller-with-thresholds.h',
         ]
 
     if bld.env['ENABLE_GSL']:

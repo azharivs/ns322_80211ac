@@ -31,6 +31,7 @@
 #include "wifi-mac-header.h"
 #include "ns3/simulator.h"
 #include "wifi-phy-state-helper.h"
+#include "ns3/per-sta-q-info-container.h"
 
 namespace ns3 {
 
@@ -55,6 +56,7 @@ public:
    */
   //void SetHistorySize (uint32_t histSize);
 
+  bool SetPerStaQInfo (PerStaQInfoContainer *c);
 
   /**
    * returns average idle time during a beacon interval
@@ -130,6 +132,16 @@ private:
 
 
   /*
+   * Is called whenever a new Tx time is detected
+   * and will update remaining time allowance for the
+   * respective PerStaQInfo
+   *
+   * \param [in] duration is the length of the Tx period experienced
+   */
+  void RecordTx (Time duration);
+
+
+  /*
    * Is called whenever a new beacon is transmitted
    * and will mark the start of a new beacon interval
    * it will add idle and busy times to the sample history
@@ -138,6 +150,10 @@ private:
    * \param [in] tstamp is time of beacon transmission start
    */
   void RecordBeacon (Time tstamp);
+
+  PerStaQInfoContainer *m_perStaQInfo; //!< Pointer to PerStaQInfoContainer for updating some statistics
+  Ptr<const Packet> m_curPacket;
+  bool m_recordTx;//!< Flag that indicates the duration of the Tx should be accounted for m_curPacket at the next call to PhyStateLoggerSink with Tx state
 
   Time m_idle; //!< Current total idle times during current beacon interval
   Time m_busy; //!< Current total busy times during current beacon interval

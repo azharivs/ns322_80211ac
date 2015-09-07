@@ -20,6 +20,13 @@
  *
  */
 
+/******************************************************/
+/********     By Narges Ferasat Manesh  ***************/
+/********         11 Mordad 94          ***************/
+/********         Evalvid server        ***************/
+/******************************************************/
+
+
 #ifndef __EVALVID_SERVER_H__
 #define __EVALVID_SERVER_H__
 
@@ -51,6 +58,10 @@ using namespace std;
 namespace ns3 {
 class Address;
 class Socket;
+class Packet;
+class Tag;
+class QosTag;
+class TimestampTag;
 
 /**
  * \ingroup applications
@@ -125,38 +136,43 @@ private:
        */
      void DataSend (Ptr<Socket>, uint32_t); // for socket's SetSendCallback
 
+     void Send (void);
+
      /*
       * \ etelalat ra az file vorodi k shamele etelaat video ast daryaft karde va dar yek sakhtar be nam m_videoInfoMap mirizad
       *  sepas size packet hai k sender mikhad ersal konad ra ba tavajoh be in etelaat mohasebe karde 
       *  va dar file m_sendsizeFile zakhire mikonad
       */
      void Setup (void);
+
  
      /// Traced Callback: sent packets
      TracedCallback<Ptr<const Packet> > m_txTrace;
 
   
 
-     Ptr<Socket>     m_socket;       //!< Associated socket
-     Address         m_peer;         //!< Peer address
-     bool            m_connected;    //!< True if connected
-     uint32_t        m_sendSize;     //!< Size of data to send each time
-     uint32_t        m_maxBytes;     //!< Limit total number of bytes sent
-     uint32_t        m_totBytes;     //!< Total bytes sent so far
-     TypeId          m_tid;          //!< The type of protocol to use.
+     Ptr<Socket>   m_socket;       //!< Associated socket
+     Address       m_peer;         //!< Peer address
+     bool          m_connected;    //!< True if connected
+     uint32_t      m_sendSize;     //!< Size of data to send each time
+     uint32_t      m_maxBytes;     //!< Limit total number of bytes sent
+     uint32_t      m_totBytes;     //!< Total bytes sent so far
+     TypeId        m_tid;          //!< The type of protocol to use.
+     string        m_serverId;
+     EventId       m_sendEvent;
 
-     string      m_videoTraceFileName;	        //!< File from mp4trace tool of Evalvid.
-     string      m_senderTraceFileName;		//!< File with information of packets transmitted by EvalvidServer.
-     fstream     m_videoTraceFile;
-     uint32_t    m_numOfFrames;
-     uint16_t    m_packetPayload;
-     ofstream    m_senderTraceFile;             
-     ofstream    m_sendsizeFile;                // !< File with size of packets transmitted by EvalvidServer.
-     ifstream    m_sendFile;                    // !< Open above file for input 
+     string        m_videoTraceFileName;	        //!< File from mp4trace tool of Evalvid.
+     string        m_senderTraceFileName;		//!< File with information of packets transmitted by EvalvidServer.
+     fstream       m_videoTraceFile;
+     uint32_t      m_numOfFrames;
+     uint16_t      m_packetPayload;
+     ofstream      m_senderTraceFile;             
+     ofstream      m_sendsizeFile;                // !< File with size of packets transmitted by EvalvidServer.
+     ifstream      m_sendFile;                    // !< Open above file for input 
                                                 
-     uint32_t    m_packetId;
-     string      m_sendsizeFilename;
- 
+     uint32_t      m_packetId;
+     string        m_sendsizeFilename;  //NFM: the file including size of each packet ...
+     
 
 
      struct m_videoInfoStruct_t

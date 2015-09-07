@@ -27,12 +27,17 @@
 #include "ns3/event-id.h"
 #include "ns3/ptr.h"
 #include "ns3/ipv4-address.h"
-#include "ns3/tag.h"
-
+//#include "ns3/tag.h"
+//#include "ns3/Timestamp-Tag.h"
+//#include "ns3/qos-tag.h"
 namespace ns3 {
 
 class Socket;
 class Packet;
+class Tag;
+class QosTag;
+class TimestampTag;
+
 
 /**
  * \ingroup udpclientserver
@@ -105,9 +110,10 @@ private:
 
 };
 
-//sva:
-class TimestampTag : public Tag {
+/*//sva:
+class TimestampTag : public ns3::Tag {
 public:
+  TimestampTag ();
   static TypeId GetTypeId (void);
   virtual TypeId GetInstanceTypeId (void) const;
 
@@ -126,7 +132,7 @@ private:
 
   // end class TimestampTag
 };
-
+*/
 
 } // namespace ns3
 
