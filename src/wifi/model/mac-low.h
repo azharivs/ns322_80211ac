@@ -43,6 +43,7 @@
 #include "block-ack-cache.h"
 #include "wifi-tx-vector.h"
 #include "mpdu-aggregator.h"
+#include "mpdu-universal-aggregator.h"
 
 namespace ns3 {
 
@@ -475,6 +476,19 @@ std::ostream &operator << (std::ostream &os, const MacLowTransmissionParameters 
 class MacLow : public Object
 {
 public:
+  /*
+   * This is made friend due to requiring some protected/private method calls
+   * The reason for this is to allow cross-layer aggregation algorithms
+   * that use MacLow and WifiPhy information.
+   * TODO:
+   * Maybe a better approach is to define a friend class CrossLayer
+   * that includes many many methods for extracting various information
+   * that can be layer accessed by the object using it.
+   * class CrossLayer can be aggregated to MacLow, etc. or it
+   * can only hold a pointer to all of them which is initialized
+   * if cross-layer features are to be used.
+   */
+  friend class MpduUniversalAggregator;
   /**
    * typedef for a callback for MacLowRx
    */
@@ -511,6 +525,12 @@ public:
    * \param aggregator MpduAggregator associated with this MacLow
    */
   void SetMpduAggregator (Ptr<MpduAggregator> aggregator);
+  /**
+   * Get MpduAggregator associated with this MacLow.
+   *
+   * \returns aggregator MpduAggregator associated with this MacLow
+   */
+  Ptr<MpduAggregator> GetMpduAggregator (void);
   /**
    * Set MAC address of this MacLow.
    *

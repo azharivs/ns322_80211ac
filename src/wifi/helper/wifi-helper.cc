@@ -98,6 +98,11 @@ WifiHelper::SetStandard (enum WifiPhyStandard standard)
   m_standard = standard;
 }
 
+/**
+ * sva: remote station manager is also instantiated here it belongs to the entire
+ * context of the BSS and is not related to the AP or the STA exclusively
+ *
+ */
 NetDeviceContainer
 WifiHelper::Install (const WifiPhyHelper &phyHelper,
                      const WifiMacHelper &macHelper, NodeContainer c) const
@@ -108,6 +113,7 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       Ptr<Node> node = *i;
       Ptr<WifiNetDevice> device = CreateObject<WifiNetDevice> ();
       Ptr<WifiRemoteStationManager> manager = m_stationManager.Create<WifiRemoteStationManager> ();
+      //sva: MAC gets created of type RegularWifiMac or ApWifiMac along with EdcaTxopN and WifiMacQueue
       Ptr<WifiMac> mac = macHelper.Create ();
       Ptr<WifiPhy> phy = phyHelper.Create (node, device);
       mac->SetAddress (Mac48Address::Allocate ());
@@ -115,7 +121,7 @@ WifiHelper::Install (const WifiPhyHelper &phyHelper,
       phy->ConfigureStandard (m_standard);
       device->SetMac (mac);
       device->SetPhy (phy);
-      device->SetRemoteStationManager (manager);
+      device->SetRemoteStationManager (manager);//sva: one for each station
       node->AddDevice (device);
       devices.Add (device);
       NS_LOG_DEBUG ("node=" << node << ", mob=" << node->GetObject<MobilityModel> ());
@@ -137,6 +143,24 @@ WifiHelper::Install (const WifiPhyHelper &phy,
   Ptr<Node> node = Names::Find<Node> (nodeName);
   return Install (phy, mac, NodeContainer (node));
 }
+
+PerStaQInfoContainer
+WifiHelper::InitPerStaQInfo (const NetDeviceContainer sta, uint8_t ac) const
+{
+  NS_ASSERT_MSG(sta.GetN()!=0,"No Stations Initialized.");
+  PerStaQInfoContainer c;
+  Ptr<NetDevice> device;
+  Ptr<WifiNetDevice> staDevice;
+  for (NetDeviceContainer::Iterator i=sta.Begin(); i != sta.End(); ++i)
+    {
+      device = *i;
+      staDevice = device->GetObject<WifiNetDevice>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
+      c.Add(staDevice);
+    }
+
+  return c;
+}
+
 
 void
 WifiHelper::EnableLogComponents (void)

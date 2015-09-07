@@ -36,6 +36,9 @@
 #include "wifi-preamble.h"
 #include "wifi-phy-standard.h"
 #include "interference-helper.h"
+//sf
+#define sfmacro_AlwaysReceiveWithoutPowerAndsnrCheck
+#define sfmacro_MarkovModel1
 
 
 namespace ns3 {

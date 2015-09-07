@@ -940,6 +940,45 @@ public:
    */
   static WifiMode GetOfdmRate150MbpsBW40MHz ();
 
+  //sf Begin
+  // add MCS 8 to 31 for 2 to 4 ss in 20 MHZ speed , see  Gast, Matthew. 802.11 n: a survival guide. " O'Reilly Media, Inc.", 2012., page 31
+  /**
+    * Return a WifiMode for OFDM at 13Mbps with 20MHz channel spacing for 2 ss (spatial stream).
+    *
+    * \return a WifiMode for OFDM at 13Mbps with 20MHz channel spacing for 2 ss (spatial stream).
+    */
+  static WifiMode GetOfdmRate13MbpsBW20MHz2ss (); //ss means spatial stream
+  //MCS9 to MCS15
+  static WifiMode GetOfdmRate26MbpsBW20MHz2ss ();
+  static WifiMode GetOfdmRate39MbpsBW20MHz2ss ();
+  static WifiMode GetOfdmRate52MbpsBW20MHz2ss ();
+  static WifiMode GetOfdmRate78MbpsBW20MHz2ss ();
+  static WifiMode GetOfdmRate104MbpsBW20MHz2ss ();
+  static WifiMode GetOfdmRate117MbpsBW20MHz2ss ();
+  static WifiMode GetOfdmRate130MbpsBW20MHz2ss (); //there is a mistake at book ( instead of 130 the typist wrote 135)
+
+  //MCS16 to MCS23
+  static WifiMode GetOfdmRate19_5MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate39MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate58_5MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate78MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate117MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate156MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate175_5MbpsBW20MHz3ss ();
+  static WifiMode GetOfdmRate195MbpsBW20MHz3ss ();
+
+  //MCS16 to MCS23
+  static WifiMode GetOfdmRate26MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate52MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate78MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate104MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate156MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate208MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate234MbpsBW20MHz4ss ();
+  static WifiMode GetOfdmRate260MbpsBW20MHz4ss ();
+
+  //sf End
+
 
   /**
    * Public method used to fire a PhyTxBegin trace.  Implemented for encapsulation
