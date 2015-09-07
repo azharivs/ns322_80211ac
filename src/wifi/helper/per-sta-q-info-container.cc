@@ -96,7 +96,7 @@ PerStaQInfoContainer::GetByIpv4 (Ipv4Address addr, uint8_t tid) const
   return *m_staQInfo.begin();
 }
 
-void
+Ptr<PerStaQInfo>
 PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta)//, Ptr<WifiNetDevice> ap)
 {
   NS_ASSERT_MSG(sta,"Station Pointer NULL!");
@@ -107,6 +107,7 @@ PerStaQInfoContainer::Add (Ptr<WifiNetDevice> sta)//, Ptr<WifiNetDevice> ap)
   qInfo->SetMac(addrs);
   qInfo->SetTid(UP_VI); //TODO sva: default TID should change later for generalization
   m_staQInfo.push_back(qInfo);
+  return qInfo;
 }
 
 void

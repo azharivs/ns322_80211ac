@@ -150,7 +150,9 @@ int main (int argc, char *argv[])
 //  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
 //      SetPerStaQInfo(perStaQueue,AC_VI);
 
-  PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI);
+  uint32_t history = 25;
+  uint32_t largeHistory = 1000;
+  PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI, history, largeHistory);
 
   //Initialize per station time allowances
   //PerBitrateTimeAllowanceHelper taHelper;
@@ -169,11 +171,12 @@ int main (int argc, char *argv[])
   //Initialize PerStaWifiMacQueue. Only need to care about the AP
 
   ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
-  uint32_t MaxPacketNumber=30000;
+  uint32_t MaxPacketNumber=60000;
   double ServiceInterval = 0.1; //seconds
   bss.SetPerStaWifiMacQueue("ServicePolicy",EnumValue(QueueServicePolicy),
                             "MaxPacketNumber",UintegerValue(MaxPacketNumber),
-                            "ServiceInterval",DoubleValue(ServiceInterval));
+                            "ServiceInterval",DoubleValue(ServiceInterval),
+                            "MaxDelay",TimeValue (Seconds (40.0)));
 
   //Initialize MpduUniversalAggregator.  Only need to care about the AP
 
@@ -185,14 +188,14 @@ int main (int argc, char *argv[])
 
   //Initialize AggregationController. Only need to care about the AP
   double dvp = 0.02;
-  Time initialTimeAllowance = MicroSeconds(13000);
+  Time initialTimeAllowance = MicroSeconds(12000);
   double MovingIntegralWeight = 0.05;
-  double kp = 0.00; //0.01;
-  double ki = 0.00 ;//0.02;
-  double kd = 0.00; //0.05;
+  double kp = 0.01; //0.01;
+  double ki = 0.02;//0.02;
+  double kd = 0.05; //0.05;
   double thrW = 0.5;
-  double thrH = 2.5;
-  double thrL = 2.5;
+  double thrH = 2.0;
+  double thrL = 2.0;
   ControllerType controller = PID;//NO_CONTROL;//
   bss.SetAggregationController("DVP",DoubleValue(dvp),
                                "TimeAllowance", TimeValue(initialTimeAllowance),

@@ -77,17 +77,20 @@ namespace ns3 {
   }
 
   PerStaQInfoContainer
-  PerStaAggregationHelper::InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac)
+  PerStaAggregationHelper::InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac, uint32_t hist, uint32_t largeHist)
   {
     NS_ASSERT_MSG(sta.GetN()!=0,"No Stations Initialized.");
     PerStaQInfoContainer c;
     Ptr<NetDevice> device;
     Ptr<WifiNetDevice> staDevice;
+    Ptr<PerStaQInfo> qInfo;
     for (NetDeviceContainer::Iterator i=sta.Begin(); i != sta.End(); ++i)
       {
         device = *i;
         staDevice = device->GetObject<WifiNetDevice>();//sva: safe alternative to dynamic down-casting if aggregation is supported on Object
-        c.Add(staDevice);
+        qInfo = c.Add(staDevice);
+        qInfo->SetAttribute("HistorySize",UintegerValue(hist));
+        qInfo->SetAttribute("LargeHistorySize",UintegerValue(largeHist));
       }
     m_queue->EnablePerStaQInfo(c); //simply initializes a member pointer to point to this container
     //sva: old code: apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->SetPerStaQInfo(c,ac);//TODO remove from ApWifiMac and do in helper
@@ -138,11 +141,15 @@ namespace ns3 {
   void
   PerStaAggregationHelper::SetPerStaWifiMacQueue (std::string n0, const AttributeValue &v0,
                                                   std::string n1, const AttributeValue &v1,
-                                                  std::string n2, const AttributeValue &v2)
+                                                  std::string n2, const AttributeValue &v2,
+                                                  std::string n3, const AttributeValue &v3,
+                                                  std::string n4, const AttributeValue &v4)
   {
     if (n0 != "") m_queue->SetAttribute (n0, v0);
     if (n1 != "") m_queue->SetAttribute (n1, v1);
     if (n2 != "") m_queue->SetAttribute (n2, v2);
+    if (n3 != "") m_queue->SetAttribute (n3, v3);
+    if (n4 != "") m_queue->SetAttribute (n4, v4);
   }
 
   void

@@ -14,7 +14,8 @@ BaseMac="00:00:00:00:00:0"
 
 for i in $(seq 1 $2) 
 do
-    Mac=$(echo $BaseMac$i)
+    j=$(printf '%x' $i)
+    Mac=$(echo $BaseMac$j)
     ./extract-sta-agg-stat.sh $1 $Mac
     ./extract-sta-q-stat.sh $1 $Mac
     ./extract-sta-agg-ctrl-stat.sh $1 $Mac

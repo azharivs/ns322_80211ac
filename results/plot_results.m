@@ -1,7 +1,7 @@
 close all;
 clear all;
-nSta = 1;
-baseLogName = 'logfiles/timeallowance_fix.test1.13ms';
+nSta = 6;
+baseLogName = 'logfiles/pid.nSta6.dMax10.1';
 dirName = baseLogName(find(baseLogName == '/',1, 'last')+1:end);
 matOutputName = sprintf('./plots/%s/%s.mat',dirName,dirName);
 dirName = sprintf('./plots/%s',dirName);
@@ -22,9 +22,9 @@ pattern3 = {'k.','r.','g.','m.','b.','y.','c.'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
     if (i<16)
-        mac = sprintf('00:00:00:00:00:0%X',i);
+        mac = sprintf('00:00:00:00:00:0%x',i);
     else
-        mac = sprintf('00:00:00:00:00:%X',i);     
+        mac = sprintf('00:00:00:00:00:%x',i);     
     end
     staQInfoLogName{i} = sprintf('%s.StaQInfo.%s',baseLogName,mac);
     staAggLogName{i} = sprintf('%s.StaAgg.%s',baseLogName,mac);
