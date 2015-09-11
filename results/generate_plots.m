@@ -94,6 +94,8 @@ if (exist('timesAggCtrl'))
         saveas(gcf,figname,'fig');
         saveas(gcf,figname,'eps');
         saveas(gcf,figname,'png');
+        i
+        mean(newTimeAllowance{i})
     end
 end
 
