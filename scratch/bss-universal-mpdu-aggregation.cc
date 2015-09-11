@@ -71,12 +71,31 @@ int main (int argc, char *argv[])
   //LogComponentEnable ("UdpClient", LOG_LEVEL_DEBUG);
   //LogComponentEnable ("UdpServer", LOG_LEVEL_DEBUG);
 
+  bool enableRts = 0;
+
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
   uint32_t nSta = 4;
   double dMax = 1.0;//maximum tolerable delay
-  bool enableRts = 0;
+  uint32_t history = 25;
+  uint32_t largeHistory = 1000;
+  ServicePolicyType QueueServicePolicy = EDF_RR;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  uint32_t MaxPacketNumber=60000;
+  double ServiceInterval = 0.1; //seconds
+  AggregationType AggregationAlgorithm = DEADLINE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
+  double dvp = 0.02;
+  Time initialTimeAllowance = MicroSeconds(12000);
+  double MovingIntegralWeight = 0.05;
+  double kp = 0.01; //0.01;
+  double ki = 0.000;//0.02;
+  double kd = 0.05; //0.05;
+  double thrW = 0.5;
+  double thrH = 2.0;
+  double thrL = 2.0;
+  ControllerType controller = PID;//NO_CONTROL;//
+
     
   CommandLine cmd;
   cmd.AddValue("nSta", "Number of stations", nSta); //sva: number of stations specified by the user
@@ -85,6 +104,18 @@ int main (int argc, char *argv[])
   cmd.AddValue("enableRts", "Enable RTS/CTS", enableRts);
   cmd.AddValue("simulationTime", "Simulation time in seconds", simulationTime);
   cmd.AddValue("dMax", "maximum tolerable end to end delay in seconds", dMax);
+  cmd.AddValue("hist","History Size used for Per Station Statistics",history);
+  cmd.AddValue("largeHist","History Size used for Per Station Statistics in Particular DVP",largeHistory);
+  cmd.AddValue("maxQ","Max Total Queue Length (@AP)",MaxPacketNumber);
+  cmd.AddValue("si","Length of Service Interval in Seconds",ServiceInterval);
+  cmd.AddValue("dvp","Target Delay Violation Probability",dvp);
+  cmd.AddValue("pidIntW","Moving Integral Weight for Recent Sample of Integral Term of the PID Controller",MovingIntegralWeight);
+  cmd.AddValue("kp","Proportional Coefficient for the PID Controller",kp);
+  cmd.AddValue("ki","Integral Coefficient for the PID Controller",ki);
+  cmd.AddValue("kd","Derivative Coefficient for the PID Controller",kd);
+  cmd.AddValue("thrW","Moving Average Recent Sample Weight for the Threshold Based PID Controller",thrW);
+  cmd.AddValue("thrH","High Threshold Coefficient for the Threshold Based PID Controller",thrH);
+  cmd.AddValue("thrL","Low Threshold Coefficient for the Threshold Based PID Controller",thrL);
   cmd.Parse (argc, argv);
     
   if(!enableRts)
@@ -150,8 +181,6 @@ int main (int argc, char *argv[])
 //  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
 //      SetPerStaQInfo(perStaQueue,AC_VI);
 
-  uint32_t history = 25;
-  uint32_t largeHistory = 1000;
   PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI, history, largeHistory);
 
   //Initialize per station time allowances
@@ -170,9 +199,6 @@ int main (int argc, char *argv[])
 
   //Initialize PerStaWifiMacQueue. Only need to care about the AP
 
-  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
-  uint32_t MaxPacketNumber=60000;
-  double ServiceInterval = 0.1; //seconds
   bss.SetPerStaWifiMacQueue("ServicePolicy",EnumValue(QueueServicePolicy),
                             "MaxPacketNumber",UintegerValue(MaxPacketNumber),
                             "ServiceInterval",DoubleValue(ServiceInterval),
@@ -180,23 +206,11 @@ int main (int argc, char *argv[])
 
   //Initialize MpduUniversalAggregator.  Only need to care about the AP
 
-  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
-  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
   bss.SetMpduUniversalAggregator("Algorithm",EnumValue(AggregationAlgorithm),
                                  "ServiceInterval",DoubleValue(ServiceInterval),
                                  "MaxAmpduSize",UintegerValue(MaxAmpduSize));
 
   //Initialize AggregationController. Only need to care about the AP
-  double dvp = 0.02;
-  Time initialTimeAllowance = MicroSeconds(12000);
-  double MovingIntegralWeight = 0.05;
-  double kp = 0.01; //0.01;
-  double ki = 0.02;//0.02;
-  double kd = 0.05; //0.05;
-  double thrW = 0.5;
-  double thrH = 2.0;
-  double thrL = 2.0;
-  ControllerType controller = PID;//NO_CONTROL;//
   bss.SetAggregationController("DVP",DoubleValue(dvp),
                                "TimeAllowance", TimeValue(initialTimeAllowance),
                                "ServiceInterval",DoubleValue(ServiceInterval),
@@ -268,6 +282,7 @@ int main (int argc, char *argv[])
 	  //sva: set dealine for each stations traffic
 	  //sva: 0.5 sec, 0.7sec, 0.9sec, 1.2 sec
 	  myClient.SetAttribute("Deadline",DoubleValue(dMax)); //set deadline
+	  //myClient.SetAttribute ("Interval", TimeValue (Seconds (0.002/(double) (j+1)))); //packets/s
 	  //sva: this is not the correct way of doing it.
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this

@@ -1,7 +1,7 @@
+function out = plot_results_func(baseLogName,nSta)
 close all;
-clear all;
-nSta = 7;
-baseLogName = 'logfiles/pid.nSta7.dMax10.3';
+%clear all;
+out = 0;
 dirName = baseLogName(find(baseLogName == '/',1, 'last')+1:end);
 matOutputName = sprintf('./plots/%s/%s.mat',dirName,dirName);
 dirName = sprintf('./plots/%s',dirName);
@@ -24,7 +24,7 @@ for i=1:nSta
     if (i<16)
         mac = sprintf('00:00:00:00:00:0%x',i);
     else
-        mac = sprintf('00:00:00:00:00:%x',i);     
+        mac = sprintf('00:00:00:00:00:%x',i);
     end
     staQInfoLogName{i} = sprintf('%s.StaQInfo.%s',baseLogName,mac);
     staAggLogName{i} = sprintf('%s.StaAgg.%s',baseLogName,mac);
@@ -231,7 +231,7 @@ for i=1:nSta
         ref{i} = data(:,8);
         errCorr{i} = data(:,10)/100;
         flag = 0;
-        if (size(data,2) > 10) %more columns 
+        if (size(data,2) > 10) %more columns
             flag = 1;
             thrHi{i} = data(:,11); %sva: lines to be commented when no hi/low threshold value exists
             thrLo{i} = data(:,12); %sva: lines to be commented when no hi/low threshold value exists
@@ -280,12 +280,12 @@ for i=1:nSta
         ylabel('Reference Signal');
         grid on;
     end %if
-    %extract bitrates and their (time averaged) probabilities 
-%     for j=1:max(size(rates))
-%         totalTxTime = sum(aggTxTime);
-%         prRates(j,i) = sum(aggTxTime(dataRate == rates(j)))/totalTxTime;
-%         %prRates(j,i) = sum((dataRate == rates(j)))/max(size(dataRate));
-%     end
+    %extract bitrates and their (time averaged) probabilities
+    %     for j=1:max(size(rates))
+    %         totalTxTime = sum(aggTxTime);
+    %         prRates(j,i) = sum(aggTxTime(dataRate == rates(j)))/totalTxTime;
+    %         %prRates(j,i) = sum((dataRate == rates(j)))/max(size(dataRate));
+    %     end
 end
 
 if (exist('prRates') && exist('rates'))
@@ -322,7 +322,7 @@ end
 %         grid on;
 %     end
 % end
-% 
+%
 % ratesActualProb
 % busy
 
