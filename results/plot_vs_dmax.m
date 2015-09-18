@@ -5,8 +5,10 @@ kk=0;
 util = figure;
 ta = figure;
 pattern0 = {'ks-','ko-','kx-','k*-','kd-','k^-','kv-'};
+font_size = 28;
+marker_size = 14;
 
-for nsta=[1 6 8]
+for nsta=[1 2 4 6 8]
     ii=0;
     kk=kk+1;
     lgnd{kk} = sprintf('%d STA(s)',nsta);
@@ -29,22 +31,22 @@ for nsta=[1 6 8]
     end
     
     figure(util);
-    plot(d_max,util_pid(kk,:),pattern0{kk},'MarkerSize',10,'LineWidth',2);
+    plot(d_max,util_pid(kk,:),pattern0{kk},'MarkerSize',marker_size,'LineWidth',2);
     grid;
     ylim([0 1]);
     hold on;
-    xlabel('Delay Bound (Sec)','fontsize',16);
-    ylabel('Channel Utilization','fontsize',16);
-    set(gca,'fontsize',16);
+    xlabel('Delay Bound (Sec)','fontsize',font_size);
+    ylabel('Channel Utilization','fontsize',font_size);
+    set(gca,'fontsize',font_size);
     
     figure(ta);
-    plot(d_max,avg_ta(kk,:),pattern0{kk},'MarkerSize',10,'LineWidth',2);
+    plot(d_max,avg_ta(kk,:),pattern0{kk},'MarkerSize',marker_size,'LineWidth',2);
     grid;
     ylim([0 16]);
     hold on;
-    xlabel('Delay Bound (Sec)','fontsize',16);
-    ylabel('Average Time Allowance per STA per BI (msec)','fontsize',16);
-    set(gca,'fontsize',16);
+    xlabel('Delay Bound (Sec)','fontsize',font_size);
+    ylabel('Avg. Time Allowance per STA (msec)','fontsize',font_size);
+    set(gca,'fontsize',font_size);
         
 end
 figure(util);
