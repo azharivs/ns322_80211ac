@@ -2,14 +2,14 @@
 simulationTime=100
 nMpdus=64;
 
-for nSta in 1 2 3 4 5 6 7 8 9 10
+for nSta in 1
   do
-  for dvp in 0.01
+  for dvp in 0.90
     do
-    for dMax in 1 2 5 7 10
+    for dMax in 5 10 20
       do
       cmdLine=$(echo "--nMpdus=$nMpdus --simulationTime=$simulationTime --nSta=$nSta --dMax=$dMax --dvp=$dvp")
-      logfile="logfiles/deadline"_"nSta$nSta"_"dMax$dMax"_"dvp$dvp"
+      logfile="logfiles/pid"_"nSta$nSta"_"dMax$dMax"_"dvp$dvp"
       export nSta
       ./single_sim_run.sh $1 "$(echo $cmdLine)" $logfile
       done
