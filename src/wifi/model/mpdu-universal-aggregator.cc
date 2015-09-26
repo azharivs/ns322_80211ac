@@ -21,7 +21,7 @@
 #include "ns3/log.h"
 #include "ns3/uinteger.h"
 #include "ns3/double.h"
-#include "ns3/udp-client.h" //used for TimestampTag. Should move so somewhere else TODO
+//#include "ns3/udp-client.h" //used for TimestampTag. Should move so somewhere else TODO
 #include "ns3/simulator.h"
 
 #include "ampdu-subframe-header.h"
@@ -31,6 +31,7 @@
 #include "per-sta-q-info.h"
 #include "wifi-tx-vector.h"
 #include "per-bitrate-timeallowance.h"
+#include "timestamp-tag.h"
 
 //sva TODO: Aggregation size should be allowed to increase to 11ac values. (I think 4MB?!)
 

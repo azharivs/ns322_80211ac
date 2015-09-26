@@ -105,6 +105,7 @@ private:
 
 };
 
+/*
 //sva:
 class TimestampTag : public Tag {
 public:
@@ -126,7 +127,7 @@ private:
 
   // end class TimestampTag
 };
-
+*/
 
 } // namespace ns3
 

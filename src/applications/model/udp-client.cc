@@ -36,6 +36,7 @@
 #include "ns3/qos-tag.h"
 #include "udp-client.h"
 #include "seq-ts-header.h"
+#include "ns3/timestamp-tag.h"
 #include <cstdlib>
 #include <cstdio>
 
@@ -216,7 +217,7 @@ UdpClient::Send (void)
 /*
  * TimestampTag implementation
  */
-
+/*
 TypeId
 TimestampTag::GetTypeId (void)
 {
@@ -272,5 +273,5 @@ TimestampTag::Print (std::ostream &os) const
 {
   os << "t=" << m_timestamp;
 }
-
+*/
 } // Namespace ns3
