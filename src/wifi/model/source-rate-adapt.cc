@@ -21,6 +21,7 @@
 
 #include <math.h>
 #include "source-rate-adapt.h"
+#include "timestamp-tag.h"
 
 namespace ns3{
 
@@ -161,7 +162,7 @@ namespace ns3{
   CbrRateAdapt::DoDoInit (void)
   {//TODO could be redundant
     TimeValue pktGenInterval;
-    m_app->GetObject<UdpClient>()->GetAttribute("Interval",pktGenInterval);
+  //  m_app->GetObject<UdpClient>()->GetAttribute("Interval",pktGenInterval);
   }
 
   void
@@ -170,7 +171,7 @@ namespace ns3{
     if (Simulator::Now() < Seconds(10.0)) //allow for warm up
       return;
     Time pktGenInterval = Seconds(1.0/pps);
-    m_app->GetObject<UdpClient>()->SetAttribute("Interval", TimeValue (pktGenInterval));
+    //m_app->GetObject<UdpClient>()->SetAttribute("Interval", TimeValue (pktGenInterval));
   }
 } //namespace ns3
 
