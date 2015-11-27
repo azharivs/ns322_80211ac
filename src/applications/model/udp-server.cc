@@ -34,6 +34,11 @@
 #include "seq-ts-header.h"
 #include "udp-server.h"
 
+#include <stdlib.h>
+#include <stdio.h>
+#include "ns3/string.h"
+#include "ns3/trace-source-accessor.h"
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("UdpServer");
@@ -58,6 +63,10 @@ UdpServer::GetTypeId (void)
                    MakeUintegerAccessor (&UdpServer::GetPacketWindowSize,
                                          &UdpServer::SetPacketWindowSize),
                    MakeUintegerChecker<uint16_t> (8,256))
+    .AddAttribute ("ServerId", "The server's Id",
+                   StringValue("1"),
+                   MakeStringAccessor(&UdpServer::m_serverId),
+                   MakeStringChecker())
   ;
   return tid;
 }
@@ -136,6 +145,16 @@ UdpServer::StartApplication (void)
 
   m_socket6->SetRecvCallback (MakeCallback (&UdpServer::HandleRead, this));
 
+
+   string receiverDumpFileName = "NF-results/output-DRAzhari/receiver-output";
+   receiverDumpFileName += m_serverId;
+   receiverDumpFile.open(receiverDumpFileName.c_str(), ios::out);
+   if (receiverDumpFile.fail())
+   {
+        NS_FATAL_ERROR(">> UDPServer: Error while opening output file: " << receiverDumpFileName.c_str());
+        return;
+   }
+
 }
 
 void
@@ -171,6 +190,14 @@ UdpServer::HandleRead (Ptr<Socket> socket)
                            " TXtime: " << seqTs.GetTs () <<
                            " RXtime: " << Simulator::Now () <<
                            " Delay: " << Simulator::Now () - seqTs.GetTs ());
+
+             receiverDumpFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(ns3::Time::S)
+                                         << std::setfill(' ') << std::setw(16) <<  "id " << currentSequenceNumber
+                                         << std::setfill(' ') <<  std::setw(16) <<  "udp " << (packet->GetSize()+12)
+                                         << std::endl;
+             m_lossCounter.NotifyReceived (currentSequenceNumber);
+          m_received++;
+
             }
           else if (Inet6SocketAddress::IsMatchingType (from))
             {
@@ -183,8 +210,7 @@ UdpServer::HandleRead (Ptr<Socket> socket)
                            " Delay: " << Simulator::Now () - seqTs.GetTs ());
             }
 
-          m_lossCounter.NotifyReceived (currentSequenceNumber);
-          m_received++;
+         
         }
     }
 }

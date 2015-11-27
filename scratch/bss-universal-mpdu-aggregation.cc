@@ -66,17 +66,49 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
 
+
+
+//NFM this function converts number to string
+std::string itos(int n)
+{
+   const int max_size = std::numeric_limits<int>::digits10 + 1 /*sign*/ + 1 /*0-terminator*/;
+   char buffer[max_size] = {0};
+   sprintf(buffer, "%d", n);
+   return std::string(buffer);
+}
+
+
+
 int main (int argc, char *argv[])
 {
   //LogComponentEnable ("UdpClient", LOG_LEVEL_DEBUG);
   //LogComponentEnable ("UdpServer", LOG_LEVEL_DEBUG);
 
+  bool enableRts = 0;
+
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
-  uint32_t nSta = 4;
+  uint32_t nSta =1;
   double dMax = 1.0;//maximum tolerable delay
-  bool enableRts = 0;
+  uint32_t history = 25;
+  uint32_t largeHistory = 1000;
+  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  uint32_t MaxPacketNumber=60000;
+  double ServiceInterval = 0.1; //seconds
+  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
+  double dvp = 0.02;
+  Time initialTimeAllowance = MicroSeconds(12000);
+  double MovingIntegralWeight = 0.05;
+  double kp = 0.01; //0.01;
+  double ki = 0.000;//0.02;
+  double kd = 0.05; //0.05;
+  double thrW = 0.5;
+  double thrH = 2.0;
+  double thrL = 2.0;
+  ControllerType controller = PID;//NO_CONTROL;//
+
     
   CommandLine cmd;
   cmd.AddValue("nSta", "Number of stations", nSta); //sva: number of stations specified by the user
@@ -85,6 +117,18 @@ int main (int argc, char *argv[])
   cmd.AddValue("enableRts", "Enable RTS/CTS", enableRts);
   cmd.AddValue("simulationTime", "Simulation time in seconds", simulationTime);
   cmd.AddValue("dMax", "maximum tolerable end to end delay in seconds", dMax);
+  cmd.AddValue("hist","History Size used for Per Station Statistics",history);
+  cmd.AddValue("largeHist","History Size used for Per Station Statistics in Particular DVP",largeHistory);
+  cmd.AddValue("maxQ","Max Total Queue Length (@AP)",MaxPacketNumber);
+  cmd.AddValue("si","Length of Service Interval in Seconds",ServiceInterval);
+  cmd.AddValue("dvp","Target Delay Violation Probability",dvp);
+  cmd.AddValue("pidIntW","Moving Integral Weight for Recent Sample of Integral Term of the PID Controller",MovingIntegralWeight);
+  cmd.AddValue("kp","Proportional Coefficient for the PID Controller",kp);
+  cmd.AddValue("ki","Integral Coefficient for the PID Controller",ki);
+  cmd.AddValue("kd","Derivative Coefficient for the PID Controller",kd);
+  cmd.AddValue("thrW","Moving Average Recent Sample Weight for the Threshold Based PID Controller",thrW);
+  cmd.AddValue("thrH","High Threshold Coefficient for the Threshold Based PID Controller",thrH);
+  cmd.AddValue("thrL","Low Threshold Coefficient for the Threshold Based PID Controller",thrL);
   cmd.Parse (argc, argv);
     
   if(!enableRts)
@@ -150,7 +194,7 @@ int main (int argc, char *argv[])
 //  apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>()->
 //      SetPerStaQInfo(perStaQueue,AC_VI);
 
-  PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI);
+  PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI, history, largeHistory);
 
   //Initialize per station time allowances
   //PerBitrateTimeAllowanceHelper taHelper;
@@ -168,32 +212,20 @@ int main (int argc, char *argv[])
 
   //Initialize PerStaWifiMacQueue. Only need to care about the AP
 
-  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
-  uint32_t MaxPacketNumber=30000;
-  double ServiceInterval = 0.1; //seconds
   bss.SetPerStaWifiMacQueue("ServicePolicy",EnumValue(QueueServicePolicy),
                             "MaxPacketNumber",UintegerValue(MaxPacketNumber),
-                            "ServiceInterval",DoubleValue(ServiceInterval));
+                            "ServiceInterval",DoubleValue(ServiceInterval),
+                            "MaxDelay",TimeValue (Seconds (40.0)));
 
   //Initialize MpduUniversalAggregator.  Only need to care about the AP
 
-  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
-  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
   bss.SetMpduUniversalAggregator("Algorithm",EnumValue(AggregationAlgorithm),
                                  "ServiceInterval",DoubleValue(ServiceInterval),
                                  "MaxAmpduSize",UintegerValue(MaxAmpduSize));
 
   //Initialize AggregationController. Only need to care about the AP
-  double dvp = 0.02;
-  double MovingIntegralWeight = 0.05;
-  double kp = 0.01;
-  double ki = 0.02;
-  double kd = 0.05;
-  double thrW = 0.5;
-  double thrH = 2.5;
-  double thrL = 2.5;
-  ControllerType controller = PID;//NO_CONTROL;//
   bss.SetAggregationController("DVP",DoubleValue(dvp),
+                               "TimeAllowance", TimeValue(initialTimeAllowance),
                                "ServiceInterval",DoubleValue(ServiceInterval),
                                "MaxDelay",DoubleValue(dMax),
                                "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
@@ -240,40 +272,52 @@ int main (int argc, char *argv[])
   /* Setting applications */
   //sva: STA is server receiving packets
 
-  UdpServerHelper myServer (9);
-  ApplicationContainer serverApp = myServer.Install (wifiStaNode);
-  serverApp.Start (Seconds (0.0));
-  serverApp.Stop (Seconds (simulationTime+1));
+  
+  
       
   //sva: AP is client sending packets
   //sva: pre-initialize all clients to pick the first station as their remote server
   UdpClientHelper myClient (StaInterface.GetAddress (0), 9);
   myClient.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
-  myClient.SetAttribute ("Interval", TimeValue (Time ("0.002"))); //packets/s
+  myClient.SetAttribute ("Interval", TimeValue (Time ("0.0002"))); //packets/s
   myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
 
+  ApplicationContainer serverApp ;
   ApplicationContainer clientApp;//sva: my empty application container for UDP clients
+  ApplicationContainer tempApp;//sva: my temporary application container for UDP clients
   uint32_t j;
   //sva: figuring out how to do the iterations.
   for ( j = 0 ; j < nSta ; j ++)
     {
+          UdpServerHelper myServer (9);
+          string ch = itos(j);
+          myServer.SetAttribute ("ServerId", StringValue(ch));
+          serverApp= myServer.Install (wifiStaNode.Get (j));
+          serverApp.Start (Seconds (0.0));
+          serverApp.Stop (Seconds (simulationTime+1));
 	  //sva: initialize correct remote address for next client instantiation
 	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
 	  //sva: set dealine for each stations traffic
 	  //sva: 0.5 sec, 0.7sec, 0.9sec, 1.2 sec
 	  myClient.SetAttribute("Deadline",DoubleValue(dMax)); //set deadline
+	  //myClient.SetAttribute ("Interval", TimeValue (Seconds (0.002/(double) (j+1)))); //packets/s
+          myClient.SetAttribute ("ClientId", StringValue(ch));
 	  //sva: this is not the correct way of doing it.
 	  //sva: I am creating a single dangling application container for each client
 	  //sva: May have to change the upd client helper to fix this
 	  //sva: needs a new Install method
-	  clientApp = myClient.Install (wifiApNode.Get (0));
+	  tempApp = myClient.Install (wifiApNode.Get (0));
 	  //myClient.setStartTime(Seconds (1.0));
 	  //myClient.setStopTime(Seconds (simulatioTime+1));
-	  clientApp.Start (Seconds (1.0));
-	  clientApp.Stop (Seconds (simulationTime+1));
+	  tempApp.Start (Seconds (1.0));
+	  tempApp.Stop (Seconds (simulationTime+1));
+	  clientApp.Add( *(tempApp.Begin()) );// add to container
     }
 
+  //double rateAdaptInterval = 10.0; //seconds;
+  //bss.InstallSourceRateAdaptor(perStaQueue, clientApp, rateAdaptInterval);
 
+  //sva: just for test: (*tempApp.Begin())->SetAttribute ("Interval", TimeValue (Time ("0.02")));
       
   Simulator::Stop (Seconds (simulationTime+1));
 
@@ -299,7 +343,7 @@ int main (int argc, char *argv[])
       std::cout << "STA(" << j << ") [" << staPtr->GetMac() << "] Throughput: " << throughput << " Mbps, PDR: " << pdr
           << " Arrival Rate = " << stats.avgArrival << " pps(" << stats.avgArrivalBytes/1000000*8 << " Mbps), Average Q Size = "
           << stats.avgQueue << " Pkts(" << stats.avgBytes/1000000 << " MBytes), Average Q Wait = "<< stats.avgWait*1000
-          << " msec, DVP = " << stats.dvp << "; \n";
+          << " msec, DVP = " << stats.dvp <<"  loss =" <<totalPacketsLost<<"; \n";
     }
 
   Simulator::Destroy ();

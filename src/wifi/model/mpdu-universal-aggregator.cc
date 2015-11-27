@@ -21,9 +21,9 @@
 #include "ns3/log.h"
 #include "ns3/uinteger.h"
 #include "ns3/double.h"
-#include "ns3/udp-client.h" //used for TimestampTag. Should move so somewhere else TODO
+//#include "ns3/udp-client.h" //used for TimestampTag. Should move so somewhere else TODO
+#include "timestamp-tag.h"
 #include "ns3/simulator.h"
-
 #include "ampdu-subframe-header.h"
 #include "mpdu-universal-aggregator.h"
 #include "wifi-mac-header.h"
@@ -55,7 +55,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeDoubleAccessor (&MpduUniversalAggregator::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("Algorithm", "The aggregation algorithm used for selecting packets to join the A-MPDU.",
-                   EnumValue (STANDARD),
+                   EnumValue (TIME_ALLOWANCE),
                    MakeEnumAccessor (&MpduUniversalAggregator::m_aggregationAlgorithm),
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE",

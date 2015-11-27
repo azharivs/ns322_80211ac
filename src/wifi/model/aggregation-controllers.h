@@ -105,6 +105,8 @@ public:
 
   virtual void Update (void);
 
+  Ptr<PidController> GetController(Mac48Address adrs);
+
 private:
 
   void DoInitialize (void);

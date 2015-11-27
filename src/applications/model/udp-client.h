@@ -29,6 +29,15 @@
 #include "ns3/ipv4-address.h"
 #include "ns3/tag.h"
 
+#include <stdio.h>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
+#include <vector>
+#include <map>
+
+using namespace std;
+
 namespace ns3 {
 
 class Socket;
@@ -95,16 +104,19 @@ private:
   uint32_t m_count; //!< Maximum number of packets the application will send
   Time m_interval; //!< Packet inter-send time
   uint32_t m_size; //!< Size of the sent packet (including the SeqTsHeader)
-  double m_deadline; //!< sva: Packet deadline in seconds
+  double m_deadline; //!< sva: Packet deadline in seconds TODO fix later on so don't have to change UdpClient
 
   uint32_t m_sent; //!< Counter for sent packets
   Ptr<Socket> m_socket; //!< Socket
   Address m_peerAddress; //!< Remote peer address
   uint16_t m_peerPort; //!< Remote peer port
   EventId m_sendEvent; //!< Event to send the next packet
+  fstream       m_senderTraceFile;
+  string        m_clientId;
 
 };
 
+/*
 //sva:
 class TimestampTag : public Tag {
 public:
@@ -126,7 +138,7 @@ private:
 
   // end class TimestampTag
 };
-
+*/
 
 } // namespace ns3
 

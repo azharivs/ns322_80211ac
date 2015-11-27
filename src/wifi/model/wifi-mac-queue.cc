@@ -59,7 +59,7 @@ WifiMacQueue::GetTypeId (void)
                    MakeUintegerAccessor (&WifiMacQueue::m_maxSize),
                    MakeUintegerChecker<uint32_t> ())
     .AddAttribute ("MaxDelay", "If a packet stays longer than this delay in the queue, it is dropped.",
-                   TimeValue (Seconds (10.0)),
+                   TimeValue (Seconds (40.0)),
                    MakeTimeAccessor (&WifiMacQueue::m_maxDelay),
                    MakeTimeChecker ())
   ;
@@ -361,9 +361,6 @@ WifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
 
 /**
  * PerStaWifiMacQueue implementation starts here
- * For now service discipline is determined by changing the default value in
- * the .AddAttribute line below.
- * TODO: do this by calling a method in the main()
  *
  *
  */
@@ -381,7 +378,7 @@ PerStaWifiMacQueue::GetTypeId (void)
                    MakeDoubleAccessor (&PerStaWifiMacQueue::m_serviceInterval),
                    MakeDoubleChecker<double> ())
     .AddAttribute ("ServicePolicy", "The Service Policy Applied to Each AC Queue.",
-                   EnumValue (EDF),
+                   EnumValue (MAX_REMAINING_TIME_ALLOWANCE),
                    MakeEnumAccessor (&PerStaWifiMacQueue::m_servicePolicy),
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
@@ -438,6 +435,7 @@ void
 PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
 {
   Cleanup ();
+        std::cout <<"\n size: " << m_size << "max: " << m_maxSize << "\n";
   if (m_size == m_maxSize)
     {
       return;

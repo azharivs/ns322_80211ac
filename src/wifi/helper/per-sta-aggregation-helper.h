@@ -34,6 +34,8 @@
 #include "ns3/wifi-mac-queue.h"
 #include "ns3/mpdu-universal-aggregator.h"
 #include "ns3/aggregation-controllers.h"
+#include "ns3/source-rate-adapt.h"
+#include "ns3/application-container.h"
 
 namespace ns3 {
 
@@ -48,15 +50,19 @@ public:
     PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac);
     ~PerStaAggregationHelper ();
 
-    PerStaQInfoContainer InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac);
+    PerStaQInfoContainer InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac, uint32_t hist, uint32_t largeHist);
 
     Ptr<BssPhyMacStats> InstallBssPhyMacStats (uint32_t hist, PerStaQInfoContainer &c);
+
+    void InstallSourceRateAdaptor (const PerStaQInfoContainer &staQInfo, const ApplicationContainer &clientApps, double interval);
 
     void FinalizeSetup (PerStaQInfoContainer &c);
 
     void SetPerStaWifiMacQueue (std::string n0 = "", const AttributeValue &v0 = EmptyAttributeValue (),
                                 std::string n1 = "", const AttributeValue &v1 = EmptyAttributeValue (),
-                                std::string n2 = "", const AttributeValue &v2 = EmptyAttributeValue ());
+                                std::string n2 = "", const AttributeValue &v2 = EmptyAttributeValue (),
+                                std::string n3 = "", const AttributeValue &v3 = EmptyAttributeValue (),
+                                std::string n4 = "", const AttributeValue &v4 = EmptyAttributeValue ());
 
     void SetMpduUniversalAggregator (std::string n0 = "", const AttributeValue &v0 = EmptyAttributeValue (),
                                      std::string n1 = "", const AttributeValue &v1 = EmptyAttributeValue (),
@@ -72,7 +78,8 @@ public:
                                    std::string n7 = "", const AttributeValue &v7 = EmptyAttributeValue (),
                                    std::string n8 = "", const AttributeValue &v8 = EmptyAttributeValue (),
                                    std::string n9 = "", const AttributeValue &v9 = EmptyAttributeValue (),
-                                   std::string n10 = "", const AttributeValue &v10 = EmptyAttributeValue ());
+                                   std::string n10 = "", const AttributeValue &v10 = EmptyAttributeValue (),
+                                   std::string n11 = "", const AttributeValue &v11 = EmptyAttributeValue ());
 
 protected:
 

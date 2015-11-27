@@ -30,6 +30,7 @@
 #include "per-sta-q-info.h"
 
 namespace ns3 {
+  class PerStaQInfo;
 
 /**
  * \ingroup wifi
@@ -101,6 +102,13 @@ public:
    * Initializes controller parameters
    */
   virtual bool Init (void);
+
+  /*
+   * forces output and previous output to a certain value.
+   * can be used for initialization as well.
+   */
+  virtual void ForceOutput (double output);
+
 
   virtual void SetStaQInfo (const Ptr<PerStaQInfo> sta);
   /*

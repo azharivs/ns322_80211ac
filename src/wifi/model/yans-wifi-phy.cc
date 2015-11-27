@@ -36,6 +36,7 @@
 #include "ns3/net-device.h"
 #include "ns3/trace-source-accessor.h"
 #include "ns3/boolean.h"
+#include "ns3/snr-tag.h"
 #include "ampdu-tag.h"
 #include <cmath>
 
@@ -983,7 +984,21 @@ YansWifiPhy::EndReceive (Ptr<Packet> packet, Ptr<InterferenceHelper::Event> even
       double signalDbm = RatioToDb (event->GetRxPowerW ()) + 30;
       double noiseDbm = RatioToDb (event->GetRxPowerW () / snrPer.snr) - GetRxNoiseFigure () + 30;
       NotifyMonitorSniffRx (packet, (uint16_t)GetChannelFrequencyMhz (), GetChannelNumber (), dataRate500KbpsUnits, isShortPreamble, signalDbm, noiseDbm);
+
+      // NF :Add SNR tag to packets
+      SnrTag tag;
+      tag.Set(signalDbm - noiseDbm);
+      if (!packet->PeekPacketTag (tag))
+      {
+          packet->AddPacketTag (tag);
+          NS_LOG_DEBUG("Add SNR Tag with value :" << tag.Get());
+      }
+
+      // NF ********* 
+
+
       m_state->SwitchFromRxEndOk (packet, snrPer.snr, event->GetPayloadMode (), event->GetPreambleType ());
+
     }
   else
     {
