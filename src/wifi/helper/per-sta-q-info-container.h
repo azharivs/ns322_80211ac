@@ -27,6 +27,7 @@
 #include "ns3/nstime.h"
 #include "ns3/object.h"
 #include "ns3/udp-client.h"
+#include "ns3/timestamp-tag.h"
 //#include "wifi-mac-queue.h"
 //#include "ns3/net-device-container.h"
 #include "ns3/wifi-net-device.h"
@@ -169,11 +170,10 @@ public:
    * Create one PerStaQInfo and add it to the container
    *
    * \param sta: station net devices pointer
-   * \param ap:  AP net device pointer
    * Currently assumes only one NetDevice per STA and AP
-   * \returns the Container containing vector of pointers to PeStaQInfo objects
+   * \returns a pointer to the currently added PerStaQInfo object
    */
-  void Add (Ptr<WifiNetDevice> sta);//, Ptr<WifiNetDevice> ap);
+  Ptr<PerStaQInfo> Add (Ptr<WifiNetDevice> sta);
 
   /**
    * Takes care of updating queue statistics for appropriate station

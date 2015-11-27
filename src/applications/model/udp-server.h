@@ -30,6 +30,21 @@
 #include "ns3/ptr.h"
 #include "ns3/address.h"
 #include "packet-loss-counter.h"
+#include <string.h>
+#include <fstream>
+#include <iostream>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <netinet/in.h>
+#include <stdio.h>
+#include <string.h>
+#include <fstream>
+#include <iostream>
+#include <iomanip>
+
+
+using namespace std;
 namespace ns3 {
 /**
  * \ingroup applications
@@ -96,12 +111,15 @@ private:
    * \param socket the socket the packet was received to.
    */
   void HandleRead (Ptr<Socket> socket);
-
+  
   uint16_t m_port; //!< Port on which we listen for incoming packets.
   Ptr<Socket> m_socket; //!< IPv4 Socket
   Ptr<Socket> m_socket6; //!< IPv6 Socket
   uint32_t m_received; //!< Number of received packets
   PacketLossCounter m_lossCounter; //!< Lost packet counter
+
+   ofstream    receiverDumpFile;       //!< output file 
+  string          m_serverId;
 };
 
 } // namespace ns3

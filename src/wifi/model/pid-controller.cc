@@ -18,6 +18,7 @@
  * Author: Seyed Vahid Azhari <azharivs@iust.ac.ir>
  */
 
+//TODO: need to clean up the feedback signal. At the moment there is no clear distinction between feedback and input signals.
 //TODO: For now all control and input signals are of type double
 //TODO: Later, c++ templates can be used to make it support generic
 //TODO: signals such as Time or even a complex struct
@@ -96,6 +97,12 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     m_pidParam.kd = m_kd;
     m_pidParam.wi = m_weightIntegral;
     return true;
+  }
+
+  void PidController::ForceOutput (double output)
+  {
+    m_state.prevOut = output;
+    m_state.curOut = output;
   }
 
   void
@@ -226,12 +233,15 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
 
   double
   PidController::GetReference(void)
-  {
+  {//for now it returns the reference queue size
+    UpdateFeedbackSignal();
     double tmpPrEmpty = 0.999;
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
-    return rho*m_feedback.avgServedPacketes; //-log(m_inParam.dvp)/m_inParam.dMax;
+    //return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp) - rho/2;
+    //sva accurate but fluctuating:
+    return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
   }
 
   double PidController::ComputeErrorSignal(void)
@@ -242,7 +252,9 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
       tmpPrEmpty = m_input.prEmpty;
     //sva original: double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
-    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
+    //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
+    //sva should be this but changed to make it smoother:
+    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
     return err;
   }

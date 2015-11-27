@@ -1,7 +1,7 @@
 close all;
 clear all;
-nSta = 4;
-baseLogName = 'logfiles/timeallowance_pid.test4';
+nSta = 7;
+baseLogName = 'logfiles/pid.nSta7.dMax10.3';
 dirName = baseLogName(find(baseLogName == '/',1, 'last')+1:end);
 matOutputName = sprintf('./plots/%s/%s.mat',dirName,dirName);
 dirName = sprintf('./plots/%s',dirName);
@@ -22,9 +22,9 @@ pattern3 = {'k.','r.','g.','m.','b.','y.','c.'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
     if (i<16)
-        mac = sprintf('00:00:00:00:00:0%X',i);
+        mac = sprintf('00:00:00:00:00:0%x',i);
     else
-        mac = sprintf('00:00:00:00:00:%X',i);     
+        mac = sprintf('00:00:00:00:00:%x',i);     
     end
     staQInfoLogName{i} = sprintf('%s.StaQInfo.%s',baseLogName,mac);
     staAggLogName{i} = sprintf('%s.StaAgg.%s',baseLogName,mac);
@@ -85,6 +85,7 @@ for i=1:nSta
     hold on;
     xlabel('Time (seconds)');
     ylabel('Avg. Arrival Rate (Mb/s)');
+    ylim([0 10]);
     grid on;
     subplot(3,3,4);
     plot(timesStaQ{i},avgQDvp{i},pattern{i});
@@ -143,7 +144,7 @@ for i=1:nSta
     avgQArrivalMbps{i} = data(:,8);
     avgQDvp{i} = data(:,9);
     avgServedPkts{i} = data(:,11);
-    avgServedBytes{i} = data(:,12)*1e3;
+    avgServedBytes{i} = data(:,13);%data(:,12)*1e3;
     clear data;
     subplot(2,3,1);
     plot(times,avgQPkt{i},pattern{i});

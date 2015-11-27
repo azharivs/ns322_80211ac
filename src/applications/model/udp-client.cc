@@ -36,6 +36,8 @@
 #include "ns3/qos-tag.h"
 #include "udp-client.h"
 #include "seq-ts-header.h"
+#include "ns3/timestamp-tag.h"
+#include "ns3/string.h"
 #include <cstdlib>
 #include <cstdio>
 
@@ -78,6 +80,10 @@ UdpClient::GetTypeId (void)
                    "Deadline (Maximum Tolerable Delay) of each packet in seconds.", DoubleValue (1.0),
                     MakeDoubleAccessor (&UdpClient::m_deadline),
                     MakeDoubleChecker<double> ())
+    .AddAttribute ("ClientId", "The Client's Id",
+                   StringValue("1"),
+                   MakeStringAccessor(&UdpClient::m_clientId),
+                   MakeStringChecker())
   ;
   return tid;
 }
@@ -155,6 +161,17 @@ UdpClient::StartApplication (void)
 
   m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
   m_sendEvent = Simulator::Schedule (Seconds (0.0), &UdpClient::Send, this);
+
+   string m_senderTraceFileName = "NF-results/output-DRAzhari/sender-output";
+    m_senderTraceFileName += m_clientId;
+    
+    //Open file to store information of packets transmitted by EvalvidServer.
+    m_senderTraceFile.open(m_senderTraceFileName.c_str(), ios::out);
+    if (m_senderTraceFile.fail())
+    {
+        NS_FATAL_ERROR(">> UDPClient: Error while opening sender trace file: " << m_senderTraceFileName.c_str());
+        return;
+    }
 }
 
 void
@@ -180,7 +197,7 @@ UdpClient::Send (void)
   TimestampTag tsTag;
   tsTag.SetTimestamp(Simulator::Now() + Seconds(m_deadline));
   p->AddByteTag(tsTag);
-
+  
 
   std::stringstream peerAddressStringStream;
   if (Ipv4Address::IsMatchingType (m_peerAddress))
@@ -199,6 +216,10 @@ UdpClient::Send (void)
                                     << peerAddressStringStream.str () << " Uid: "
                                     << p->GetUid () << " Time: "
                                     << (Simulator::Now ()).GetSeconds ());
+      m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
+                                    << std::setfill(' ') << std::setw(16) <<  "id " << m_sent
+                                    << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()
+                                    << std::endl;
 
     }
   else
@@ -216,7 +237,7 @@ UdpClient::Send (void)
 /*
  * TimestampTag implementation
  */
-
+/*
 TypeId
 TimestampTag::GetTypeId (void)
 {
@@ -272,5 +293,6 @@ TimestampTag::Print (std::ostream &os) const
 {
   os << "t=" << m_timestamp;
 }
+*/
 
 } // Namespace ns3
