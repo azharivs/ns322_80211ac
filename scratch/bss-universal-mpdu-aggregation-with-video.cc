@@ -81,31 +81,6 @@ std::string itos(int n)
    return std::string(buffer);
 }
 
-//NFM this function print snr of all packets in snrFile
-void
-PhyRxOkTrace (std::string context, Ptr<const Packet> packet, double snr, WifiMode mode, enum WifiPreamble preamble)
-{
-  double temp_snr=0.0;
-  SnrTag tag;
-  Ptr<Packet> m_currentPacket;
-  WifiMacHeader hdr;
-  m_currentPacket = packet->Copy();
-  m_currentPacket->RemoveHeader (hdr);
-  Address from;
-  if (hdr.IsData())
-  {
-    from = hdr.GetAddr2 ();
-  }
-  if (packet->PeekPacketTag(tag))
-  {
-      temp_snr = tag.Get();
-      snrFile << Simulator::Now().GetSeconds() << "\t" << temp_snr <<"\t from "<< InetSocketAddress::ConvertFrom (from).GetIpv4 () <<"\n";
-  }
-  
-}
-
-
-
 int main (int argc, char *argv[])
 {
   //LogComponentEnable ("UdpClient", LOG_LEVEL_DEBUG);
@@ -115,7 +90,6 @@ int main (int argc, char *argv[])
 
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 32; //seconds
-  uint64_t simulationTime1 = 35; //seconds
   uint32_t nMpdus = 64;
   uint32_t nSta = 1;
   double dMax = 1.0;//maximum tolerable delay
@@ -331,13 +305,8 @@ int main (int argc, char *argv[])
 
        s_tempApp= server.Install (wifiApNode.Get (0));
        s_tempApp.Start (Seconds (0.0));
-       s_tempApp.Stop (Seconds (simulationTime1));
+       s_tempApp.Stop (Seconds (simulationTime));
        serverApps.Add( *(s_tempApp.Begin()) );
-
-       //serverApps = server.Install (wifiApNode.Get (0));
-
-       //serverApps.Start (Seconds (1.0));
-       //serverApps.Stop (Seconds (simulationTime));
 
        //NFM: STA is client receiving packets
        // Create a EvalvidClient and install it on node wifiStaNodes(i)
@@ -345,17 +314,13 @@ int main (int argc, char *argv[])
        string ch2 = itos(i);
        client.SetAttribute ("ClientId", StringValue(ch2));
        client.SetAttribute("Deadline",DoubleValue(dMax)); //set deadline
-       //clientApps= client.Install (wifiStaNode.Get (i));
-       //clientApps.Start (Seconds (0.0));
-       // clientApps.Stop (Seconds (simulationTime));
+    
        c_tempApp = client.Install (wifiStaNode.Get (i));
 
        c_tempApp.Start (Seconds (0.0));
-       c_tempApp.Stop (Seconds (simulationTime1));
+       c_tempApp.Stop (Seconds (simulationTime));
        clientApps.Add( *(c_tempApp.Begin()) );// add to container
    }
-
-   Config::Connect ("/NodeList/*/DeviceList/*/Phy/State/RxOk", MakeCallback (&PhyRxOkTrace));
 
 
   //NFM**************** 
@@ -368,7 +333,7 @@ int main (int argc, char *argv[])
 
   //sva: just for test: (*tempApp.Begin())->SetAttribute ("Interval", TimeValue (Time ("0.02")));
       
-  Simulator::Stop (Seconds (simulationTime1));
+  Simulator::Stop (Seconds (simulationTime+1));
 
   Simulator::Run ();
 

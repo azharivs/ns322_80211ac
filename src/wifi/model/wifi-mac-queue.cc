@@ -435,7 +435,6 @@ void
 PerStaWifiMacQueue::Enqueue (Ptr<const Packet> packet, const WifiMacHeader &hdr)
 {
   Cleanup ();
-        std::cout <<"\n size: " << m_size << "max: " << m_maxSize << "\n";
   if (m_size == m_maxSize)
     {
       return;
