@@ -15,7 +15,7 @@ mkdir(dirName);
 % for edf scheduler and deadline based aggregation with a max end to end
 % delay of 1 second use:
 %baseLogName = 'logfiles/edf_deadline_agg.1';
-pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^','kv','rv','gv','mv','bv','yv','cv','r.','g.','m.','b.','y.','c.'};
+pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^','kv','rv','gv','mv','bv','yv','cv'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
 pattern3 = {'k.','r.','g.','m.','b.','y.','c.'};
@@ -47,7 +47,7 @@ legend('Average Idle Time Per Beacon','Average Busy Time Per Beacon');
 xlabel('Time (seconds)');
 ylabel('milli-seconds');
 grid;
-%saveas(gcf, './plots/AverageIdleTimePerBeacon-AverageBusyTimePerBeacon.png');
+saveas(gcf, './plots/AverageIdleTimePerBeacon-AverageBusyTimePerBeacon.png');
 
 % Process StaQInfo and aggregation data
 rates = [];
@@ -133,7 +133,7 @@ for i=1:nSta
         rates = union(rates,unique(dataRate{i}));
     end
 end
-saveas (gcf,'plot1.jpg','jpg');
+
 
 % Repeat StaQInfo in separate plots
 figure;
@@ -187,7 +187,7 @@ for i=1:nSta
     grid on;
 end
 
-saveas (gcf,'plot2.jpg','jpg');
+
 
 % Repeat aggregation info in separate plot
 figure;
@@ -290,7 +290,6 @@ for i=1:nSta
     %     end
 end
 
-saveas (gcf,'plot3.jpg','jpg');
 if (exist('prRates') && exist('rates'))
     save('params.mat','prRates','rates');
 end

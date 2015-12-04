@@ -224,7 +224,7 @@ void EvalvidClient::StartApplication ()    // Called at time specified by Start
           return;
       }
 
-     /* string filename = "NF-results/output/receiver-out";
+    /*  string filename = "NF-results/output/receiver-out";
       filename += m_clientId;   
       output.open(filename.c_str(), ios::out);*/
      
@@ -331,16 +331,15 @@ void EvalvidClient::HandleRead (Ptr<Socket> socket)
                     /*TimestampTag tsTag;
                     packet->RemovePacketTag (tsTag);
                     QosTag qosTag;
-                    packet->RemovePacketTag (qosTag);*/
+                    packet->RemovePacketTag (qosTag);
                     QosTag qosTag;
-                    packet->FindFirstMatchingByteTag(qosTag);
+                    packet->FindFirstMatchingByteTag(qosTag);*/
                    
 
                     receiverDumpFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(ns3::Time::S)
                                      << std::setfill(' ') << std::setw(16) <<  "id " << packetId
-                                     << std::setfill(' ') <<  std::setw(16) <<  "Tcp " << size+12 <<"\t"<< (int)qosTag.GetTid()
+                                     << std::setfill(' ') <<  std::setw(16) <<  "Tcp " << size+12 //<<"\t"<< (int)qosTag.GetTid()
                                      << std::endl;
-                   std::cout << Simulator::Now().GetSeconds()<<" r "<< packetId <<" "<< "Data "<< size+12 <<" " << InetSocketAddress::ConvertFrom(from).GetIpv4 ()<<"\n";
                     
                 }
         
@@ -369,31 +368,24 @@ void EvalvidClient::HandleRead (Ptr<Socket> socket)
                         uint32_t currentSequenceNumber = seqTs.GetSeq ();
                         TimestampTag tsTag;
                         packet->FindFirstMatchingByteTag(tsTag);
-                        //packet->RemovePacketTag (tsTag);
                         QosTag qosTag;
                         packet->RemovePacketTag (qosTag);
-                      //  std::cout << Simulator::Now().GetSeconds()<<" r "<< packetId <<" "<< "Data "<< (packet->GetSize()+12)<<" " << InetSocketAddress::ConvertFrom(from).GetIpv4 ()<<"\n";
-                  // double send_t=tsTag.GetTimestamp().ToDouble(ns3::Time::S)-m_deadline;
-                   double delay=Simulator::Now().ToDouble(ns3::Time::S) - seqTs.GetTs ().ToDouble(ns3::Time::S);
-                   //if ((Simulator::Now().ToDouble(ns3::Time::S)-send_t) <= m_deadline)
-                   if (delay <= m_deadline)
-                   {
-                      // output << Simulator::Now().GetSeconds()<<" r "<< packetId <<" "<< "Data "<< packet->GetSize()+12<<" " << InetSocketAddress::ConvertFrom(from).GetIpv4 ()<<"\n";
-
-                        receiverDumpFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(ns3::Time::S)
-                                         << std::setfill(' ') << std::setw(16) <<  "id " << packetId
-                                         << std::setfill(' ') <<  std::setw(16) <<  "udp " << (packet->GetSize()+12)
-                                       << std::endl;
-                     }
                      
-                   /* NS_LOG_INFO ("TraceDelay: RX " << packet->GetSize () <<
-                           " bytes from "<< InetSocketAddress::ConvertFrom (from).GetIpv4 () <<
-                           " Sequence Number: " << currentSequenceNumber <<
-                           " Uid: " << packet->GetUid () <<
-                           " TXtime: " << seqTs.GetTs () <<
-                           " RXtime: " << Simulator::Now () <<
-                           " Delay: " << Simulator::Now () - seqTs.GetTs ());*/
-                        m_lossCounter.NotifyReceived (currentSequenceNumber);
+                 
+                   //   double delay=Simulator::Now().ToDouble(ns3::Time::S) - seqTs.GetTs ().ToDouble(ns3::Time::S);
+                  
+                    //  if (delay <= m_deadline)
+                        {
+
+                              receiverDumpFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(ns3::Time::S)
+                                               << std::setfill(' ') << std::setw(16) <<  "id " << packetId
+                                               << std::setfill(' ') <<  std::setw(16) <<  "udp " << (packet->GetSize()+12)//<<"\t"<<packet->GetUid()
+                                               << std::endl;
+                         }
+                     
+              
+                         m_lossCounter.NotifyReceived (currentSequenceNumber);
+                         m_rxTrace (packet, from);
                        
                    }
                }

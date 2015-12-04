@@ -136,6 +136,7 @@ private:
        * \brief Send more data as soon as some has been transmitted.
        */
      void DataSend (Ptr<Socket>, uint32_t); // for socket's SetSendCallback
+     void DummySendForArpResolve();
 
 
      /*
@@ -173,6 +174,8 @@ private:
      uint32_t      m_packetId;
      string        m_sendsizeFilename;           //!< The file including size of each packet ...
      ofstream      output;
+     float         mp_interval;
+     float         p_size;
     
 
      // !< Structure to save video tracefile
@@ -181,7 +184,7 @@ private:
         string   frameType;
         uint32_t frameSize;
         uint16_t numOfTcpPackets;  //uint16_t numOfTcpPackets;
-        float     packetInterval;
+        Time     packetInterval;
      };
      map<uint32_t, m_videoInfoStruct_t*> m_videoInfoMap;
      map<uint32_t, m_videoInfoStruct_t*>::iterator m_videoInfoMapIt;

@@ -217,7 +217,7 @@ UdpClient::Send (void)
                                     << p->GetUid () << " Time: "
                                     << (Simulator::Now ()).GetSeconds ());
       m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
-                                    << std::setfill(' ') << std::setw(16) <<  "id " << m_sent
+                                    << std::setfill(' ') << std::setw(16) <<  "id " << m_sent-1
                                     << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()
                                     << std::endl;
 

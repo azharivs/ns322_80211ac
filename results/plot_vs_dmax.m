@@ -8,11 +8,11 @@ pattern0 = {'ks-','ko-','kx-','k*-','kd-','k^-','kv-','yo-','c*-','m^-','c^-','r
 font_size = 18;
 marker_size = 14;
 
-for nsta=[2 4 6 8 10 12 14 16 18 20 22 24]
+for nsta=[2 4 6 8 10 12 14 16 18 20]
     ii=0;
     kk=kk+1;
     lgnd{kk} = sprintf('%d STA(s)',nsta);
-    for dmax=[5 7 10]
+    for dmax=[2 3 5]
         ii = ii+1;
         dvp = 0.01;
         str = sprintf('plots/pid_nSta%d_dMax%d_dvp%.2f',nsta,dmax,dvp);
@@ -43,7 +43,7 @@ for nsta=[2 4 6 8 10 12 14 16 18 20 22 24]
     plot(d_max,avg_ta(kk,:),pattern0{kk},'MarkerSize',marker_size,'LineWidth',2);
     grid;
     ylim([0 30]);
-    xlim([5 11]);
+    xlim([2 6]);
     hold on;
     xlabel('Delay Bound (Sec)','fontsize',font_size);
     ylabel('Avg. Time Allowance per STA (msec)','fontsize',font_size);
