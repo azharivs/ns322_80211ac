@@ -45,6 +45,8 @@
 #include "ns3/timestamp-tag.h"
 #include "ns3/qos-tag.h"
 #include "ns3/seq-ts-header.h"
+#include <time.h>  
+
 
 
 
@@ -118,6 +120,8 @@ EvalvidServer::EvalvidServer ()
    m_packetPayload = 0;
    m_packetId = 0;
    m_sendEvent = EventId ();
+   mp_interval=0;
+   p_size = 0;
 }
 
 
@@ -164,10 +168,11 @@ void EvalvidServer::StartApplication (void) // Called at time specified by Start
             m_socket = Socket::CreateSocket (GetNode (), m_tid);
             m_socket->Bind ();
             m_socket->Connect (m_peer);
-         //  m_connected = true;
         }
         m_socket->SetRecvCallback (MakeNullCallback<void, Ptr<Socket> > ());
-        m_sendEvent=Simulator::Schedule (Seconds (0.001), &EvalvidServer::SendData, this);
+        DummySendForArpResolve();
+      //  m_sendEvent=Simulator::Schedule (Seconds (0.0), &EvalvidServer::SendData, this);
+       
            
     }
     // Create the TCP socket if not already 
@@ -252,7 +257,7 @@ EvalvidServer::Setup()
     uint32_t frameSize;
     uint16_t numOfTcpPackets;
     double sendTime;
-    double lastSendTime = 0.0;
+    double lastSendTime = 0.0 ;
 
     //Open file from mp4trace tool of EvalVid.
     ifstream videoTraceFile(m_videoTraceFileName.c_str(), ios::in);
@@ -270,7 +275,7 @@ EvalvidServer::Setup()
         videoInfoStruct->frameType = frameType;
         videoInfoStruct->frameSize = frameSize;
         videoInfoStruct->numOfTcpPackets = numOfTcpPackets;
-        videoInfoStruct->packetInterval = sendTime - lastSendTime;
+        videoInfoStruct->packetInterval = Seconds(sendTime - lastSendTime);
         m_videoInfoMap.insert (pair<uint32_t, m_videoInfoStruct_t*>(frameId, videoInfoStruct));
         NS_LOG_LOGIC(">> EvalvidServer: " << frameId << "\t" << frameType << "\t" <<
                                 frameSize << "\t" << numOfTcpPackets << "\t" << sendTime);
@@ -318,7 +323,7 @@ EvalvidServer::Setup()
           m_videoInfoMapIt++;
          m_sendsizeFile << s+12 <<"\t";
          if (m_videoInfoMapIt != m_videoInfoMap.end())
-               m_sendsizeFile<<m_videoInfoMapIt->second->packetInterval+0.001 <<std::endl;
+               m_sendsizeFile<<m_videoInfoMapIt->second->packetInterval <<std::endl;
          else
                m_sendsizeFile<<"0"<<std::endl;
          
@@ -372,31 +377,17 @@ EvalvidServer::Send ()
 
           m_socket->SendTo(p, 0, m_peer);
              
-         //Unsuccess send
-        
-         {
-            
 
-             if (InetSocketAddress::IsMatchingType (m_peer) )
-             {
-                 // peerAddressStringStream << Ipv4Address::ConvertFrom (m_peer);
-                  m_txTrace(p);
+          if (InetSocketAddress::IsMatchingType (m_peer) )
+          {
+               m_txTrace(p);
                
-                  m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
-                                    << std::setfill(' ') << std::setw(16) <<  "id " << m_packetId
-                                    << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()
-                                    << std::endl;
-                  //std::cout<< Simulator::Now().GetSeconds() <<" s "<< m_packetId <<" "<< "Data "<< p->GetSize() <<" " << InetSocketAddress::ConvertFrom(m_peer).GetIpv4 ()<< " udp \n";
-
-                //  output<< Simulator::Now().GetSeconds() <<" s "<< m_packetId <<" "<< "Data "<< p->GetSize() <<" " << InetSocketAddress::ConvertFrom(m_peer).GetIpv4 ()<< " udp \n";
-
-             } 
-
-           }//end else 
+               m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
+                                 << std::setfill(' ') << std::setw(16) <<  "id " << m_packetId
+                                 << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()<<"\t"<<p->GetUid()
+                                 << std::endl;
+           } 
          
-         
-
-
       }
 
       //Sending the rest of the frame
@@ -407,39 +398,38 @@ EvalvidServer::Send ()
 
      
 
-      SeqTsHeader seqTs;
-          seqTs.SetSeq (m_packetId);
-          p->AddHeader (seqTs);
+       SeqTsHeader seqTs;
+       seqTs.SetSeq (m_packetId);
+       p->AddHeader (seqTs);
            
-          //add QoS tag to have it treated as AC_VI
-          QosTag tag=QosTag(UP_VI);
-          p->AddPacketTag(tag);
+       //add QoS tag to have it treated as AC_VI
+       QosTag tag=QosTag(UP_VI);
+       p->AddPacketTag(tag);
        
-          //add deadline as absolute timestamp
-          TimestampTag tsTag;
-          tsTag.SetTimestamp(Simulator::Now() + Seconds(m_deadline));
-          p->AddByteTag(tsTag);
+       //add deadline as absolute timestamp
+       TimestampTag tsTag;
+       tsTag.SetTimestamp(Simulator::Now() + Seconds(m_deadline));
+       p->AddByteTag(tsTag);
 
-          m_socket->SendTo(p, 0, m_peer);
-           if (InetSocketAddress::IsMatchingType (m_peer) )
-           {
-                 // peerAddressStringStream << Ipv4Address::ConvertFrom (m_peer);
-                  m_txTrace(p);
+       m_socket->SendTo(p, 0, m_peer);
+       if (InetSocketAddress::IsMatchingType (m_peer) )
+       {
+            m_txTrace(p);
 
-          m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
-                        << std::setfill(' ') << std::setw(16) <<  "id " << m_packetId
-                        << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()
-                        << std::endl;         
-           }
+            m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
+                              << std::setfill(' ') << std::setw(16) <<  "id " << m_packetId
+                              << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()<<"\t"<<p->GetUid()
+                              << std::endl;         
+       }
  
 
-      m_videoInfoMapIt++;
-      if (m_videoInfoMapIt == m_videoInfoMap.end())
-      {
+       m_videoInfoMapIt++;
+       if (m_videoInfoMapIt == m_videoInfoMap.end())
+       {
          // NS_LOG_INFO(">> EvalvidServer: Video streaming successfully completed!");
-      }
-      else
-      {
+       }
+       else
+       {
           if (m_videoInfoMapIt->second->packetInterval.GetSeconds() == 0)
           {
               m_sendEvent = Simulator::ScheduleNow (&EvalvidServer::Send, this);
@@ -449,7 +439,7 @@ EvalvidServer::Send ()
               m_sendEvent = Simulator::Schedule (m_videoInfoMapIt->second->packetInterval,
                                                  &EvalvidServer::Send, this);
           }
-        }
+       }
     }*/
   
 }
@@ -461,7 +451,7 @@ void EvalvidServer::SendData (void)
     
     uint32_t toSend = 0;
     uint32_t size = 0;
-    Time p_Interval ;
+    Time p_Interval;
    // std::stringstream peerAddressStringStream;
     NS_LOG_FUNCTION (this);
     NS_LOG_FUNCTION( this << Simulator::Now().GetSeconds());
@@ -525,12 +515,13 @@ void EvalvidServer::SendData (void)
      
      // UDP send
      else if (m_tid == UdpSocketFactory::GetTypeId ())
-     {
+     { 
          int pos = m_sendFile.tellg();   
-         //float last_p_Interval=p_Interval;
-         m_sendFile >> toSend >>p_Interval;          // read size for create new packet
+         m_sendFile >> toSend >>p_Interval;               // read size for create new packet
          if (m_sendFile.eof())
-              return;
+             return;
+
+         
          Ptr<Packet> p = Create<Packet> ((toSend-12)); // 12 is size seqTs (SeqTsHeader)
          m_packetId++;
          SeqTsHeader seqTs;
@@ -545,14 +536,13 @@ void EvalvidServer::SendData (void)
          TimestampTag tsTag;
          tsTag.SetTimestamp(Simulator::Now() + Seconds(m_deadline));
          p->AddByteTag(tsTag);
-             
+           
          //Unsuccess send
-         if (m_socket->Send(p) < 0)
+         if ((unsigned)m_socket->SendTo(p, 0, m_peer) != (toSend))
          {    
-             std::cout << "\n" << m_packetId << " Send failed !!!!!!!!!\n";  
+             //std::cout << "\n" << m_packetId << " Send failed !!!!!!!!!\n";  
              m_sendFile.seekg(pos);
              m_packetId--;
-             //p_Interval=last_p_Interval;
          }
          else
          {
@@ -560,22 +550,18 @@ void EvalvidServer::SendData (void)
 
              if (InetSocketAddress::IsMatchingType (m_peer))
              {
-                
                   m_txTrace(p);
                  
                   m_senderTraceFile << std::fixed << std::setprecision(4) << Simulator::Now().ToDouble(Time::S)
                                     << std::setfill(' ') << std::setw(16) <<  "id " << m_packetId
-                                    << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()
+                                    << std::setfill(' ') <<  std::setw(16) <<  "udp " << p->GetSize()//<<"\t"<<p->GetUid()
                                     << std::endl;
-
-                  //  output<< Simulator::Now().GetSeconds() <<" s "<< m_packetId <<" "<< "Data "<< p->GetSize() <<" " << InetSocketAddress::ConvertFrom(m_peer).GetIpv4 ()<< " udp \n";
-
              } 
 
          }//end else 
          
          if (p_Interval == 0)    
-               m_sendEvent=Simulator::ScheduleNow (&EvalvidServer::SendData, this);
+              m_sendEvent=Simulator::ScheduleNow (&EvalvidServer::SendData, this);
          else 
               m_sendEvent=Simulator::Schedule (p_Interval, &EvalvidServer::SendData, this);
           // m_sendEvent = Simulator::Schedule (m_interval,&EvalvidServer::SendData, this);
@@ -611,6 +597,30 @@ void EvalvidServer::DataSend (Ptr<Socket> socket , uint32_t i)
         Simulator::ScheduleNow (&EvalvidServer::SendData, this);
     }
 }
+void wait(int seconds) 
+{ 
+    int endwait; 
+    endwait = clock() + seconds * CLOCKS_PER_SEC ; 
+    while (clock() < endwait){} 
+}
+
+void EvalvidServer::DummySendForArpResolve ()
+{
+    NS_LOG_FUNCTION (this);
+
+    
+    Ptr<Packet> p = Create<Packet> ();
+
+    SeqTsHeader seqTs;
+    seqTs.SetSeq (0);
+    p->AddHeader (seqTs);
+
+    m_socket->SendTo (p,0,m_peer);
+
+    m_sendEvent=Simulator::Schedule (Seconds (2.0), &EvalvidServer::SendData, this);
+   
+}
+
 
 
 

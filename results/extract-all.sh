@@ -14,7 +14,7 @@ BaseMac="00:00:00:00:00:"
 
 for i in $(seq 1 $2) 
 do
-    if [ "$i" -le 15 ]; then
+    if [ "$i" -le 15 ] ; then
 	j=$(printf '0%x' $i)
     else
 	j=$(printf '%x' $i)

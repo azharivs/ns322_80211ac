@@ -5,10 +5,11 @@ ii=0;
 jj = 0;
 font_size = 28;
 marker_size = 14;
-for nsta=[2 4 6 8 10 12 14 16 18 20 22 24]
+%for nsta=[2 4 6 8 10 12 14 16 18 20]
+for nsta=[1 2 3 4 5 6 7 8 9 10]    
     nsta
     ii = ii+1;
-    dmax = 7;
+    dmax = 5;
     dvp = 0.01;
     
     str = sprintf('plots/pid_nSta%d_dMax%d_dvp%.2f',nsta,dmax,dvp)
@@ -18,8 +19,8 @@ for nsta=[2 4 6 8 10 12 14 16 18 20 22 24]
     load(matFile);%load all variables
     cd(curDir);
     
-   jj =jj+2;
-    if (jj<25)
+   jj =jj+1;
+    if (jj<21)
         n_sta(ii) = jj;
     end
     
@@ -70,7 +71,7 @@ plot(n_sta,util_deadline,'ko-','MarkerSize',marker_size,'LineWidth',2);
 plot(n_sta,util_edf,'kx-','MarkerSize',marker_size,'LineWidth',2);
 xlabel('Number of Stations','fontsize',font_size);
 ylabel('Channel Utilization','fontsize',font_size);
-xlim([1 24]);
+xlim([1 10]);
 set(gca,'fontsize',font_size);
 
 legend('PID Control','Deadline','EDF','Location','NorthWest');
@@ -83,7 +84,8 @@ plot(n_sta,avg_delay_deadline/1000,'ko-','MarkerSize',marker_size,'LineWidth',2)
 plot(n_sta,avg_delay_edf/1000,'kx-','MarkerSize',marker_size,'LineWidth',2);
 xlabel('Number of Stations','fontsize',font_size);
 ylabel('Average End to End Delay (Seconds)','fontsize',font_size);
-xlim([1 24]);
+xlim([1 10]);
+%ylim([0 5]);
 set(gca,'fontsize',font_size);
 legend('PID Control','Deadline','EDF');
 
@@ -94,8 +96,8 @@ hold on;
 semilogy(n_sta,avg_dvp_deadline,'ko-','MarkerSize',marker_size,'LineWidth',2);
 semilogy(n_sta,avg_dvp_edf,'kx-','MarkerSize',marker_size,'LineWidth',2);
 ylim([0.001 1]);
-xlim([1 24]);
-line([1 24],[dvp dvp],'LineWidth',2);
+xlim([1 10]);
+line([1 10],[dvp dvp],'LineWidth',2);
 xlabel('Number of Stations','fontsize',font_size);
 ylabel('Delay Violation Probability','fontsize',font_size);
 set(gca,'fontsize',font_size);
