@@ -66,7 +66,11 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
 
+//NF #####################################################################
 
+//In this Senario only I added ServerId and ClientId for each servers and clients to log their send and receive
+
+//#####################################################################
 
 //NFM this function converts number to string
 std::string itos(int n)
@@ -89,7 +93,7 @@ int main (int argc, char *argv[])
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
-  uint32_t nSta =1;
+  uint32_t nSta =14;
   double dMax = 1.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
@@ -98,7 +102,7 @@ int main (int argc, char *argv[])
   double ServiceInterval = 0.1; //seconds
   AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
-  double dvp = 0.02;
+  double dvp = 0.01;
   Time initialTimeAllowance = MicroSeconds(12000);
   double MovingIntegralWeight = 0.05;
   double kp = 0.01; //0.01;
@@ -107,7 +111,7 @@ int main (int argc, char *argv[])
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
-  ControllerType controller = PID;//NO_CONTROL;//
+  ControllerType controller = PID;//PID;//NO_CONTROL;//
 
     
   CommandLine cmd;
@@ -279,22 +283,27 @@ int main (int argc, char *argv[])
   //sva: pre-initialize all clients to pick the first station as their remote server
   UdpClientHelper myClient (StaInterface.GetAddress (0), 9);
   myClient.SetAttribute ("MaxPackets", UintegerValue (4294967295u));
-  myClient.SetAttribute ("Interval", TimeValue (Time ("0.0002"))); //packets/s
+  myClient.SetAttribute ("Interval", TimeValue (Time ("0.002"))); //packets/s
   myClient.SetAttribute ("PacketSize", UintegerValue (payloadSize));
 
   ApplicationContainer serverApp ;
   ApplicationContainer clientApp;//sva: my empty application container for UDP clients
   ApplicationContainer tempApp;//sva: my temporary application container for UDP clients
+   ApplicationContainer s_tempApp;
   uint32_t j;
   //sva: figuring out how to do the iterations.
-  for ( j = 0 ; j < nSta ; j ++)
+  for ( j = 0 ; j < nSta ; j++)
     {
           UdpServerHelper myServer (9);
           string ch = itos(j);
           myServer.SetAttribute ("ServerId", StringValue(ch));
-          serverApp= myServer.Install (wifiStaNode.Get (j));
-          serverApp.Start (Seconds (0.0));
-          serverApp.Stop (Seconds (simulationTime+1));
+          s_tempApp= myServer.Install (wifiStaNode.Get (j));
+          s_tempApp.Start (Seconds (0.0));
+          s_tempApp.Stop (Seconds (simulationTime+1));
+          serverApp.Add( *(s_tempApp.Begin()) );
+
+
+
 	  //sva: initialize correct remote address for next client instantiation
 	  myClient.SetAttribute ("RemoteAddress", AddressValue (StaInterface.GetAddress (j)));
 	  //sva: set dealine for each stations traffic
@@ -307,8 +316,7 @@ int main (int argc, char *argv[])
 	  //sva: May have to change the upd client helper to fix this
 	  //sva: needs a new Install method
 	  tempApp = myClient.Install (wifiApNode.Get (0));
-	  //myClient.setStartTime(Seconds (1.0));
-	  //myClient.setStopTime(Seconds (simulatioTime+1));
+	 
 	  tempApp.Start (Seconds (1.0));
 	  tempApp.Stop (Seconds (simulationTime+1));
 	  clientApp.Add( *(tempApp.Begin()) );// add to container
