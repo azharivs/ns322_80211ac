@@ -77,7 +77,7 @@ int main (int argc, char *argv[])
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
   uint32_t nSta = 4;
-  double dMax = 1.0;//maximum tolerable delay
+  double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
   ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//

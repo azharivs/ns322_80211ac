@@ -1,12 +1,13 @@
 #!/bin/sh
-simulationTime=100
+#example: ./sim_run.sh scratch/bss-universal-mpdu-aggregation
+simulationTime=20
 nMpdus=64;
 
-for nSta in 1
+for nSta in 8
   do
-  for dvp in 0.90
+  for dvp in 0.01
     do
-    for dMax in 5 10 20
+    for dMax in 5
       do
       cmdLine=$(echo "--nMpdus=$nMpdus --simulationTime=$simulationTime --nSta=$nSta --dMax=$dMax --dvp=$dvp")
       logfile="logfiles/pid"_"nSta$nSta"_"dMax$dMax"_"dvp$dvp"
