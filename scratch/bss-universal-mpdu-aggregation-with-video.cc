@@ -297,7 +297,7 @@ int main (int argc, char *argv[])
        // Set the amount of data to send in bytes.  Zero is unlimited.
        server.SetAttribute ("MaxBytes", UintegerValue (4294967295u));
        server.SetAttribute ("SendSize", UintegerValue (payloadSize));
-       server.SetAttribute("Deadline",DoubleValue()); //set deadline
+       server.SetAttribute("Deadline",DoubleValue(dMax)); //set deadline
        server.SetAttribute ("Interval", TimeValue (Time ("0.0001"))); //packets/s
        server.SetAttribute ("SenderTraceFilename", StringValue(traceFile[9]));
        string ch = itos(i);
