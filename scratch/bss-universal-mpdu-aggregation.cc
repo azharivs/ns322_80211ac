@@ -88,9 +88,9 @@ int main (int argc, char *argv[])
   double dvp = 0.02;
   Time initialTimeAllowance = MicroSeconds(12000);
   double MovingIntegralWeight = 0.05;
-  double kp = 0.01/1500; //0.01;
-  double ki = 0.000/1500;//0.02;
-  double kd = 0.05/1500; //0.05;
+  double kp = 0.01; //0.01;
+  double ki = 0.000;//0.02;
+  double kd = 0.05; //0.05;
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
