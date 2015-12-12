@@ -241,7 +241,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
     //return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp) - rho/2;
     //sva accurate but fluctuating:
-    return -rho*m_feedback.avgServedBytes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
+    return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
   }
 
   double PidController::ComputeErrorSignal(void)
@@ -254,7 +254,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
     //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
     //sva should be this but changed to make it smoother:
-    double err = -rho*m_feedback.avgServedBytes/(0.5*rho+m_input.avgQBytes) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
+    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
     return err;
   }
