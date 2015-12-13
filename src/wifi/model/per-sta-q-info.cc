@@ -541,13 +541,14 @@ namespace ns3 {
               }
           }
         m_avgQueueSize = tmp / (double) m_queueSizeHistory.size();
+
         timespan = (m_arrivalHistory.back().tstamp - m_arrivalHistory.front().tstamp).GetSeconds();
         if (!m_queueSizeHistory.empty() && m_queueSizeHistory.back().bytes == 0)
           {//if at last sample time the queue is still empty then need to update emptyTime
             emptyStart=false;
             emptyTime += m_queueSizeHistory.back().tstamp - lastEmptyStart;
           }
-        m_prEmpty = emptyTime.GetSeconds()/timespan;
+        m_prEmpty = emptyTime.GetSeconds()/(timespan+0.000001); //sva: added small constant to prevent division by zero
       }
 
     if (!m_queueBytesHistory.empty())
