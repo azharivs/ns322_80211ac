@@ -151,7 +151,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   {
     m_feedback.avgServedPacketes = m_staQ->GetAvgArrivalRate();  //sva original: m_staQ->GetAvgServedPackets();
     m_feedback.avgServedBytes = m_staQ->GetAvgArrivalRateBytes(); //sva original: m_staQ->GetAvgServedBytes();
-//sva for debug    std::cout << "feedback signal = " << m_feedback.avgServedPacketes << "\n";
+    std::cout << "feedback signal = " << m_feedback.avgServedBytes << "\n";
   }
 
   double PidController::ErrorConditioning(double err)
@@ -180,7 +180,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
     ctrl = CtrlConditioning(ctrl);
     double output = std::max(0.0,m_state.curOut + ctrl);
-//sva for debug    std::cout << "err= " << err << " computed output = " << output << "\n";
+    std::cout << "err= " << err << " computed output = " << output << "\n";
     return output;
   }
 
@@ -241,7 +241,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
     //return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp) - rho/2;
     //sva accurate but fluctuating:
-    return -rho*m_feedback.avgServedPacketes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
+    return -rho*m_feedback.avgServedBytes*m_inParam.dMax / log(m_inParam.dvp/rho) - rho/2;
   }
 
   double PidController::ComputeErrorSignal(void)
@@ -254,8 +254,9 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
     //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
     //sva should be this but changed to make it smoother:
-    double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
+    double err = -rho*m_feedback.avgServedBytes/(0.5*rho+m_input.avgQBytes) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
+
     return err;
   }
 
