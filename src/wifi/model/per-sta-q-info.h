@@ -345,8 +345,10 @@ private:
 
   std::deque<Item> m_queueSizeHistory; //!< Array of samples of queue length in packets along with time stamp
   std::deque<uint32_t> m_queueBytesHistory; //!< Array of samples of queue length in bytes
+  std::deque<Item> m_queueBytesHistoryTime; //!< Array of samples of queue length in bytes over a certain time frame determined by m_observationInterval
   std::deque<double> m_queueWaitHistory; //!< Array of samples of queue waiting time
   std::deque<Item> m_arrivalHistory; //!< Array of samples of packet arrival times
+  std::deque<Item> m_arrivalByteHistoryTime; //!< Array of samples of byte arrivals over a certain time frame determined by m_observationInterval
   std::deque<double> m_queueDelayViolationHistory; //!< Array of samples of queue deadline violations in seconds (pos. value means no violation)
   std::deque<uint32_t> m_servedBytesHistory; //!<Array of samples of served bytes during a service interval
   std::deque<uint32_t> m_servedPacketsHistory; //!<Array of samples of served packets during a service interval
@@ -363,9 +365,11 @@ private:
   uint32_t m_histSizeLarge; //!< Sample history size for larger history (DVP)
   double m_avgQueueSize; //!< Last updated average queue size in packets
   double m_avgQueueBytes; //!< Last updated average queue size in bytes
+  double m_avgQueueBytesTimeAverage; //!< Last updated time averaged queue size in bytes
   double m_avgQueueWait; //!< Last updated average queue waiting time in seconds
   double m_avgArrivalRate; //!< Last updated average packet arrival rate in pps
   double m_avgArrivalRateBytes; //!< Last updated average arrival rate in Bytes per second
+  double m_avgArrivalRateBytesTimeAverage; //!< Last updated time averaged arrival rate in Bytes per second
   double m_dvp; //!< Delay violation probability measured right before transmission
   double m_prEmpty; //!< Probability of the queue being empty
   double m_avgServedBytes; //!<Average number of served bytes during a service interval
