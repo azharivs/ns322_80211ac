@@ -65,8 +65,9 @@ namespace ns3 {
   PerStaQInfo::PerStaQInfo()
   : m_addrs (),
     m_queueSize (0), m_queueBytes (0), m_servedBytes (0), m_servedPackets(0),
-    m_avgQueueSize (0.0), m_avgQueueBytes (0.0),
+    m_avgQueueSize (0.0), m_avgQueueBytes (0.0), m_avgQueueBytesTimeAverage (0.0),
     m_avgQueueWait (0.0), m_avgArrivalRate (0.0), m_avgArrivalRateBytes (0.0),
+    m_avgArrivalRateBytesTimeAverage (0.0),
     m_dvp (0.0), m_prEmpty (0),
     m_avgServedBytes (0.0), m_avgServedPackets(0.0),
     m_curArrivalRateSurplus (0), m_targetQueueSize(0),
@@ -78,8 +79,10 @@ namespace ns3 {
   {
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();
+    m_queueBytesHistoryTime.clear();
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
+    m_arrivalByteHistoryTime.clear();
     m_queueDelayViolationHistory.clear();
     m_servedBytesHistory.clear();
     m_servedPacketsHistory.clear();
@@ -158,7 +161,8 @@ namespace ns3 {
   double
   PerStaQInfo::GetAvgSizeBytes (void)
   {
-    return m_avgQueueBytes;
+    //return m_avgQueueBytes; //sva: original code
+    return m_avgQueueBytesTimeAverage;//sva: added for now
   }
 
   double
@@ -176,7 +180,8 @@ namespace ns3 {
   double
   PerStaQInfo::GetAvgArrivalRateBytes (void)
   {
-    return m_avgArrivalRateBytes;
+    //return m_avgArrivalRateBytes; //sva: original code
+    return m_avgArrivalRateBytesTimeAverage; //sva: added for now
   }
 
   double
@@ -342,6 +347,7 @@ namespace ns3 {
     m_servedBytes = 0;
     m_servedPackets = 0;
   }
+
   void
   PerStaQInfo::Arrival (uint32_t bytes, Time tstamp)
   {//TODO: record time of arrival as well for avgArrival and avgWait calculation
@@ -360,23 +366,38 @@ namespace ns3 {
       }
     m_queueBytesHistory.push_back(m_queueBytes);
 
+    m_queueBytesHistoryTime.push_back(Item(m_queueBytes,tstamp));
+
     if (m_arrivalHistory.size() == m_histSize)
       {//make sure old samples are discarded
         m_arrivalHistory.pop_front();
       }
     m_arrivalHistory.push_back(Item(bytes,tstamp));
 
+    m_arrivalByteHistoryTime.push_back(Item(bytes,tstamp));
+
     if (m_ctrl && m_queueSize > m_targetQueueSize)
       {
         m_arrivalSurplus.push_back(tstamp);
         m_curArrivalSurplus ++;
       }
+
     Time observationStartTime = Simulator::Now() - Seconds(m_observationInterval);
     //remove old samples
     while (!m_arrivalSurplus.empty() && m_arrivalSurplus.front() < observationStartTime )
       {
         m_arrivalSurplus.pop_front();
         m_curArrivalSurplus --;
+      }
+
+    while (!m_queueBytesHistoryTime.empty() && m_queueBytesHistoryTime.front().tstamp < observationStartTime )
+      {
+        m_queueBytesHistoryTime.pop_front();
+      }
+
+    while (!m_arrivalByteHistoryTime.empty() && m_arrivalByteHistoryTime.front().tstamp < observationStartTime )
+      {
+        m_arrivalByteHistoryTime.pop_front();
       }
 
     Update();
@@ -405,6 +426,8 @@ namespace ns3 {
         m_queueBytesHistory.pop_front();
       }
     m_queueBytesHistory.push_back(m_queueBytes);
+
+    m_queueBytesHistoryTime.push_back(Item(m_queueBytes,Simulator::Now ()));
 
     if (m_queueWaitHistory.size() == m_histSize)
       {//make sure old samples are discarded
@@ -436,6 +459,11 @@ namespace ns3 {
         m_curArrivalSurplus ++;
       }
 
+    while (!m_queueBytesHistoryTime.empty() && m_queueBytesHistoryTime.front().tstamp < observationStartTime )
+      {
+        m_queueBytesHistoryTime.pop_front();
+      }
+
     Update();
     if (m_ctrl)
       m_targetQueueSize = m_ctrl->GetReference();
@@ -456,9 +484,11 @@ namespace ns3 {
     m_servedPackets = 0;
     m_avgQueueSize = 0;
     m_avgQueueBytes = 0;
+    m_avgQueueBytesTimeAverage = 0;
     m_avgQueueWait = 0;
     m_avgArrivalRate = 0;
     m_avgArrivalRateBytes = 0;
+    m_avgArrivalRateBytesTimeAverage = 0;
     m_dvp = 0;
     m_prEmpty = 0;
     m_avgServedBytes = 0;
@@ -468,10 +498,12 @@ namespace ns3 {
 
     m_queueSizeHistory.clear();
     m_queueBytesHistory.clear();
+    m_queueBytesHistoryTime.clear();
     m_servedBytesHistory.clear();
     m_servedPacketsHistory.clear();
     m_queueWaitHistory.clear();
     m_arrivalHistory.clear();
+    m_arrivalByteHistoryTime.clear();
     m_queueDelayViolationHistory.clear();
     m_arrivalSurplus.clear();
     m_arrivalDeficit.clear();
@@ -602,12 +634,51 @@ namespace ns3 {
       m_curArrivalRateSurplus = 0;
 
 
-#ifdef SVA_DEBUG
+    start = Seconds(0);
+    stop = Seconds(0);
+    if (!m_arrivalByteHistoryTime.empty())
+      {
+        start = m_arrivalByteHistoryTime.front().tstamp;
+        stop = m_arrivalByteHistoryTime.back().tstamp;
+      }
+    if (stop > start)
+      {
+        tmp = 0;
+        for (std::deque<Item>::iterator ait=m_arrivalByteHistoryTime.begin(); ait != m_arrivalByteHistoryTime.end(); ++ait)
+          {
+            tmp += (*ait).bytes;
+          }
+        m_avgArrivalRateBytesTimeAverage = tmp / (stop-start).GetSeconds();
+      }
+    else
+      m_avgArrivalRateBytesTimeAverage = 0.0;
+
+    start = Seconds(0);
+    stop = Seconds(0);
+    if (!m_queueBytesHistoryTime.empty())
+      {
+        start = m_queueBytesHistoryTime.front().tstamp;
+        stop = m_queueBytesHistoryTime.back().tstamp;
+      }
+    if (stop > start)
+      {
+        tmp = 0;
+        for (std::deque<Item>::iterator ait=m_queueBytesHistoryTime.begin(); ait != m_queueBytesHistoryTime.end(); ++ait)
+          {
+            tmp += (*ait).bytes;
+          }
+        m_avgQueueBytesTimeAverage = tmp / (stop-start).GetSeconds();
+      }
+    else
+      m_avgQueueBytesTimeAverage = 0.0;
+
+
+#ifdef SVA_DEBUG //sva: I have changed average queue bytes and average byte arrival rate to time based averages
     std::cout << Simulator::Now().GetSeconds() << " PerStaQInfo::Update " << GetMac() << " [TID " << (int) m_tid << "] " ;
     std::cout << "Q= " << m_queueSize << " Pkts( " << (double)m_queueBytes/1000000 << " MB) " ;
-    std::cout << "avgQ= " << m_avgQueueSize << " Pkts( " << m_avgQueueBytes/1000000 << " MB) " ;
+    std::cout << "avgQ= " << m_avgQueueSize << " Pkts( " << m_avgQueueBytesTimeAverage/1000000 << " MB) " ;
     std::cout << "avgW= " << m_avgQueueWait*1000 << " msec arrRate= " << m_avgArrivalRate << " pps( "
-        << m_avgArrivalRateBytes*8/1000000 << " Mbps) DVP= " << m_dvp
+        << m_avgArrivalRateBytesTimeAverage*8/1000000 << " Mbps) DVP= " << m_dvp
         << " History= " << m_queueSizeHistory.size() << " ProbEmpty= " << m_prEmpty
         << " avgServedPackets= " << m_avgServedPackets << " avgServedBytes= " << m_avgServedBytes/1000000
         << " arrivalRateSurplus= " << m_curArrivalRateSurplus
