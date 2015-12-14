@@ -151,7 +151,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   {
     m_feedback.avgServedPacketes = m_staQ->GetAvgArrivalRate();  //sva original: m_staQ->GetAvgServedPackets();
     m_feedback.avgServedBytes = m_staQ->GetAvgArrivalRateBytes(); //sva original: m_staQ->GetAvgServedBytes();
-    std::cout << "feedback signal = " << m_feedback.avgServedBytes << "\n";
+    //std::cout << "feedback signal = " << m_feedback.avgServedBytes << "\n";
   }
 
   double PidController::ErrorConditioning(double err)
@@ -180,7 +180,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
     double ctrl = m_pidParam.kp * err + m_pidParam.ki * integral + m_pidParam.kd * (err - m_state.curErr);
     ctrl = CtrlConditioning(ctrl);
     double output = std::max(0.0,m_state.curOut + ctrl);
-    std::cout << "err= " << err << " computed output = " << output << "\n";
+    //std::cout << "err= " << err << " computed output = " << output << "\n";
     return output;
   }
 
