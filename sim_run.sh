@@ -1,6 +1,6 @@
 #!/bin/sh
 #example: ./sim_run.sh scratch/bss-universal-mpdu-aggregation
-simulationTime=20
+simulationTime=100
 nMpdus=64;
 
 for nSta in 8 #1 2 3 4 5 6 7 8

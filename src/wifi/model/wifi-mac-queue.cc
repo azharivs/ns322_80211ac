@@ -516,8 +516,8 @@ PerStaWifiMacQueue::Dequeue (WifiMacHeader *hdr)
         }
       m_queue.pop_front ();
       m_size--;
-#ifdef SVA_DEBUG_DETAIL
-      if (i.hdr.IsData()) std::cout << "@Dequeue PerStaWifiMacQueue = " << m_size << " TID= " <<  (int) i.hdr.GetQosTid() << "\n";
+#ifdef SVA_DEBUG_EDFBUG
+      if (i.hdr.IsData()) std::cout << "@Dequeue PerStaWifiMacQueue = " << m_size << " MAC= " <<  i.hdr.GetAddr1() << "\n";
 #endif
       *hdr = i.hdr;
       return i.packet;
