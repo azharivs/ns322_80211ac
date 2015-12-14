@@ -839,6 +839,9 @@ PerStaWifiMacQueue::PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blo
                   qiServed = qi;
                   earliestDeadline = deadline.GetTimestamp();
                   found = true;
+#ifdef SVA_DEBUG_EDFBUG
+  std::cout << Simulator::Now().GetSeconds() << " @PeekEdf cur sta= " << (*sta)->GetMac() << " Deadline= " <<  earliestDeadline.GetSeconds() << "\n";
+#endif
                 }
             }
         }
@@ -855,11 +858,14 @@ PerStaWifiMacQueue::PeekEdf (PacketQueueI &it, const QosBlockedDestinations *blo
   if (found)
     {
       it = qiServed;
+#ifdef SVA_DEBUG_EDFBUG
+          std::cout << Simulator::Now().GetSeconds() << " PeekEdf: STA "
+              << it->hdr.GetAddr1() << " selected with deadline " << earliestDeadline.GetSeconds() << "\n";
+#endif
       return true;
     }
   return false;
 }
-
 
 bool
 PerStaWifiMacQueue::PeekEdfRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
@@ -986,6 +992,7 @@ PerStaWifiMacQueue::PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, con
   Time rta;
   bool found=false;
   Ptr<PerBitrateTimeAllowance> ta;
+  uint64_t bitrate=0;
 
   if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
     {
@@ -998,7 +1005,7 @@ PerStaWifiMacQueue::PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, con
           if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
             {
               WifiTxVector dataTxVector = m_low->GetDataTxVector (qi->packet, &(qi->hdr));
-              uint64_t bitrate = dataTxVector.GetMode().GetDataRate();
+              bitrate = dataTxVector.GetMode().GetDataRate();
               rta = ta->GetRemainingTimeAllowance(bitrate);
               if (rta > Seconds(0))
                 { //update selected STA for service
@@ -1017,7 +1024,7 @@ PerStaWifiMacQueue::PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, con
               if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
                 {
                   WifiTxVector dataTxVector = m_low->GetDataTxVector (qi->packet, &(qi->hdr));
-                  uint64_t bitrate = dataTxVector.GetMode().GetDataRate();
+                  bitrate = dataTxVector.GetMode().GetDataRate();
                   rta = ta->GetRemainingTimeAllowance(bitrate);
                   if (rta > Seconds(0))
                     { //update selected STA for service

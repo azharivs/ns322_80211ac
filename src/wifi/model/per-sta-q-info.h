@@ -23,6 +23,7 @@
 #define PER_STA_Q_INFO_H
 
 //sva: when enabled will send debug info to stdout (related to my classes)
+#define SVA_DEBUG_EDFBUG
 #define SVA_DEBUG
 //sva: when enabled will send detailed debug info to stdout  (related to my classes)
 //#define SVA_DEBUG_DETAIL
