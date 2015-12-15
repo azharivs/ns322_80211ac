@@ -9,10 +9,6 @@
 var="$2"
 # Frome here .....
 
-#Clean the output folder for a new run
-cd $outDir
-#rm -rf *
-cd ../..
 echo "$(echo "$1 --nSta=$nSta")"
 ./waf --run "$(echo $1 $var)" > results/$3
 
