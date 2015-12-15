@@ -15,16 +15,16 @@ mkdir(dirName);
 % for edf scheduler and deadline based aggregation with a max end to end
 % delay of 1 second use:
 %baseLogName = 'logfiles/edf_deadline_agg.1';
-pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^'};
+pattern = {'k-','r-','g-','m-','b-','y-','c-','ks','bs','rs','k^','r^','g^','m^','kv','rv','gv','mv','bv','yv','cv','k.','r.','g.','m.','b.'};
 pattern1 = {'k^','r^','g^','m^','b^','y^','c^'};
 pattern2 = {'kv','rv','gv','mv','bv','yv','cv'};
 pattern3 = {'k.','r.','g.','m.','b.','y.','c.'};
 bssPhyMacLogName = sprintf('%s.BssPhyMacStats',baseLogName);
 for i=1:nSta
     if (i<16)
-        mac = sprintf('00:00:00:00:00:0%x',i);
+        mac = sprintf('00:00:00:00:00:0%x', i);
     else
-        mac = sprintf('00:00:00:00:00:%x',i);
+        mac = sprintf('00:00:00:00:00:%x', i);
     end
     staQInfoLogName{i} = sprintf('%s.StaQInfo.%s',baseLogName,mac);
     staAggLogName{i} = sprintf('%s.StaAgg.%s',baseLogName,mac);
@@ -40,12 +40,16 @@ avgIdle = data(:,3);
 avgBusy = data(:,5);
 clear data;
 figure;
+
 hold;
 plot(beaconTimes,avgIdle,'s-',beaconTimes,avgBusy,'*-');
 legend('Average Idle Time Per Beacon','Average Busy Time Per Beacon');
 xlabel('Time (seconds)');
 ylabel('milli-seconds');
 grid;
+%saveas(gcf, './plots/AverageIdleTimePerBeacon-AverageBusyTimePerBeacon.fig');
+fig1 = sprintf('%s/fig1.fig',dirName);
+saveas(gcf, fig1);
 
 % Process StaQInfo and aggregation data
 rates = [];
@@ -131,7 +135,9 @@ for i=1:nSta
         rates = union(rates,unique(dataRate{i}));
     end
 end
-
+%saveas(gcf, './plots/fig2.fig');
+fig2 = sprintf('%s/fig2.fig',dirName);
+saveas(gcf, fig2);
 
 % Repeat StaQInfo in separate plots
 figure;
@@ -185,7 +191,9 @@ for i=1:nSta
     grid on;
 end
 
-
+%saveas(gcf, './plots/fig2.fig');
+fig3 = sprintf('%s/fig3.fig',dirName);
+saveas(gcf, fig3);
 
 % Repeat aggregation info in separate plot
 figure;
@@ -291,7 +299,9 @@ end
 if (exist('prRates') && exist('rates'))
     save('params.mat','prRates','rates');
 end
-
+%saveas(gcf, './plots/fig3.fig');
+fig4 = sprintf('%s/fig4.fig',dirName);
+saveas(gcf, fig4);
 
 % figure;
 % %Per Bitrate TimeAlowance Aggregation info
