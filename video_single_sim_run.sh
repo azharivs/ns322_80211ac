@@ -42,7 +42,7 @@ cd $defDir
 cd ..
 cd results
 ./extract-all.sh $3 $nSta
-/usr/local/MATLAB/R2010b/bin/matlab -nosplash -nodesktop -r "plot_results_func('$3',$nSta); quit;"
+matlab -nosplash -nodesktop -r "plot_results_func('$3',$nSta); quit;"
 #rm -rf $3
 cd ..
 
