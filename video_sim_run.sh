@@ -2,7 +2,8 @@
 simulationTime=20
 nMpdus=64;
 
-defDir="/home/aolnf/video/ns-3.22/NF-results"
+#please update the following address
+defDir="/home/aolnf/video/ns-allinone-3.22/ns-3.22/NF-results"
 logDir=$defDir"/NF-logfiles"
 #YUVDir="/media/7C766F3A766EF474"
 outDir=$defDir"/output"
