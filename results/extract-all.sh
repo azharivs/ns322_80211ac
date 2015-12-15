@@ -10,12 +10,18 @@ echo "--------------------------------------------------------------------------
 
 ./extract-channel-stat.sh $1
 
-BaseMac="00:00:00:00:00:0"
+BaseMac="00:00:00:00:00:"
 
 for i in $(seq 1 $2) 
 do
-    j=$(printf '%x' $i)
+    if [ "$i" -le 15 ] ; then
+	j=$(printf '0%x' $i)
+    else
+	j=$(printf '%x' $i)
+    fi
+
     Mac=$(echo $BaseMac$j)
+
     ./extract-sta-agg-stat.sh $1 $Mac
     ./extract-sta-q-stat.sh $1 $Mac
     ./extract-sta-agg-ctrl-stat.sh $1 $Mac
