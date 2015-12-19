@@ -1,6 +1,6 @@
 #!/bin/sh
-simulationTime=25
-nMpdus=10;
+simulationTime=35
+nMpdus=64;
 
 #please update the following address
 #defDir="/home/aolnf/video/ns-allinone-3.22/ns-3.22/NF-results"
@@ -70,7 +70,7 @@ do
 			fi
 			
  			cmdLine=$(echo "--nMpdus=$nMpdus --simulationTime=$simulationTime --nSta=$nSta --dMax=$dMax --dvp=$dvp")
-                        logfile="logfiles/pid"_"nSta$nSta"_"dMax$dMax"_"dvp$dvp"
+                        logfile="logfiles/edfstdRND"_"nSta$nSta"_"dMax$dMax"_"dvp$dvp"
 			export nSta outTrace outVID outYUV defDir outDir
  			./video_single_sim_run.sh $1 "$(echo $cmdLine)" $logfile
 			
