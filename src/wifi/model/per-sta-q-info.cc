@@ -400,6 +400,9 @@ namespace ns3 {
         m_arrivalByteHistoryTime.pop_front();
       }
 
+#ifdef SVA_DEBUG_EDFBUG
+    std::cout << "ARRIVAL \n";
+#endif
     Update();
 
     if (m_ctrl)
@@ -463,6 +466,9 @@ namespace ns3 {
       {
         m_queueBytesHistoryTime.pop_front();
       }
+#ifdef SVA_DEBUG_EDFBUG
+    std::cout << "DEPARTURE \n";
+#endif
 
     Update();
     if (m_ctrl)
@@ -664,9 +670,11 @@ namespace ns3 {
     if (stop > start)
       {
         tmp = 0;
-        for (std::deque<Item>::iterator ait=m_queueBytesHistoryTime.begin(); ait != m_queueBytesHistoryTime.end(); ++ait)
+        double delta = 0;
+        for (std::deque<Item>::iterator ait=m_queueBytesHistoryTime.begin(); ait != m_queueBytesHistoryTime.end()-1; ++ait)
           {
-            tmp += (*ait).bytes;
+            delta = ( (*(ait+1)).tstamp - (*ait).tstamp).GetSeconds();
+            tmp += (*ait).bytes * delta;
           }
         m_avgQueueBytesTimeAverage = tmp / (stop-start).GetSeconds();
       }

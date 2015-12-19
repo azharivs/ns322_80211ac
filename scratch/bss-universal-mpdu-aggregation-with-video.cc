@@ -91,15 +91,15 @@ int main (int argc, char *argv[])
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 64;
-  uint32_t nSta = 1;
+  uint32_t nSta = 14;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = EDF;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
-  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
+  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  uint32_t   MaxAmpduSize = nMpdus*(payloadSize+100); //TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.01;
   Time initialTimeAllowance = MicroSeconds(12000);
   double MovingIntegralWeight = 0.05;
@@ -109,7 +109,7 @@ int main (int argc, char *argv[])
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
-  ControllerType controller =NO_CONTROL;// NO_CONTROL;//PID;
+  ControllerType controller =PID;//NO_CONTROL;// NO_CONTROL;//PID;
 
     
   //NFM
@@ -137,6 +137,8 @@ int main (int argc, char *argv[])
   cmd.AddValue("thrL","Low Threshold Coefficient for the Threshold Based PID Controller",thrL);
   cmd.Parse (argc, argv);
     
+  MaxAmpduSize = nMpdus*(payloadSize+100);
+
   if(!enableRts)
     Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue ("999999"));
   else
@@ -161,8 +163,8 @@ int main (int argc, char *argv[])
   WifiHelper wifi = WifiHelper::Default ();
   //wifi.EnableLogComponents();//sva: added
   wifi.SetStandard (WIFI_PHY_STANDARD_80211n_5GHZ);
- // wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate65MbpsBW20MHz"), "ControlMode", StringValue("OfdmRate6_5MbpsBW20MHz"));
-  wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel11n");
+  wifi.SetRemoteStationManager ("ns3::ConstantRateWifiManager", "DataMode", StringValue("OfdmRate65MbpsBW20MHz"), "ControlMode", StringValue("OfdmRate6_5MbpsBW20MHz"));
+  //wifi.SetRemoteStationManager ("ns3::IdealWifiManagerForMarkovChannelModel11n");
   //wifi.SetRemoteStationManager ("ns3::IdealWifiManager");
   HtWifiMacHelper mac = HtWifiMacHelper::Default ();
 
