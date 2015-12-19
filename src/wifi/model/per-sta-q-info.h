@@ -26,7 +26,7 @@
 #define SVA_DEBUG_EDFBUG
 #define SVA_DEBUG
 //sva: when enabled will send detailed debug info to stdout  (related to my classes)
-//#define SVA_DEBUG_DETAIL
+#define SVA_DEBUG_DETAIL
 //sva: when enabled will send debug info to stdout regarding all transmitted packets
 //#define SVA_PACKET_TRACE
 //sva: Also produce non detailed output when detailed debug is enabled

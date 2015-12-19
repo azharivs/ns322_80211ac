@@ -810,6 +810,10 @@ PerStaWifiMacQueue::PeekFcfs (PacketQueueI &it, const QosBlockedDestinations *bl
           || !blockedPackets->IsBlocked (i->hdr.GetAddr1 (), i->hdr.GetQosTid ()))
         {
           it = i;
+#ifdef SVA_DEBUG_EDFBUG
+          std::cout << Simulator::Now().GetSeconds() << " PeekFcfs: STA "
+              << it->hdr.GetAddr1() << " selected\n";// with deadline " << earliestDeadline.GetSeconds() << "\n";
+#endif
           return true;
         }
     }

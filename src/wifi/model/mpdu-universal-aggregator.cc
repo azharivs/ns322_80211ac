@@ -112,6 +112,12 @@ MpduUniversalAggregator::Aggregate (Ptr<const Packet> packet, Ptr<Packet> aggreg
   //the packet has correct header installed before this function is called --> ok
   packet->PeekHeader(peekedHdr);
 
+  /*sva for debug to be removed */
+  if (fabs (Simulator::Now().GetSeconds() - 18.2353) < 0.001)
+    {
+      std::cout << "We are here ...\n";
+    }
+  /*sva for debug to be removed*/
   uint32_t padding = CalculatePadding (aggregatedPacket);
   //old code: uint32_t actualSize = aggregatedPacket->GetSize ();
 
@@ -178,6 +184,10 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMa
   if (!peekedHeader.IsQosData())
     {
       result = StandardCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::CanBeAggregated Non-QoS Data "
+          << peekedHeader.GetAddr2() << " \n";
+#endif
       return result;
     }
   if (m_perStaQInfo)//if supposed to support aggregation on per queue basis

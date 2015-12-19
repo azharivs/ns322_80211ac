@@ -75,7 +75,7 @@ int main (int argc, char *argv[])
 
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
-  uint32_t nMpdus = 64;
+  uint32_t nMpdus = 10;
   uint32_t nSta = 4;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
@@ -84,7 +84,7 @@ int main (int argc, char *argv[])
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
   AggregationType AggregationAlgorithm = STANDARD;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
-  uint32_t MaxAmpduSize = 65535;//TODO allow larger values. May require changes to the aggregator class
+  uint32_t MaxAmpduSize = nMpdus*(payloadSize+100);//TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.02;
   Time initialTimeAllowance = MicroSeconds(12000);
   double MovingIntegralWeight = 0.05;
@@ -117,7 +117,9 @@ int main (int argc, char *argv[])
   cmd.AddValue("thrH","High Threshold Coefficient for the Threshold Based PID Controller",thrH);
   cmd.AddValue("thrL","Low Threshold Coefficient for the Threshold Based PID Controller",thrL);
   cmd.Parse (argc, argv);
-    
+
+  MaxAmpduSize = nMpdus*(payloadSize+100);
+
   if(!enableRts)
     Config::SetDefault ("ns3::WifiRemoteStationManager::RtsCtsThreshold", StringValue ("999999"));
   else

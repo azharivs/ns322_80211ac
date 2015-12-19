@@ -9,7 +9,7 @@
 var="$2"
 # Frome here .....
 
-echo "$(echo "$1 --nSta=$nSta")"
+echo "$(echo "$1 $var --nSta=$nSta")"
 ./waf --run "$(echo $1 $var)" > results/$3
 
 #echo 
@@ -42,7 +42,7 @@ cd $defDir
 cd ..
 cd results
 ./extract-all.sh $3 $nSta
-matlab -nosplash -nodesktop -r "plot_results_func('$3',$nSta); quit;"
+matlab -nosplash -nodesktop -r "plot_results_func('$3',$nSta);"
 #rm -rf $3
 cd ..
 

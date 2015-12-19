@@ -2626,7 +2626,7 @@ MacLow::StopAggregation(Ptr<const Packet> peekedPacket, WifiMacHeader peekedHdr,
     
     //An HT STA shall not transmit a PPDU that has a duration that is greater than aPPDUMaxTime (10 milliseconds)
     Time duration = m_phy->CalculateTxDuration (aggregatedPacket->GetSize () + peekedPacket->GetSize () + peekedHdr.GetSize () +WIFI_MAC_FCS_LENGTH,dataTxVector, preamble, m_phy->GetFrequency(), 0, 0);
-#ifdef SVA_DEBUG_DETAIL
+#ifdef SVA_DEBUG_DETAIL_SVA //sva: temporarily changed to SVA_DEBUG_DETAIL_SVA. To be changed back to SVA_DEBUG_DETAIL
     std::cout << Simulator::Now().GetSeconds() << " MacLow::StopAggregation "
         << "---PEEKED PACKET---> " << peekedPacket->ToString()
         << "---AGGERGATED PACKET---> " << aggregatedPacket->ToString()
@@ -2702,6 +2702,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   //sva: newPacket is a copy of the input HoL packet with proper fcs and trailer added
                   //sva: currentAggregatedPacket is yet null and the following line is just to initialize the first aggregated packet
                   //sva: this first packet is not aggregated if the header is of type BLOCK_ACK_REQ and will be later aggregated, but WHY?
+                  std::cout << "MacLow::AggregateToAmpdu 0th time \n"; //sva for debug to be removed
                   aggregated=m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
                   //currentAggregatedPacket will contain the correct packet with its header added to the end.
                   //However no call to AddHeader is made for currentAggregatedPacket!
@@ -2728,7 +2729,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
               Ptr<const Packet> peekedPacket = listenerIt->second->PeekNextPacketInBaQueue (peekedHdr, peekedHdr.GetAddr1 (), tid, &tstamp);
               if (peekedPacket == 0) 
                 {
-                  /*sva for debug to be removed TODO ----- start
+                  /*sva for debug to be removed TODO ----- start*/
                   std::ostringstream os;
                   peekedHdr.Print(os);
                   std::cout << "MacLow::AggregateToAmpdu (peekedPacket == 0) peekedHdr: " << os.str() << "\n";
@@ -2743,10 +2744,10 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                 }
               else
                 {
-                  /*sva for debug to be removed TODO ----- start
+                  /*sva for debug to be removed TODO ----- start*/
                   std::ostringstream os;
                   peekedHdr.Print(os);
-                  std::cout << "MacLow::AggregateToAmpdu (peekedPacket != 0) peekedHdr: " << os.str() << "\n";
+                  std::cout << "MacLow::AggregateToAmpdu (peekedPacket != 0 -> set retry = true) peekedHdr: " << os.str() << "\n";
                   //sva for debug to be removed TODO ----- end*/
                   retry = true;
                   currentSequenceNumber = peekedHdr.GetSequenceNumber(); 
@@ -2815,8 +2816,9 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                   newPacket->AddHeader (peekedHdr);
                   WifiMacTrailer fcs;
                   newPacket->AddTrailer (fcs);
+                  std::cout << "MacLow::AggregateToAmpdu 1st time \n"; //sva for debug to be removed
                   aggregated = m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
-                  if (aggregated) //sva: if aggregation successfull then put that packet in the book keeping queue as well
+                  if (aggregated) //sva: if aggregation successful then put that packet in the book keeping queue as well
                     {
                       m_aggregateQueue->Enqueue (aggPacket, peekedHdr);
                       if (i == 1 && hdr.IsQosData ())
@@ -2829,7 +2831,10 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       m_sentMpdus++;
                       listenerIt->second->CompleteMpduTx (peekedPacket, peekedHdr, tstamp);
                       if (retry)
+                        {
                           listenerIt->second->RemoveFromBaQueue(tid, hdr.GetAddr1 (), peekedHdr.GetSequenceNumber ());
+                          std::cout << "MacLow::AggregateToAmpdu  RemoveFromBaQueue\n";
+                        }
                       else //sva: if correctly aggregated and sent then remove from EDCA queue (the main one).
                           queue->Remove (peekedPacket);//sva: This resolves to PreStaWifiMacQueue
                       newPacket = 0;
@@ -2877,6 +2882,7 @@ MacLow::AggregateToAmpdu (Ptr<const Packet> packet, const WifiMacHeader hdr)
                       newPacket->AddHeader (peekedHdr);
                       WifiMacTrailer fcs;
                       newPacket->AddTrailer (fcs);
+                      std::cout << "MacLow::AggregateToAmpdu 2nd time (original HoL pkt) \n"; //sva for debug to be removed
                       m_mpduAggregator->Aggregate (newPacket, currentAggregatedPacket);
                     }
                   if (qosPolicy==0)
