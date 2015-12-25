@@ -95,21 +95,21 @@ int main (int argc, char *argv[])
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = EDF;//MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = STANDARD;//TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t   MaxAmpduSize = nMpdus*(payloadSize+100); //TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.01;
-  Time initialTimeAllowance = MicroSeconds(12000);
+  Time initialTimeAllowance = MicroSeconds(5000);
   double MovingIntegralWeight = 0.05;
-  double kp = 0.01; //0.01;
-  double ki = 0.000;//0.02;
-  double kd = 0.05; //0.05;
+  double kp = 0.0001/2e6;//0.01; //0.01;
+  double ki = 0.050/2e6;//0.000;//0.02;
+  double kd = 0.200/2e6;//0.05; //0.05;
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
-  ControllerType controller =NO_CONTROL;// NO_CONTROL;//PID;
+  ControllerType controller =PID;//NO_CONTROL;// NO_CONTROL;//PID;
 
     
   //NFM
@@ -287,7 +287,7 @@ int main (int argc, char *argv[])
   ApplicationContainer clientApps;
   ApplicationContainer c_tempApp;
   ApplicationContainer s_tempApp;
-  string traceFile[10] = {"st_highway_cif.st", "st_waterfall_cif.st", "st_flower_cif.st", "st_mobile_cif.st", "st_bridge-far_cif.st","st_football_cif.st","st_ElephantsDream_cif.st","st_mobcal3.st","st_hd30_1.st","st_fhd60_30.st"};  
+  string traceFile[10] = {"st_highway_cif.st", "st_waterfall_cif.st", "st_flower_cif.st", "st_mobile_cif.st", "st_bridge-far_cif.st","st_football_cif.st","st_ElephantsDream_cif.st","st_mobcal3.st","st_hd30_1.st","st_fhd60_60.st"};
   
   
   uint16_t port = 401; 

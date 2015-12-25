@@ -314,7 +314,7 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     << " avgQueue= " << sta->GetAvgSize()
     << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
     << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
-    << " reference= " << sta->GetAvgSize() - m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
+    << " reference= " << /*sta->GetAvgSize() - */m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
     << " totalAllowance= " << totalTimeAllowance
     << " adjust= " << adjustment
     << "\n";

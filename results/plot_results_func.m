@@ -59,24 +59,26 @@ for i=1:nSta
     data = load(staQInfoLogName{i});
     timesStaQ{i} = data(:,1);
     qPkt{i} = data(:,2);
+    qByte{i} = data(:,3);
     avgQPkt{i} = data(:,4);
+    avgQByte{i} = data(:,5);
     avgQWait{i} = data(:,6);
     avgQArrivalMbps{i} = data(:,8);
     avgQDvp{i} = data(:,9);
     probEmpty{i} = data(:,10);
     clear data;
     subplot(3,3,1);
-    plot(timesStaQ{i},avgQPkt{i},pattern{i});
+    plot(timesStaQ{i},avgQByte{i},pattern{i});
     hold on;
     legend(legendStr);
     xlabel('Time (seconds)');
-    ylabel('Avg. Queue Length (pkt)');
+    ylabel('Avg. Queue Length (MBytes)');
     grid on;
     subplot(3,3,9);
-    plot(timesStaQ{i},qPkt{i},pattern{i});
+    plot(timesStaQ{i},qByte{i},pattern{i});
     hold on;
     xlabel('Time (seconds)');
-    ylabel('Instantaneous Queue Length (pkt)');
+    ylabel('Instantaneous Queue Length (MBytes)');
     grid on;
     subplot(3,3,2);
     plot(timesStaQ{i},avgQWait{i},pattern{i});
@@ -282,10 +284,11 @@ for i=1:nSta
         ylabel('Integral Term');
         grid on;
         subplot(3,3,9);
-        plot(timesAggCtrl{i},ref{i},pattern{i})
+        plot(timesAggCtrl{i},ref{i}/1e6,pattern{i})
         hold on;
+        plot(timesStaQ{i},qByte{i},pattern{i});
         xlabel('Time (seconds)');
-        ylabel('Reference Signal');
+        ylabel('Reference Signal (M:x1e6)');
         grid on;
     end %if
     %extract bitrates and their (time averaged) probabilities
