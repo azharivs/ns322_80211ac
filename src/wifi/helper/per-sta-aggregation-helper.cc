@@ -35,7 +35,7 @@
 
 namespace ns3 {
 
-  PerStaAggregationHelper::PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac)
+  PerStaAggregationHelper::PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac, AggregationType aggAlg)
   : m_nSta (nSta)
   {
     Ptr<ApWifiMac> apWifiMac = ap->GetObject<WifiNetDevice>()->GetMac()->GetObject<ApWifiMac>();
@@ -64,7 +64,20 @@ namespace ns3 {
     m_low = edca->Low();
     m_queue = edca->GetEdcaQueue()->GetObject<PerStaWifiMacQueue>(); //set pointer to queue
     m_aggregator = edca->Low()->GetMpduAggregator()->GetObject<MpduUniversalAggregator>(); //set pointer to aggregator
-    m_aggCtrl = m_aggregator->GetAggregationController()->GetObject<TimeAllowanceAggregationController>(); //set pointer to aggregation controller
+    switch (aggAlg)
+    {
+      case TIME_ALLOWANCE:
+      case PER_BITRATE_TIME_ALLOWANCE:
+        m_aggCtrl = m_aggregator->GetAggregationController()->GetObject<TimeAllowanceAggregationController>(); //set pointer to aggregation controller
+        std::cout << "PerStaAggregationHelper --> TimeAllowanceAggregationController\n";//sva for debug
+        break;
+      case QUEUE_SURPLUS:
+        m_aggCtrl = m_aggregator->GetAggregationController()->GetObject<QueueSurplusAggregationController>(); //set pointer to aggregation controller
+        std::cout << "PerStaAggregationHelper --> QueueSurplusAggregationController\n";//sva for debug
+        break;
+      default:
+        break;
+    }
     NS_ASSERT(m_queue);
     NS_ASSERT(m_aggregator);
     NS_ASSERT(m_aggCtrl);

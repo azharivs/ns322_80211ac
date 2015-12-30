@@ -83,7 +83,7 @@ int main (int argc, char *argv[])
   ServicePolicyType QueueServicePolicy = EDF;//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = STANDARD;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = QUEUE_SURPLUS;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = nMpdus*(payloadSize+100);//TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.02;
   Time initialTimeAllowance = MicroSeconds(12000);
@@ -175,7 +175,7 @@ int main (int argc, char *argv[])
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
-  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI);
+  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI,AggregationAlgorithm);
 
   //Initialize PerStaQInfo after AP and STA's initialized
 
@@ -213,18 +213,46 @@ int main (int argc, char *argv[])
                                  "MaxAmpduSize",UintegerValue(MaxAmpduSize));
 
   //Initialize AggregationController. Only need to care about the AP
-  bss.SetAggregationController("DVP",DoubleValue(dvp),
-                               "TimeAllowance", TimeValue(initialTimeAllowance),
-                               "ServiceInterval",DoubleValue(ServiceInterval),
-                               "MaxDelay",DoubleValue(dMax),
-                               "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
-                               "KP",DoubleValue(kp),
-                               "KI",DoubleValue(ki),
-                               "KD",DoubleValue(kd),
-                               "ThrWeight",DoubleValue(thrW),
-                               "ThrHighCoef",DoubleValue(thrH),
-                               "ThrLowCoef",DoubleValue(thrL),
-                               "Controller",EnumValue(controller));
+  switch (AggregationAlgorithm)
+  {
+    case TIME_ALLOWANCE:
+    case PER_BITRATE_TIME_ALLOWANCE:
+      bss.SetAggregationController("DVP",DoubleValue(dvp),
+                                   "TimeAllowance", TimeValue(initialTimeAllowance),
+                                   "ServiceInterval",DoubleValue(ServiceInterval),
+                                   "MaxDelay",DoubleValue(dMax),
+                                   "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
+                                   "KP",DoubleValue(kp),
+                                   "KI",DoubleValue(ki),
+                                   "KD",DoubleValue(kd),
+                                   "ThrWeight",DoubleValue(thrW),
+                                   "ThrHighCoef",DoubleValue(thrH),
+                                   "ThrLowCoef",DoubleValue(thrL),
+                                   "Controller",EnumValue(controller));
+      break;
+    case QUEUE_SURPLUS:
+      bss.SetAggregationController("DVP",DoubleValue(dvp),
+//                                   "ByteAllowance", DoubleValue(initialByteAllowance),
+                                   "ServiceInterval",DoubleValue(ServiceInterval),
+                                   "MaxDelay",DoubleValue(dMax)
+//                                   "Controller",EnumValue(controller)
+                                   );
+      break;
+    default:
+      bss.SetAggregationController("DVP",DoubleValue(dvp),
+                                   "TimeAllowance", TimeValue(initialTimeAllowance),
+                                   "ServiceInterval",DoubleValue(ServiceInterval),
+                                   "MaxDelay",DoubleValue(dMax),
+                                   "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
+                                   "KP",DoubleValue(kp),
+                                   "KI",DoubleValue(ki),
+                                   "KD",DoubleValue(kd),
+                                   "ThrWeight",DoubleValue(thrW),
+                                   "ThrHighCoef",DoubleValue(thrH),
+                                   "ThrLowCoef",DoubleValue(thrL),
+                                   "Controller",EnumValue(controller));
+      break;
+  }
 
   bss.FinalizeSetup(perStaQueue);
 

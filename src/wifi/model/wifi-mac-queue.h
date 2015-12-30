@@ -317,7 +317,8 @@ typedef enum
   EDF,
   EDF_RR,
   MAX_REMAINING_TIME_ALLOWANCE,//to be used in conjunction with TIME_ALLOWANCE aggregation algorithm
-  PER_BITRATE_TIME_ALLOWANCE_RR//to be used in conjunction with PER_BITRATE_TIME_ALLOWANCE aggregation algorithm
+  PER_BITRATE_TIME_ALLOWANCE_RR,//to be used in conjunction with PER_BITRATE_TIME_ALLOWANCE aggregation algorithm
+  MAX_QUEUE_SURPLUS// to be used with QUEUE_SURPLUS aggregation algorithm
 } ServicePolicyType;
 
 class PerStaWifiMacQueue : public WifiMacQueue
@@ -559,6 +560,12 @@ private:
   bool PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
 
   /*
+   * Called to implement the Queue Surplus Based service policy
+   * Selects a station with largest positive queue surplus
+   */
+  bool PeekMaxQueueSurplus (PacketQueueI &it, const QosBlockedDestinations *blockedPackets);
+
+  /*
    * Return iterator pointing to queue location holding packet with
    * appropriate tid destined to certain dest STA which is ready to be sent.
    *
@@ -568,6 +575,7 @@ private:
    * \param blockedPackets: passed directly by caller
    *
    */
+
   bool GetStaHol (PacketQueueI &it, uint8_t tid, Mac48Address dest,
                                  const QosBlockedDestinations *blockedPackets);
 

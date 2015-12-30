@@ -27,7 +27,7 @@
 
 #include <math.h>
 #include <algorithm>
-#include "per-sta-q-info.h"
+//#include "per-sta-q-info.h"
 #include "pid-controller.h"
 
 namespace ns3 {

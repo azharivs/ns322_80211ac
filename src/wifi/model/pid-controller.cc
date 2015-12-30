@@ -31,7 +31,34 @@
 
 namespace ns3 {
 
-NS_OBJECT_ENSURE_REGISTERED (PidController);
+  NS_OBJECT_ENSURE_REGISTERED (Controller);
+
+  TypeId
+  Controller::GetTypeId (void)
+  {
+    static TypeId tid = TypeId ("ns3::Controller")
+        .SetParent<Object> ()
+        .AddConstructor<Controller> ()
+        ;
+    return tid;
+  }
+
+  Controller::Controller ()
+  {//TODO
+    return ;
+  }
+
+  Controller::~Controller ()
+  {//TODO
+    return ;
+  }
+
+  double Controller::GetReference ()
+  {//To be re-implemented by sub-classes
+    return 0.0;
+  }
+
+  NS_OBJECT_ENSURE_REGISTERED (PidController);
 /**
  * \ingroup wifi
  * PID Controller
@@ -67,7 +94,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   PidController::GetTypeId (void)
   {
     static TypeId tid = TypeId ("ns3::PidController")
-        .SetParent<Object> ()
+        .SetParent<Controller> ()
         .AddConstructor<PidController> ()
         .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
                        DoubleValue (0.1),

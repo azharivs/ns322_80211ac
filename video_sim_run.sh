@@ -39,7 +39,7 @@ fi
 #fi
 
 
-for nSta in 16
+for nSta in 1
 do
  	for dvp in 0.01
  	do
