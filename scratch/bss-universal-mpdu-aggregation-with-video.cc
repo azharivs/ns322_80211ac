@@ -89,16 +89,16 @@ int main (int argc, char *argv[])
   bool enableRts = 0;
 
   uint32_t payloadSize = 1472; //bytes
-  uint64_t simulationTime = 20; //seconds
+  uint64_t simulationTime = 65; //seconds
   uint32_t nMpdus = 64;
-  uint32_t nSta = 14;
+  uint32_t nSta = 1;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = EDF;//MAX_QUEUE_SURPLUS;//MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = STANDARD;//QUEUE_SURPLUS;//TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t   MaxAmpduSize = nMpdus*(payloadSize+100); //TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.01;
   Time initialTimeAllowance = MicroSeconds(5000);
@@ -109,7 +109,7 @@ int main (int argc, char *argv[])
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
-  ControllerType controller =PID;//NO_CONTROL;// NO_CONTROL;//PID;
+  ControllerType controller =NO_CONTROL;// NO_CONTROL;//PID;
 
     
   //NFM
@@ -175,9 +175,14 @@ int main (int argc, char *argv[])
 
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
 
+  //sva I think I should specify the aggregation algorithm here ...
   mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100)),
+                              "Algorithm",EnumValue(AggregationAlgorithm)); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+
+  /*mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
                               "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
-  
+  */
   NetDeviceContainer staDevice;
   staDevice = wifi.Install (phy, mac, wifiStaNode);
 
@@ -189,12 +194,16 @@ int main (int argc, char *argv[])
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
     
   mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100)),
+                              "Algorithm",EnumValue(AggregationAlgorithm)); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
 
+  /*mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+*/
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
-  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI);
+  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI,AggregationAlgorithm);
 
   //Initialize PerStaQInfo after AP and STA's initialized
 
@@ -232,18 +241,46 @@ int main (int argc, char *argv[])
                                  "MaxAmpduSize",UintegerValue(MaxAmpduSize));
 
   //Initialize AggregationController. Only need to care about the AP
-  bss.SetAggregationController("DVP",DoubleValue(dvp),
-                               "TimeAllowance", TimeValue(initialTimeAllowance),
-                               "ServiceInterval",DoubleValue(ServiceInterval),
-                               "MaxDelay",DoubleValue(dMax),
-                               "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
-                               "KP",DoubleValue(kp),
-                               "KI",DoubleValue(ki),
-                               "KD",DoubleValue(kd),
-                               "ThrWeight",DoubleValue(thrW),
-                               "ThrHighCoef",DoubleValue(thrH),
-                               "ThrLowCoef",DoubleValue(thrL),
-                               "Controller",EnumValue(controller));
+  switch (AggregationAlgorithm)
+  {
+    case TIME_ALLOWANCE:
+    case PER_BITRATE_TIME_ALLOWANCE:
+      bss.SetAggregationController("DVP",DoubleValue(dvp),
+                                   "TimeAllowance", TimeValue(initialTimeAllowance),
+                                   "ServiceInterval",DoubleValue(ServiceInterval),
+                                   "MaxDelay",DoubleValue(dMax),
+                                   "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
+                                   "KP",DoubleValue(kp),
+                                   "KI",DoubleValue(ki),
+                                   "KD",DoubleValue(kd),
+                                   "ThrWeight",DoubleValue(thrW),
+                                   "ThrHighCoef",DoubleValue(thrH),
+                                   "ThrLowCoef",DoubleValue(thrL),
+                                   "Controller",EnumValue(controller));
+      break;
+    case QUEUE_SURPLUS:
+      bss.SetAggregationController("DVP",DoubleValue(dvp),
+//                                   "ByteAllowance", DoubleValue(initialByteAllowance),
+                                   "ServiceInterval",DoubleValue(ServiceInterval),
+                                   "MaxDelay",DoubleValue(dMax)
+//                                   "Controller",EnumValue(controller)
+                                   );
+      break;
+    default:
+      bss.SetAggregationController("DVP",DoubleValue(dvp),
+                                   "TimeAllowance", TimeValue(initialTimeAllowance),
+                                   "ServiceInterval",DoubleValue(ServiceInterval),
+                                   "MaxDelay",DoubleValue(dMax),
+                                   "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
+                                   "KP",DoubleValue(kp),
+                                   "KI",DoubleValue(ki),
+                                   "KD",DoubleValue(kd),
+                                   "ThrWeight",DoubleValue(thrW),
+                                   "ThrHighCoef",DoubleValue(thrH),
+                                   "ThrLowCoef",DoubleValue(thrL),
+                                   "Controller",EnumValue(controller));
+      break;
+  }
 
   bss.FinalizeSetup(perStaQueue);
 

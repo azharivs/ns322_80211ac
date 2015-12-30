@@ -384,6 +384,7 @@ PerStaWifiMacQueue::GetTypeId (void)
                                     ns3::EDF, "ns3::EDF",
                                     ns3::PER_BITRATE_TIME_ALLOWANCE_RR, "ns3::PER_BITRATE_TIME_ALLOWANCE_RR",
                                     ns3::MAX_REMAINING_TIME_ALLOWANCE, "ns3::MAX_REMAINING_TIME_ALLOWANCE",
+                                    ns3::MAX_QUEUE_SURPLUS,"ns3::MAX_QUEUE_SURPLUS",
                                     ns3::EDF_RR, "ns3::EDF_RR"))
   ;
   return tid;
@@ -677,6 +678,9 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case PER_BITRATE_TIME_ALLOWANCE_RR:
       found = PeekPerBitrateTimeAllowanceRoundRobin(it,blockedPackets);
       break;
+    case MAX_QUEUE_SURPLUS:
+      found = PeekMaxQueueSurplus(it,blockedPackets);
+      break;
       /*sva-design: add for appropriate service policy ?
     case ?:
       found = Peek?(it,blockedPackets);
@@ -728,6 +732,9 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
       break;
     case PER_BITRATE_TIME_ALLOWANCE_RR:
       found = PeekPerBitrateTimeAllowanceRoundRobin(it,blockedPackets);
+      break;
+    case MAX_QUEUE_SURPLUS:
+      found = PeekMaxQueueSurplus(it,blockedPackets);
       break;
       /*sva-design: add for appropriate service policy ?
     case ?:
@@ -1076,5 +1083,70 @@ PerStaWifiMacQueue::PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, con
     }
   return false;
 }
+
+bool
+PerStaWifiMacQueue::PeekMaxQueueSurplus (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{
+  PerStaQInfoContainer::Iterator sta;
+  PacketQueueI qi;
+  PacketQueueI qiServed; //the one that will eventually be served
+  double maxQSurplus = 0; //Max queue surplus
+  double qSurplus;
+  bool found=false;
+
+  if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
+    {
+      for (sta = m_perStaQInfo->Begin(); sta != m_perStaQInfo->End(); ++sta)
+        {
+          if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
+            {
+              Ptr<SimpleController> simpleCtrl = (m_mpduAggregator->GetAggregationController()->GetObject<QueueSurplusAggregationController>())->GetController((*sta)->GetMac())->GetObject<SimpleController>();
+              simpleCtrl->SetInputSignal(SimpleController::InSigType ((*sta)->GetAvgSize(), (*sta)->GetAvgSizeBytes(), (*sta)->GetPrEmpty()));
+              qSurplus = simpleCtrl->ComputeOutput();
+
+              if (qSurplus > maxQSurplus)
+                { //update selected STA for service
+                  qiServed = qi;
+                  maxQSurplus = qSurplus;
+                  found = true;
+                }
+            }
+        }
+      if (found)
+        {
+          it = qiServed;
+#ifdef SVA_DEBUG
+          std::cout << Simulator::Now().GetSeconds() << " PeekMaxQueueSurplus: STA "
+              << it->hdr.GetAddr1() << " selected with surplus " << maxQSurplus/1e6 << " MBytes \n";
+#endif
+          return true;
+        }
+    }
+  //if perStaQInfo not supported then resort to FCFS scheduling
+  else
+    {
+      found = PeekFcfs(qiServed,blockedPackets);
+      if (found)
+        {
+          it = qiServed;
+          return true;
+        }
+    }
+  //otherwise if no packet found then don't service anything.
+  //TODO: This causes a problem as it will sometimes result in an unbounded pending service interval. Should call pending service interval if this happens
+  if (m_mpduAggregator)
+    {
+      if (m_mpduAggregator->IsPendingServiceInterval())
+        {
+          Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, m_mpduAggregator); //make sure current line of execution is finished
+
+          #ifdef SVA_DEBUG
+          std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::PeekMaxQueueSurplus pending service interval, CAN NOT PEEK QUEUE so re-schedule PendingServiceInterval \n";
+          #endif
+        }
+    }
+  return false;
+}
+
 
 } // namespace ns3

@@ -51,7 +51,8 @@ typedef enum
   /*sva-design: add for new aggregation algorithm AGG_ALG
   AGG_ALG,
   sva-design*/
-  PER_BITRATE_TIME_ALLOWANCE //TODO to be used with PerStaWifiMacQueue::ServicePolicyType ???
+  PER_BITRATE_TIME_ALLOWANCE, //TODO to be used with PerStaWifiMacQueue::ServicePolicyType ???
+  QUEUE_SURPLUS
 } AggregationType;
 
 /*
@@ -175,6 +176,14 @@ private:
    * m_aggregationAlgorithm is set to PER_BITRATE_TIME_ALLOWANCE
    */
   bool PerBitrateTimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
+
+  /**
+   * This method is used to determine if a packet could be aggregated to an A-MPDU
+   * based on the condition that there exists a queue surplus to be transmitted
+   * It is called by CanBeAggregated() to deal with aggregation when
+   * m_aggregationAlgorithm is set to DEADLINE
+   */
+  bool QueueSurplusCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
 
   /*sva-design: add for new aggregation algorithm AGG_ALG
    * Called for AGG_ALG aggregation algorithm
