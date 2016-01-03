@@ -31,6 +31,7 @@
 #include "per-sta-q-info.h"
 #include "wifi-tx-vector.h"
 #include "per-bitrate-timeallowance.h"
+#include "per-bitrate-bitallowance.h"
 
 //sva TODO: Aggregation size should be allowed to increase to 11ac values. (I think 4MB?!)
 
@@ -60,7 +61,7 @@ MpduUniversalAggregator::GetTypeId (void)
                    MakeEnumChecker (ns3::STANDARD, "ns3::STANDARD",
                                     ns3::DEADLINE, "ns3::DEADLINE",
                                     ns3::PER_BITRATE_TIME_ALLOWANCE, "ns3::PER_BITRATE_TIME_ALLOWANCE",
-                                    ns3::QUEUE_SURPLUS, "ns3::QUEUE_SURPLUS",
+                                    ns3::PER_BITRATE_BIT_ALLOWANCE, "ns3::PER_BITRATE_BIT_ALLOWANCE",
                                     /*sva-design: add for new aggregation algorithm AGG_ALG
                                     ns3::AGG_ALG, "ns3::AGG_ALG",
                                     sva-design*/
@@ -72,21 +73,7 @@ MpduUniversalAggregator::GetTypeId (void)
 MpduUniversalAggregator::MpduUniversalAggregator ()
 {
   m_perStaQInfo = NULL; //should be initialized later if required
-  switch (m_aggregationAlgorithm)
-  {
-    case TIME_ALLOWANCE:
-    case PER_BITRATE_TIME_ALLOWANCE:
-      m_controller = CreateObject<TimeAllowanceAggregationController>();
-      std::cout << "MpduUniversalAggregator::MpduUniversalAggregator --> TimeAllowanceAggregationController\n"; //sva for debug
-      break;
-    case QUEUE_SURPLUS:
-      m_controller = CreateObject<QueueSurplusAggregationController>();
-      std::cout << "MpduUniversalAggregator::MpduUniversalAggregator --> QueueSurplusAggregationController\n"; //sva for debug
-      break;
-    default:
-      std::cout << "MpduUniversalAggregator::MpduUniversalAggregator --> Other AggregationController\n"; //sva for debug
-      break;
-  }
+  m_controller = CreateObject<TimeAllowanceAggregationController>();//should be generalized
 }
 
 MpduUniversalAggregator::~MpduUniversalAggregator ()
@@ -221,8 +208,8 @@ MpduUniversalAggregator::CanBeAggregated (Ptr<const Packet> peekedPacket, WifiMa
         case PER_BITRATE_TIME_ALLOWANCE:
           result = PerBitrateTimeAllowanceCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
           break;
-        case QUEUE_SURPLUS:
-          result = QueueSurplusCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
+         case PER_BITRATE_BIT_ALLOWANCE:
+          result = PerBitrateBitAllowanceCanBeAggregated(peekedPacket, peekedHeader, aggregatedPacket, blockAckSize, duration);
           break;
           /*sva-design: add for new aggregation algorithm AGG_ALG
     case AGG_ALG:
@@ -346,6 +333,49 @@ MpduUniversalAggregator::IsReadyForNextServiceIntervalPerBitrateTimeAllowance(vo
 }
 
 bool
+MpduUniversalAggregator::IsReadyForNextServiceIntervalPerBitrateBitAllowance(void)
+{//TODO Possibly not needed at all
+  PerStaQInfoContainer::Iterator it;
+  //double allowance;
+  bool flag = true;
+
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::IsReadyForNextServiceIntervalPerBitrateBitAllowance: service interval ";
+#endif
+
+  if (!m_perStaQInfo)
+    {//does not support per station queues
+#ifdef SVA_DEBUG_DETAIL
+      if (m_low)
+        {
+          std::cout << "m_perStaQInfo not initialized on "<< m_low->GetAddress() << " ";
+        }
+      else
+        {
+          std::cout << "m_perStaQInfo not initialized on "<< "UNKNOWN-MAC" << " ";
+        }
+#endif
+      return flag;
+    }
+/* sva commented for now
+  for (it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it )
+    {
+      Ptr<PerBitrateTimeAllowance> ta = (*it)->GetObject<PerBitrateTimeAllowance>();
+      if ( !ta->IsInsufficientTimeAllowanceEncountered() && !(*it)->IsEmpty())
+        {
+          flag = false;
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << "time allowance (" << ta->GetRemainingTimeAllowance().GetSeconds()*1000
+          << ") msec not used up at non-empty queue of " << (*it)->GetMac() << " ";
+#endif
+        }
+    }
+  std::cout << "\n";
+  */
+  return flag;
+}
+
+bool
 MpduUniversalAggregator::IsPendingServiceInterval(void)
 {
   return m_pendingServiceInterval;
@@ -363,6 +393,9 @@ MpduUniversalAggregator::PendingServiceInterval(void)
       break;
     case PER_BITRATE_TIME_ALLOWANCE:
       ready = true;//IsReadyForNextServiceIntervalPerBitrateTimeAllowance();//commented possibly not needed at all
+      break;
+     case PER_BITRATE_BIT_ALLOWANCE:
+      ready = true;//IsReadyForNextServiceIntervalPerBitrateBitAllowance();//commented possibly not needed at all
       break;
       /*sva-design: add for new algorithm AGG_ALG
     case AGG_ALG:
@@ -403,6 +436,9 @@ MpduUniversalAggregator::BeginServiceInterval(void)
       break;
     case PER_BITRATE_TIME_ALLOWANCE:
       ResetPerBitrateTimeAllowance();
+      break;
+     case PER_BITRATE_BIT_ALLOWANCE:
+      ResetPerBitrateBitAllowance();
       break;
       /*sva-design: add for new algorithm AGG_ALG
     case AGG_ALG:
@@ -475,6 +511,35 @@ MpduUniversalAggregator::ResetPerBitrateTimeAllowance (void)
     }
 }
 
+void
+MpduUniversalAggregator::ResetPerBitrateBitAllowance (void)
+{//TODO
+  if(!m_perStaQInfo)
+    {
+#ifdef SVA_DEBUG_DETAIL
+      if (m_low)
+        {
+          std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::ResetPerBitrateBitAllowance on "
+              << m_low->GetAddress() << " m_perStaQInfo not initialized\n";
+        }
+      else
+        {
+          std::cout << Simulator::Now().GetSeconds() << " MpduUniversalAggregator::ResetPerBitrateBitAllowance on "
+              << "UNKNOWN-MAC" << " m_perStaQInfo not initialized\n";
+        }
+#endif
+      return ;
+    }
+
+  for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
+    {
+      Ptr<PerBitrateBitAllowance> ba = (*it)->GetObject<PerBitrateBitAllowance>();
+      (*it)->Update();//update station statistics
+      ba->ResetAllBitAllowances();
+      (*it)->CollectServedPackets();//for station statistics
+    }
+}
+
 /*sva-design: add for new aggregation algorithm AGG_ALG
 void
 MpduUniversalAggregator::ResetXxx (void)
@@ -504,37 +569,6 @@ MpduUniversalAggregator::StandardCanBeAggregated (Ptr<const Packet> peekedPacket
     }
 }
 
-
-bool
-MpduUniversalAggregator::QueueSurplusCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
-{
-
-  Ptr<PerStaQInfo> staQInfo;
-  staQInfo = m_perStaQInfo->GetByMac(peekedHeader.GetAddr1());
-
-  Ptr<SimpleController> simpleCtrl = ((m_controller->GetObject<QueueSurplusAggregationController>())->GetController(peekedHeader.GetAddr1()))->GetObject<SimpleController>();
-  simpleCtrl->SetInputSignal(SimpleController::InSigType (staQInfo->GetAvgSize(), staQInfo->GetAvgSizeBytes(), staQInfo->GetPrEmpty()));
-
-  double queueSurplus = simpleCtrl->ComputeOutput();
-  //sva for debug
-  std::cout << "MpduUniversalXAggregator::QueueSurplusCanBeAggregated surplus = " << queueSurplus << "\n";
-
-  uint32_t padding = CalculatePadding (aggregatedPacket);
-  uint32_t actualSize = aggregatedPacket->GetSize ();
-  uint32_t packetSize = peekedPacket->GetSize () + peekedHeader.GetSize () + WIFI_MAC_FCS_LENGTH;
-  if (blockAckSize > 0)
-    {
-      blockAckSize = blockAckSize + 4 + padding;
-    }
-  if ((4 + packetSize + actualSize + padding + blockAckSize) <= queueSurplus)
-    {
-      return true;
-    }
-  else
-    {
-      return false;
-    }
-}
 
 bool
 MpduUniversalAggregator::DeadlineCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
@@ -648,6 +682,50 @@ MpduUniversalAggregator::PerBitrateTimeAllowanceCanBeAggregated (Ptr<const Packe
 
 }
 
+bool
+MpduUniversalAggregator::PerBitrateBitAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
+{//TODO
+  
+  Ptr<PerStaQInfo> staQInfo;
+  staQInfo = m_perStaQInfo->GetByMac(peekedHeader.GetAddr1());
+#ifdef SVA_DEBUG_DETAIL
+      std::cout << Simulator::Now().GetSeconds() << " RTA MpduUniversalAggregator::PerBitrateBitAllowanceCanBeAggregated "
+          << peekedPacket->ToString() << " ";
+      std::ostringstream os;
+      peekedHeader.Print(os);
+      std::cout << "Header : " << os.str() << " ";
+#endif
+  NS_ASSERT_MSG(staQInfo,"MpduUniversalAggregator::PerBitrateBitAllowanceCanBeAggregated no matching station queue found for packet!\n");
+
+#ifdef SVA_DEBUG_DETAIL
+  //std::cout << "duration= " << duration.GetSeconds()*1000 << " RTA= " << staQInfo->GetRemainingTimeAllowance().GetSeconds()*1000 << "\n";
+#endif
+
+  Ptr<PerBitrateBitAllowance> ba = staQInfo->GetObject<PerBitrateBitAllowance>();
+  WifiTxVector dataTxVector = m_low->GetDataTxVector (peekedPacket, &peekedHeader);
+  uint64_t bitrate = dataTxVector.GetMode().GetDataRate();
+  double rba = ba->GetRemainingBitAllowance(bitrate);
+
+  uint32_t padding = CalculatePadding (aggregatedPacket);
+  uint32_t actualSize = aggregatedPacket->GetSize ();
+  uint32_t packetSize = peekedPacket->GetSize () + peekedHeader.GetSize () + WIFI_MAC_FCS_LENGTH;
+  if (blockAckSize > 0)
+    {
+      blockAckSize = blockAckSize + 4 + padding;
+    }
+  if ((4 + packetSize + actualSize + padding + blockAckSize) <= (rba*8))
+    {
+      return true;
+    }
+  else
+    {
+      ba->SetInsufficientBitAllowanceEncountered(bitrate);
+      return false;
+    }
+
+
+}
+
 /*sva-design: add for new aggregation algorithm AGG_ALG
 bool
 MpduUniversalAggregator::XxxCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration)
@@ -658,7 +736,7 @@ sva-design*/
 void
 MpduUniversalAggregator::DoUpdate(void)
 {
-  if (m_aggregationAlgorithm == PER_BITRATE_TIME_ALLOWANCE || m_aggregationAlgorithm == DEADLINE) //for now, don't apply a controller for this type
+  if (m_aggregationAlgorithm == PER_BITRATE_TIME_ALLOWANCE || m_aggregationAlgorithm == DEADLINE || m_aggregationAlgorithm == PER_BITRATE_BIT_ALLOWANCE) //for now, don't apply a controller for this type
     return ;
   if (m_controller)
     m_controller->Update();

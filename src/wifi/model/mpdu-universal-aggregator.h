@@ -52,7 +52,7 @@ typedef enum
   AGG_ALG,
   sva-design*/
   PER_BITRATE_TIME_ALLOWANCE, //TODO to be used with PerStaWifiMacQueue::ServicePolicyType ???
-  QUEUE_SURPLUS
+  PER_BITRATE_BIT_ALLOWANCE
 } AggregationType;
 
 /*
@@ -177,13 +177,12 @@ private:
    */
   bool PerBitrateTimeAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
 
-  /**
-   * This method is used to determine if a packet could be aggregated to an A-MPDU
-   * based on the condition that there exists a queue surplus to be transmitted
+  /* Called for PER_BITRATE_BIT_ALLOWANCE aggregation algorithm
    * It is called by CanBeAggregated() to deal with aggregation when
-   * m_aggregationAlgorithm is set to DEADLINE
+   * m_aggregationAlgorithm is set to PER_BITRATE_BIT_ALLOWANCE
    */
-  bool QueueSurplusCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
+  bool PerBitrateBitAllowanceCanBeAggregated (Ptr<const Packet> peekedPacket, WifiMacHeader peekedHeader, Ptr<Packet> aggregatedPacket, uint16_t blockAckSize, Time duration);
+
 
   /*sva-design: add for new aggregation algorithm AGG_ALG
    * Called for AGG_ALG aggregation algorithm
@@ -213,6 +212,12 @@ private:
    */
   void ResetPerBitrateTimeAllowance (void);
 
+  /* Called for PER_BITRATE_Bit_ALLOWANCE aggregation algorithm
+   * Does book keeping/etc. at beginning of new service interval
+
+   */
+  void ResetPerBitrateBitAllowance (void);
+
   /*sva-design: add for new aggregation algorithm AGG_ALG
    * Called for AGG_ALG aggregation algorithm
    * Does book keeping/etc. at beginning of new service interval
@@ -229,6 +234,8 @@ private:
   bool IsReadyForNextServiceIntervalTimeAllowance (void);
 
   bool IsReadyForNextServiceIntervalPerBitrateTimeAllowance (void);
+ 
+  bool IsReadyForNextServiceIntervalPerBitrateBitAllowance (void);
 
   /*sva-design: add for new aggregation algorithm ???
    *
