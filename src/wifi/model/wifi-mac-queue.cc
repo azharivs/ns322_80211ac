@@ -31,6 +31,7 @@
 #include "wifi-mac-queue.h"
 #include "wifi-tx-vector.h"
 #include "per-bitrate-timeallowance.h"
+#include "per-bitrate-bitallowance.h"
 #include "mac-low.h"
 #include "qos-blocked-destinations.h"
 #include "ns3/per-sta-q-info-container.h"
@@ -383,8 +384,8 @@ PerStaWifiMacQueue::GetTypeId (void)
                    MakeEnumChecker (ns3::FCFS, "ns3::FCFS",
                                     ns3::EDF, "ns3::EDF",
                                     ns3::PER_BITRATE_TIME_ALLOWANCE_RR, "ns3::PER_BITRATE_TIME_ALLOWANCE_RR",
+                                    ns3::PER_BITRATE_BIT_ALLOWANCE_RR, "ns3::PER_BITRATE_BIT_ALLOWANCE_RR",
                                     ns3::MAX_REMAINING_TIME_ALLOWANCE, "ns3::MAX_REMAINING_TIME_ALLOWANCE",
-                                    ns3::MAX_QUEUE_SURPLUS,"ns3::MAX_QUEUE_SURPLUS",
                                     ns3::EDF_RR, "ns3::EDF_RR"))
   ;
   return tid;
@@ -678,8 +679,8 @@ PerStaWifiMacQueue::DequeueFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case PER_BITRATE_TIME_ALLOWANCE_RR:
       found = PeekPerBitrateTimeAllowanceRoundRobin(it,blockedPackets);
       break;
-    case MAX_QUEUE_SURPLUS:
-      found = PeekMaxQueueSurplus(it,blockedPackets);
+    case PER_BITRATE_BIT_ALLOWANCE_RR:
+      found = PeekPerBitrateBitAllowanceRoundRobin(it,blockedPackets);
       break;
       /*sva-design: add for appropriate service policy ?
     case ?:
@@ -733,8 +734,8 @@ PerStaWifiMacQueue::PeekFirstAvailable (WifiMacHeader *hdr, Time &timestamp,
     case PER_BITRATE_TIME_ALLOWANCE_RR:
       found = PeekPerBitrateTimeAllowanceRoundRobin(it,blockedPackets);
       break;
-    case MAX_QUEUE_SURPLUS:
-      found = PeekMaxQueueSurplus(it,blockedPackets);
+    case PER_BITRATE_BIT_ALLOWANCE_RR:
+      found = PeekPerBitrateBitAllowanceRoundRobin(it,blockedPackets);
       break;
       /*sva-design: add for appropriate service policy ?
     case ?:
@@ -1085,39 +1086,65 @@ PerStaWifiMacQueue::PeekPerBitrateTimeAllowanceRoundRobin (PacketQueueI &it, con
 }
 
 bool
-PerStaWifiMacQueue::PeekMaxQueueSurplus (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
-{
+PerStaWifiMacQueue::PeekPerBitrateBitAllowanceRoundRobin (PacketQueueI &it, const QosBlockedDestinations *blockedPackets)
+{//TODO
   PerStaQInfoContainer::Iterator sta;
   PacketQueueI qi;
   PacketQueueI qiServed; //the one that will eventually be served
-  double maxQSurplus = 0; //Max queue surplus
-  double qSurplus;
+  double rba;
   bool found=false;
+  Ptr<PerBitrateBitAllowance> ba;
+  uint64_t bitrate=0;
 
   if (m_perStaQInfo)//only if PerStaQInfo is supported on this queue
     {
-      for (sta = m_perStaQInfo->Begin(); sta != m_perStaQInfo->End(); ++sta)
+      ++m_lastServed;
+      if (m_lastServed == m_perStaQInfo->End())
+        m_lastServed = m_perStaQInfo->Begin();
+      for (sta = m_lastServed; sta != m_perStaQInfo->End(); ++sta)
         {
+          ba = (*sta)->GetObject<PerBitrateBitAllowance>();
           if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
             {
-              Ptr<SimpleController> simpleCtrl = (m_mpduAggregator->GetAggregationController()->GetObject<QueueSurplusAggregationController>())->GetController((*sta)->GetMac())->GetObject<SimpleController>();
-              simpleCtrl->SetInputSignal(SimpleController::InSigType ((*sta)->GetAvgSize(), (*sta)->GetAvgSizeBytes(), (*sta)->GetPrEmpty()));
-              qSurplus = simpleCtrl->ComputeOutput();
-
-              if (qSurplus > maxQSurplus)
+              WifiTxVector dataTxVector = m_low->GetDataTxVector (qi->packet, &(qi->hdr));
+              bitrate = dataTxVector.GetMode().GetDataRate();
+              rba = ba->GetRemainingBitAllowance(bitrate);
+              if (rba > 0)
                 { //update selected STA for service
                   qiServed = qi;
-                  maxQSurplus = qSurplus;
+                  m_lastServed = sta;
                   found = true;
+                  break;
+                }
+            }
+        }
+      if (!found) //continue round robin search
+        {
+          for (sta = m_perStaQInfo->Begin(); sta != m_lastServed; ++sta)
+            {
+              ba = (*sta)->GetObject<PerBitrateBitAllowance>();
+              if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
+                {
+                  WifiTxVector dataTxVector = m_low->GetDataTxVector (qi->packet, &(qi->hdr));
+                  bitrate = dataTxVector.GetMode().GetDataRate();
+                  rba = ba->GetRemainingBitAllowance(bitrate);
+                  if (rba > 0)
+                    { //update selected STA for service
+                      qiServed = qi;
+                      m_lastServed = sta;
+                      found = true;
+                      break;
+                    }
                 }
             }
         }
       if (found)
         {
           it = qiServed;
-#ifdef SVA_DEBUG
-          std::cout << Simulator::Now().GetSeconds() << " PeekMaxQueueSurplus: STA "
-              << it->hdr.GetAddr1() << " selected with surplus " << maxQSurplus/1e6 << " MBytes \n";
+#ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PeekPerBitrateBitAllowance: STA "
+              << it->hdr.GetAddr1() << " selected with RBA " << rba <<
+              " bits, bitrate " << (double)bitrate/1e6 << " Mbps\n";
 #endif
           return true;
         }
@@ -1137,16 +1164,15 @@ PerStaWifiMacQueue::PeekMaxQueueSurplus (PacketQueueI &it, const QosBlockedDesti
   if (m_mpduAggregator)
     {
       if (m_mpduAggregator->IsPendingServiceInterval())
-        {
+        {//this condition should never become true!!
           Simulator::ScheduleNow(&MpduUniversalAggregator::PendingServiceInterval, m_mpduAggregator); //make sure current line of execution is finished
 
-          #ifdef SVA_DEBUG
-          std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::PeekMaxQueueSurplus pending service interval, CAN NOT PEEK QUEUE so re-schedule PendingServiceInterval \n";
+          #ifdef SVA_DEBUG_DETAIL
+          std::cout << Simulator::Now().GetSeconds() << " PerStaWifiMacQueue::PeekPerBitrateBitAllowance pending service interval, CAN NOT PEEK QUEUE so re-schedule PendingServiceInterval \n";
           #endif
         }
     }
   return false;
 }
-
 
 } // namespace ns3
