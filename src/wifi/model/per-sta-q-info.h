@@ -43,14 +43,11 @@
 #include "ns3/qos-tag.h"
 #include "wifi-mac-header.h"
 #include "ns3/simulator.h"
-//#include "simple-controller.h"
-#include "pid-controller.h"
+#include "ns3/pid-controller.h"
 
 namespace ns3 {
 //class WiFiMacQueue;
-//class SimpleController;
-//class PidController;
-class Controller;
+class PidController;
 /**
  * \ingroup wifi
  *
@@ -104,7 +101,7 @@ public:
    * will be considered excessive arrivals and below which, departures
    * will be considered arrival deficit.
    */
-  void SetController (Ptr<Controller> ctrl); //TODO bad code design. this should be transparent to PerStaQInfo
+  void SetController (Ptr<PidController> ctrl); //TODO bad code design. this should be transparent to PerStaQInfo
 
   /*
    * Get current value of target queue size in packets
@@ -386,7 +383,7 @@ private:
   Time m_timeAllowance; //!< Amount of time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   Time m_remainingTimeAllowance; //!< Amount of remaining time allowance for the current service interval. Used by TIME_ALLOWANCE aggregation algorithm.
   bool m_insufficientTimeAllowance; //!< Insufficient amount of time allowance encountered at last access
-  Ptr<Controller> m_ctrl; //TODO bad code design should be moved to somewhere else
+  Ptr<PidController> m_ctrl; //TODO bad code design should be moved to somewhere else
 };
 
 } // namespace ns3

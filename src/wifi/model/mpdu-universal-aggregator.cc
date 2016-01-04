@@ -713,7 +713,7 @@ MpduUniversalAggregator::PerBitrateBitAllowanceCanBeAggregated (Ptr<const Packet
     {
       blockAckSize = blockAckSize + 4 + padding;
     }
-  if ((4 + packetSize + actualSize + padding + blockAckSize) <= (rba*8))
+  if ((4 + packetSize + actualSize + padding + blockAckSize) <= (rba/8))
     {
       return true;
     }

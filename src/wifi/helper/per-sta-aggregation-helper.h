@@ -47,7 +47,7 @@ public:
    * particular service policy and aggregation algorithm at the
    * access point. Uses the PerStaQInfo class.
    */
-    PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac, AggregationType aggAlg);
+    PerStaAggregationHelper (Ptr<NetDevice> ap, uint8_t nSta, uint8_t ac);
     ~PerStaAggregationHelper ();
 
     PerStaQInfoContainer InstallPerStaQInfo (const NetDeviceContainer sta, NetDeviceContainer apDevice, uint8_t ac, uint32_t hist, uint32_t largeHist);
@@ -87,7 +87,7 @@ protected:
     Ptr<MacLow> m_low; //!< Pointer to MacLow related to the AP
     Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to PerStaWifiMacQueue related to the AP
     Ptr<MpduUniversalAggregator> m_aggregator; //!< Pointer to MpduUniversalAggregator related to the AP
-    Ptr<AggregationController> m_aggCtrl; //!< Pointer to TimeAllowanceAggregationController related to the AP //TODO make it generic <AggregationController>
+    Ptr<TimeAllowanceAggregationController> m_aggCtrl; //!< Pointer to TimeAllowanceAggregationController related to the AP //TODO make it generic <AggregationController>
 };
 
 } //name space ns3
