@@ -80,10 +80,11 @@ int main (int argc, char *argv[])
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = EDF;//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = PER_BITRATE_BIT_ALLOWANCE_RR;
+//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = STANDARD;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = PER_BITRATE_BIT_ALLOWANCE;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = nMpdus*(payloadSize+100);//TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.02;
   Time initialTimeAllowance = MicroSeconds(12000);
@@ -186,8 +187,8 @@ int main (int argc, char *argv[])
   PerStaQInfoContainer perStaQueue = bss.InstallPerStaQInfo(staDevice, apDevice, AC_VI, history, largeHistory);
 
   //Initialize per station time allowances
-  //PerBitrateTimeAllowanceHelper taHelper;
-  //taHelper.Install(perStaQueue,"./TimeAllowance.txt");
+  PerBitrateBitAllowanceHelper baHelper;
+  baHelper.Install(perStaQueue,"./BitAllowance.txt");
 
   //Initialize BssPhyMacStats for statistic collection on the medium
 

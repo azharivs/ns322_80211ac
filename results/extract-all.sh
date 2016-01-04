@@ -26,5 +26,6 @@ do
     ./extract-sta-q-stat.sh $1 $Mac
     ./extract-sta-agg-ctrl-stat.sh $1 $Mac
     ./extract-sta-agg-per-rate-time-allowance-stat.sh $1 $Mac
+    ./extract-sta-agg-per-rate-bit-allowance-stat.sh $1 $Mac
 done
 

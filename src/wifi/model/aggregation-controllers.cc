@@ -21,10 +21,8 @@
 #include "ns3/enum.h"
 #include "ns3/double.h"
 #include "ns3/nstime.h"
-#include "simple-controller.h"
 #include "pid-controller.h"
 #include "pid-controller-with-thresholds.h"
-#include "simple-controller.h"
 
 //TODO: For now all PerStaQ's have the same DVP and MaxDelay. To be changed later.
 
@@ -52,7 +50,6 @@ AggregationController::Initialize(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoCont
   NS_ASSERT(m_queue);
   NS_ASSERT(m_aggregator);
   //perform initialization specific to the particular type of AggragationController subclass
-  std::cout << "AggregationXController::Initialize\n"; //sva for debug
   DoInitialize();
 }
 
@@ -62,7 +59,6 @@ AggregationController::Initialize(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoCont
 void
 AggregationController::DoInitialize(void)
 {
-  std::cout << "AggregationXController::DoInitialize\n"; //sva for debug
   return ;
 }
 
@@ -70,12 +66,6 @@ void
 AggregationController::Update (void)
 {
   return ;
-}
-
-Ptr<Controller>
-AggregationController::GetController(Mac48Address adrs)
-{
-  return NULL;
 }
 
 NS_OBJECT_ENSURE_REGISTERED (TimeAllowanceAggregationController);
@@ -151,7 +141,7 @@ TimeAllowanceAggregationController::~TimeAllowanceAggregationController ()
 {
 }
 
-Ptr<Controller>
+Ptr<PidController>
 TimeAllowanceAggregationController::GetController(Mac48Address adrs)
 {
   return m_ctrl[adrs];
@@ -179,7 +169,6 @@ TimeAllowanceAggregationController::DoInitialize (void)
     default:
       NS_FATAL_ERROR("Undefined Controller Associated to AggregationController " << m_type);
   }
-  std::cout << "TimeAllowanceAggregationXController::DoInitialize\n";//sva for debug
 }
 
 /*sva design: add following lines for each new type of controller ?
@@ -216,8 +205,6 @@ TimeAllowanceAggregationController::DoInitializePidControl (void)
       m_ctrl[(*it)->GetMac()] = pid;
       (*it)->SetTimeAllowance(m_timeAllowance);// set initial value
       pid->ForceOutput(m_timeAllowance.GetSeconds());
-      //sva for debug
-      std::cout << "TimeAllowanceAggregationXController::DoInitializePidControl for " << (*it)->GetMac() << "\n";
     }
 }
 
@@ -327,7 +314,7 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     << " avgQueue= " << sta->GetAvgSize()
     << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
     << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
-    << " reference= " << /*sta->GetAvgSize() - */m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
+    << " reference= " << sta->GetAvgSize() - m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
     << " totalAllowance= " << totalTimeAllowance
     << " adjust= " << adjustment
     << "\n";
@@ -395,184 +382,6 @@ std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidContro
     }
 }
 
-
-NS_OBJECT_ENSURE_REGISTERED (QueueSurplusAggregationController);
-
-TypeId
-QueueSurplusAggregationController::GetTypeId (void)
-{//TODO
-  static TypeId tid = TypeId ("ns3::QueueSurplusAggregationController")
-    .SetParent<AggregationController> ()
-    .AddConstructor<QueueSurplusAggregationController> ()
-    .AddAttribute ("DVP", "Tolerable Delay Violation Probability",
-                   DoubleValue (0.01),
-                   MakeDoubleAccessor (&QueueSurplusAggregationController::m_targetDvp),
-                   MakeDoubleChecker<double> ())
-    .AddAttribute ("ServiceInterval", "Periodicity with which queues are guaranteed to be serviced (in seconds).",
-                   DoubleValue (0.1), //sva: the default value should be later changed to beacon interval
-                   MakeDoubleAccessor (&QueueSurplusAggregationController::m_serviceInterval),
-                   MakeDoubleChecker<double> ())
-    .AddAttribute ("MaxDelay", "Maximum tolerable single hop delay in seconds",
-                   DoubleValue (5.0), //sva: the default value should be later changed to beacon interval
-                   MakeDoubleAccessor (&QueueSurplusAggregationController::m_maxDelay),
-                   MakeDoubleChecker<double> ())
-    .AddAttribute ("ByteAllowance", "Byte Allowance (in bytes) when NO_CONTROL controller is selected",
-                   DoubleValue (65535),
-                   MakeDoubleAccessor (&QueueSurplusAggregationController::m_byteAllowance),
-                   MakeDoubleChecker<double> ())
-;
-  return tid;
-}
-
-QueueSurplusAggregationController::QueueSurplusAggregationController ()
-{
-}
-
-QueueSurplusAggregationController::~QueueSurplusAggregationController ()
-{
-}
-
-Ptr<Controller>
-QueueSurplusAggregationController::GetController(Mac48Address adrs)
-{
-  return m_ctrl[adrs];
-}
-
-void
-QueueSurplusAggregationController::DoInitialize (void)
-{
-  std::cout << "QueueSurplusAggregationXController::DoInitialize\n";//sva for debug
-  DoInitializeSimpleControl();
-}
-
-/*sva design: add following lines for each new type of controller ?
-void
-QueueSurplusAggregationController::DoInitialize? (void)
-{
-  //TODO Implementation of initialization code for controller of type ?
-}
-sva-design*/
-
-void
-QueueSurplusAggregationController::DoInitializeSimpleControl (void)
-{
-  //allocate a controller for each PerStaQInfo
-  for (PerStaQInfoContainer::Iterator it = m_perStaQInfo->Begin(); it != m_perStaQInfo->End(); ++it)
-    {
-      Ptr<SimpleController> simple;
-      simple = CreateObject<SimpleController>();
-      //initialize pid controller if necessary
-      simple->SetStaQInfo ( (*it) );
-      simple->SetInputParams(SimpleController::InParamType(m_targetDvp, m_maxDelay, m_serviceInterval));
-      simple->Init();
-      m_ctrl[(*it)->GetMac()] = simple;
-      //(*it)->SetTimeAllowance(m_timeAllowance);// set initial value
-      simple->ForceOutput(m_byteAllowance);
-      //sva for debug
-      std::cout << "QueueSurplusAggregationXController::DoInitializeSimpleControl for " << (*it)->GetMac() << "\n";
-    }
-}
-
-void
-QueueSurplusAggregationController::Update (void)
-{
-  SimpleControlUpdate();
-}
-
-void
-QueueSurplusAggregationController::SimpleControlUpdate (void)
-{
-  if (!m_perStaQInfo)//not supported
-    {
-      return ;
-    }
-  double totalByteAllowance = 0;
-  double tmpByteAllowance = 0;
-  SimpleIterator it;
-  Ptr<PerStaQInfo> sta;
-  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
-    {
-      sta = m_perStaQInfo->GetByMac(it->first); //tid = UP_VI by default, TODO: this should be made generic
-      NS_ASSERT(sta);
-
-      //apply input signal to controller and update controller
-      it->second->SetInputSignal(SimpleController::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
-      tmpByteAllowance = it->second->ComputeOutput();
-      tmpByteAllowance = it->second->UpdateController(1.0);
-      totalByteAllowance += tmpByteAllowance;
-
-#ifdef SVA_DEBUG
-std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidController) " << sta->GetMac()
-    << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
-    << " curByteAllowance= " << 0*1000 << " msec"
-    << " newByteAllowance= " << tmpByteAllowance << " bytes"
-    << " avgServed= " << sta->GetAvgServedPackets()
-    << " avgQueue= " << sta->GetAvgSize()
-    << " derivative= " << 0
-    << " integral= " << 0
-    << " reference= " << m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
-    << " totalAllowance= " << 0.0
-    << " adjust= " << 1.0
-    << "\n";
-#endif
-
-    }
-}
-
-/*
-void
-TimeAllowanceAggregationController::PidControlUpdate (void)
-{//TODO: define perSta targetDVP and Dmax
-  if (!m_perStaQInfo)//not supported
-    {
-      return ;
-    }
-  double totalTimeAllowance = 0;
-  double tmpTimeAllowance = 0;
-  PidIterator it;
-  Ptr<PerStaQInfo> sta;
-  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
-    {
-      sta = m_perStaQInfo->GetByMac(it->first); //tid = UP_VI by default, TODO: this should be made generic
-      NS_ASSERT(sta);
-
-      //apply input signal to controller and update controller
-      it->second->SetInputSignal(PidController::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
-      tmpTimeAllowance = it->second->ComputeOutput();
-      totalTimeAllowance += tmpTimeAllowance;
-    }
-
-  //adjust time allowance to not exceed service interval
-  double adjustment = 1;
-  if (totalTimeAllowance > m_serviceInterval)
-      adjustment = totalTimeAllowance/m_serviceInterval;
-  //start adjusting output signals to fit in one service interval
-  for (it = m_ctrl.begin(); it != m_ctrl.end(); ++it)
-    {
-      tmpTimeAllowance = it->second->UpdateController(adjustment);
-      sta = m_perStaQInfo->GetByMac(it->first);
-      sta->SetTimeAllowance(Seconds(tmpTimeAllowance));
-      //sva: sta->SetTimeAllowance(m_timeAllowance);
-
-
-#ifdef SVA_DEBUG
-std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidController) " << sta->GetMac()
-    << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
-    << " curTimeAllowance= " << sta->GetTimeAllowance().GetSeconds()*1000 << " msec"
-    << " newTimeAllowance= " << tmpTimeAllowance*1000 << " msec"
-    << " avgServed= " << sta->GetAvgServedPackets()
-    << " avgQueue= " << sta->GetAvgSize()
-    << " derivative= " << m_ctrl[sta->GetMac()]->GetDerivative()
-    << " integral= " << m_ctrl[sta->GetMac()]->GetIntegral()
-    << " reference= " << m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length
-    << " totalAllowance= " << totalTimeAllowance
-    << " adjust= " << adjustment
-    << "\n";
-#endif
-
-    }
-}
-*/
 
 }  // namespace ns3
 

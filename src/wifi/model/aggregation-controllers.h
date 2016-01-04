@@ -29,7 +29,6 @@
 #include "wifi-mac-queue.h"
 #include "ns3/per-sta-q-info-container.h"
 #include "ns3/mac48-address.h"
-#include "simple-controller.h"
 #include "pid-controller.h"
 #include "pid-controller-with-thresholds.h"
 
@@ -48,8 +47,7 @@ typedef enum
 {
   NO_CONTROL,
   PID,
-  PID_WITH_THRESHOLDS,
-  SIMPLE
+  PID_WITH_THRESHOLDS
 } ControllerType;
 
 /*
@@ -76,8 +74,6 @@ public:
    * before calling this function.
    */
   void Initialize(Ptr<PerStaWifiMacQueue> queue, PerStaQInfoContainer &c, Ptr<MpduUniversalAggregator> agg);
-
-  virtual Ptr<Controller> GetController(Mac48Address adrs);
 
 protected:
 
@@ -109,7 +105,7 @@ public:
 
   virtual void Update (void);
 
-  Ptr<Controller> GetController(Mac48Address adrs);
+  Ptr<PidController> GetController(Mac48Address adrs);
 
 private:
 
@@ -151,58 +147,6 @@ private:
   double m_thrW;
   double m_thrH;
   double m_thrL;
-
-  Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
-};
-
-class QueueSurplusAggregationController : public AggregationController
-{
-public:
-  static TypeId GetTypeId (void);
-  QueueSurplusAggregationController();
-  ~QueueSurplusAggregationController ();
-
-  /**
-   */
-
-  virtual void Update (void);
-
-  Ptr<Controller> GetController(Mac48Address adrs);
-
-private:
-
-  void DoInitialize (void);
-  /*
-   * should be redefined by each subclass to reflect its own specific initialization steps
-   */
-
-  void SimpleControlUpdate (void);
-  void DoInitializeSimpleControl (void);
-
-  /*sva-design should be added for every new type of controller ?
-  void ?Update (void);
-  void DoInitialize? (void);
-  sva-design*/
-
-  //service parameters
-  double m_targetDvp; //!< Target delay violation probability
-  double m_maxDelay; //!< maximum delay requirement in seconds
-  double m_serviceInterval; //!< service interval in seconds
-
-  //controller parameters
-  typedef std::map<Mac48Address,Ptr<SimpleController> >::iterator SimpleIterator;
-  std::map<Mac48Address,Ptr<SimpleController> > m_ctrl; //!< map relating MAC address to controller, assumes there is one PerStaQInfo per STA (TODO: change later)
-  double m_byteAllowance; //!< Fixed byte allowance used for NO_CONTROL
-  //ControllerType m_type; //!< Type of controller, PID, etc.
-  //PidParametersType m_pidParams; //!< PID controller parameters
-  //TODO redundant: is there a way to group these together in the attribute system?
-  //double m_weightIntegral;
-  //double m_kp;
-  //double m_ki;
-  //double m_kd;
-  //double m_thrW;
-  //double m_thrH;
-  //double m_thrL;
 
   Ptr<PerStaWifiMacQueue> m_queue; //!< Pointer to queue over which this aggregation controller is applied
 };

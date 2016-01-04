@@ -28,10 +28,9 @@
 #include <math.h>
 #include <algorithm>
 #include "per-sta-q-info.h"
-//#include "simple-controller.h"
 
 namespace ns3 {
- class PerStaQInfo;
+  class PerStaQInfo;
 
 /**
  * \ingroup wifi
@@ -39,17 +38,8 @@ namespace ns3 {
  *
  */
 
-class Controller : public Object
-{
-  public:
-     static TypeId GetTypeId (void);
-     Controller (void);
-     ~Controller (void);
 
-     virtual double GetReference(void);
-};
-
-class PidController : public Controller
+class PidController : public Object
 {
 public:
   static TypeId GetTypeId (void);
@@ -111,75 +101,75 @@ public:
   /*
    * Initializes controller parameters
    */
-  bool Init (void);
+  virtual bool Init (void);
 
   /*
    * forces output and previous output to a certain value.
    * can be used for initialization as well.
    */
-  void ForceOutput (double output);
+  virtual void ForceOutput (double output);
 
 
-  void SetStaQInfo (const Ptr<PerStaQInfo> sta);
+  virtual void SetStaQInfo (const Ptr<PerStaQInfo> sta);
   /*
    * sets the input parameters of the controller: dvp,dMax,SI
    */
-  void SetInputParams (const InParamType &in);
+  virtual void SetInputParams (const InParamType &in);
 
   /*
    * sets the current value of the input signal to the controller
    */
-  void SetInputSignal (const InSigType sig);
+  virtual void SetInputSignal (const InSigType sig);
 
   /*
    * returns the current value of the input signal to the controller
    */
-  InSigType GetInputSignal (void);
+  virtual InSigType GetInputSignal (void);
 
   /*
    * returns current value of the feedback signal
    */
-  FeedbackSigType GetFeedbackSignal (void);
+  virtual FeedbackSigType GetFeedbackSignal (void);
 
   /*
    * Calculates control and output signals
    * uses adjustment parameter to scale output
    * Returns new output signal
    */
-  double UpdateController (double adjustment=1);
+  virtual double UpdateController (double adjustment=1);
 
   /*
    * Calculates control and output signals
    * but does not change controller state variables
    * Returns new output signal
    */
-  double ComputeOutput ();
+  virtual double ComputeOutput ();
 
   /*
    * returns the most recent value of the control signal
    */
-  CtrlSigType GetControlSignal (void);
+  virtual CtrlSigType GetControlSignal (void);
 
   /*
    * returns the current value of the controller output signal
    */
-  double GetOutputSignal (void);
+  virtual double GetOutputSignal (void);
 
   /*
    * returns the current value of the error signal at the input to the controller
    * that is: target - actual
    */
-  double GetErrorSignal(void);
-  double GetDerivative(void);
-  double GetIntegral(void);
-  double GetReference(void);
+  virtual double GetErrorSignal(void);
+  virtual double GetDerivative(void);
+  virtual double GetIntegral(void);
+  virtual double GetReference(void);
 
 protected:
 
-  double ComputeErrorSignal(void);
-  double ErrorConditioning(double err);
-  double CtrlConditioning(double ctrl);
-  void UpdateFeedbackSignal(void);
+  virtual double ComputeErrorSignal(void);
+  virtual double ErrorConditioning(double err);
+  virtual double CtrlConditioning(double ctrl);
+  virtual void UpdateFeedbackSignal(void);
 
   //void DoGetInputSignal(void);
 

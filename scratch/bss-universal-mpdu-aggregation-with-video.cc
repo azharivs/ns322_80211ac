@@ -91,25 +91,25 @@ int main (int argc, char *argv[])
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 65; //seconds
   uint32_t nMpdus = 64;
-  uint32_t nSta = 1;
+  uint32_t nSta = 14;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = EDF;//MAX_QUEUE_SURPLUS;//MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = MAX_REMAINING_TIME_ALLOWANCE;//FCFS;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = STANDARD;//QUEUE_SURPLUS;//TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = TIME_ALLOWANCE;//STANDARD;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t   MaxAmpduSize = nMpdus*(payloadSize+100); //TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.01;
-  Time initialTimeAllowance = MicroSeconds(5000);
+  Time initialTimeAllowance = MicroSeconds(12000);
   double MovingIntegralWeight = 0.05;
-  double kp = 0.0001/2e6;//0.01; //0.01;
-  double ki = 0.050/2e6;//0.000;//0.02;
-  double kd = 0.200/2e6;//0.05; //0.05;
+  double kp = 0.01; //0.01;
+  double ki = 0.000;//0.02;
+  double kd = 0.05; //0.05;
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
-  ControllerType controller =NO_CONTROL;// NO_CONTROL;//PID;
+  ControllerType controller =PID;// NO_CONTROL;//PID;
 
     
   //NFM
@@ -175,14 +175,9 @@ int main (int argc, char *argv[])
 
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
 
-  //sva I think I should specify the aggregation algorithm here ...
   mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100)),
-                              "Algorithm",EnumValue(AggregationAlgorithm)); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
-
-  /*mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
                               "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
-  */
+  
   NetDeviceContainer staDevice;
   staDevice = wifi.Install (phy, mac, wifiStaNode);
 
@@ -194,16 +189,12 @@ int main (int argc, char *argv[])
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
     
   mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100)),
-                              "Algorithm",EnumValue(AggregationAlgorithm)); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
-
-  /*mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduStandardAggregator",
                               "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
-*/
+
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
 
-  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI,AggregationAlgorithm);
+  PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI);
 
   //Initialize PerStaQInfo after AP and STA's initialized
 
@@ -241,46 +232,18 @@ int main (int argc, char *argv[])
                                  "MaxAmpduSize",UintegerValue(MaxAmpduSize));
 
   //Initialize AggregationController. Only need to care about the AP
-  switch (AggregationAlgorithm)
-  {
-    case TIME_ALLOWANCE:
-    case PER_BITRATE_TIME_ALLOWANCE:
-      bss.SetAggregationController("DVP",DoubleValue(dvp),
-                                   "TimeAllowance", TimeValue(initialTimeAllowance),
-                                   "ServiceInterval",DoubleValue(ServiceInterval),
-                                   "MaxDelay",DoubleValue(dMax),
-                                   "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
-                                   "KP",DoubleValue(kp),
-                                   "KI",DoubleValue(ki),
-                                   "KD",DoubleValue(kd),
-                                   "ThrWeight",DoubleValue(thrW),
-                                   "ThrHighCoef",DoubleValue(thrH),
-                                   "ThrLowCoef",DoubleValue(thrL),
-                                   "Controller",EnumValue(controller));
-      break;
-    case QUEUE_SURPLUS:
-      bss.SetAggregationController("DVP",DoubleValue(dvp),
-//                                   "ByteAllowance", DoubleValue(initialByteAllowance),
-                                   "ServiceInterval",DoubleValue(ServiceInterval),
-                                   "MaxDelay",DoubleValue(dMax)
-//                                   "Controller",EnumValue(controller)
-                                   );
-      break;
-    default:
-      bss.SetAggregationController("DVP",DoubleValue(dvp),
-                                   "TimeAllowance", TimeValue(initialTimeAllowance),
-                                   "ServiceInterval",DoubleValue(ServiceInterval),
-                                   "MaxDelay",DoubleValue(dMax),
-                                   "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
-                                   "KP",DoubleValue(kp),
-                                   "KI",DoubleValue(ki),
-                                   "KD",DoubleValue(kd),
-                                   "ThrWeight",DoubleValue(thrW),
-                                   "ThrHighCoef",DoubleValue(thrH),
-                                   "ThrLowCoef",DoubleValue(thrL),
-                                   "Controller",EnumValue(controller));
-      break;
-  }
+  bss.SetAggregationController("DVP",DoubleValue(dvp),
+                               "TimeAllowance", TimeValue(initialTimeAllowance),
+                               "ServiceInterval",DoubleValue(ServiceInterval),
+                               "MaxDelay",DoubleValue(dMax),
+                               "MovingIntegralWeight",DoubleValue(MovingIntegralWeight),
+                               "KP",DoubleValue(kp),
+                               "KI",DoubleValue(ki),
+                               "KD",DoubleValue(kd),
+                               "ThrWeight",DoubleValue(thrW),
+                               "ThrHighCoef",DoubleValue(thrH),
+                               "ThrLowCoef",DoubleValue(thrL),
+                               "Controller",EnumValue(controller));
 
   bss.FinalizeSetup(perStaQueue);
 
@@ -324,7 +287,7 @@ int main (int argc, char *argv[])
   ApplicationContainer clientApps;
   ApplicationContainer c_tempApp;
   ApplicationContainer s_tempApp;
-  string traceFile[10] = {"st_highway_cif.st", "st_waterfall_cif.st", "st_flower_cif.st", "st_mobile_cif.st", "st_bridge-far_cif.st","st_football_cif.st","st_ElephantsDream_cif.st","st_mobcal3.st","st_hd30_1.st","st_fhd60_60.st"};
+  string traceFile[10] = {"st_highway_cif.st", "st_waterfall_cif.st", "st_flower_cif.st", "st_mobile_cif.st", "st_bridge-far_cif.st","st_football_cif.st","st_ElephantsDream_cif.st","st_mobcal3.st","st_fhd60_60.st","st_fhd60_30.st"};  
   
   
   uint16_t port = 401; 
@@ -338,7 +301,7 @@ int main (int argc, char *argv[])
        server.SetAttribute ("SendSize", UintegerValue (payloadSize));
        server.SetAttribute("Deadline",DoubleValue(dMax)); //set deadline
        server.SetAttribute ("Interval", TimeValue (Time ("0.0001"))); //packets/s
-       server.SetAttribute ("SenderTraceFilename", StringValue(traceFile[9]));
+       server.SetAttribute ("SenderTraceFilename", StringValue(traceFile[8]));
        string ch = itos(i);
        server.SetAttribute ("ServerId", StringValue(ch));
 

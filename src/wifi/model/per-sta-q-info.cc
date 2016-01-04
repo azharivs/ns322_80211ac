@@ -111,7 +111,7 @@ namespace ns3 {
   }
 
   void
-  PerStaQInfo::SetController (Ptr<Controller> ctrl)
+  PerStaQInfo::SetController (Ptr<PidController> ctrl)
   {
     m_ctrl = ctrl; //TODO: bad code design
   }

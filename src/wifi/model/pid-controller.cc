@@ -31,34 +31,7 @@
 
 namespace ns3 {
 
-  NS_OBJECT_ENSURE_REGISTERED (Controller);
-
-  TypeId
-  Controller::GetTypeId (void)
-  {
-    static TypeId tid = TypeId ("ns3::Controller")
-        .SetParent<Object> ()
-        .AddConstructor<Controller> ()
-        ;
-    return tid;
-  }
-
-  Controller::Controller ()
-  {//TODO
-    return ;
-  }
-
-  Controller::~Controller ()
-  {//TODO
-    return ;
-  }
-
-  double Controller::GetReference ()
-  {//To be re-implemented by sub-classes
-    return 0.0;
-  }
-
-  NS_OBJECT_ENSURE_REGISTERED (PidController);
+NS_OBJECT_ENSURE_REGISTERED (PidController);
 /**
  * \ingroup wifi
  * PID Controller
@@ -94,7 +67,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   PidController::GetTypeId (void)
   {
     static TypeId tid = TypeId ("ns3::PidController")
-        .SetParent<Controller> ()
+        .SetParent<Object> ()
         .AddConstructor<PidController> ()
         .AddAttribute ("MovingAverageWeight", "Recent sample moving average weight for approximating the integral term of the PID controller",
                        DoubleValue (0.1),
@@ -183,7 +156,7 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
 
   double PidController::ErrorConditioning(double err)
   {
-    return err; //sva: for now we have disabled error conditioning
+    //return err; //sva: for now we have disabled error conditioning
     if (err >= 0)
       return atan(log(1+fabs(err)));
     else
@@ -274,17 +247,14 @@ PidController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, double
   double PidController::ComputeErrorSignal(void)
   {
     UpdateFeedbackSignal();
-    /* sva: put here for applying queue length as reference signal. to be removed
     double tmpPrEmpty = 0.999;
     if (m_input.prEmpty != 1) //prevent division by zero
       tmpPrEmpty = m_input.prEmpty;
     //sva original: double err = -log(m_inParam.dvp)*m_inParam.si * m_input.avgQ/m_inParam.dMax/(1-tmpPrEmpty) - m_feedback.avgServedPacketes;
     double rho = 1-tmpPrEmpty; //sva added later for second form of error signal
-    to be removed*/
     //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
     //sva should be this but changed to make it smoother:
-    //double err = -rho*m_feedback.avgServedBytes/(0.5*rho+m_input.avgQBytes) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
-    double err = m_input.avgQBytes - GetReference(); //sva added later for second form of error signal
+    double err = -rho*m_feedback.avgServedBytes/(0.5*rho+m_input.avgQBytes) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
     err = ErrorConditioning(err);
 
     return err;
