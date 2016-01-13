@@ -32,6 +32,8 @@
 #include "ns3/bss-phy-mac-stats.h"
 #include "ns3/uinteger.h"
 #include "ns3/per-sta-aggregation-helper.h"
+#include <string>
+#include <cstdlib>
 
 // This is a simple example in order to show how 802.11n MPDU aggregation feature works.
 // The throughput is obtained for a given number of aggregated MPDUs.
@@ -66,6 +68,66 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE ("SimpleMpduAggregation");
 
+
+
+std::string itoa(int value, unsigned int base) {
+	
+	const char digitMap[] = "0123456789abcdef";
+	
+	std::string buf;
+	
+
+	
+	// Guard:
+	
+	if (base == 0 || base > 16) {
+	
+		// Error: may add more trace/log output here
+	
+		return buf;
+	
+	}
+	
+
+	
+	// Take care of negative int:
+	
+	std::string sign;
+	
+	int _value = value;
+	
+
+	
+	// Check for case when input is zero:
+	
+	if (_value == 0) return "0";
+	
+
+	
+	if (value < 0) {
+	
+		_value = -value;
+	
+		sign = "-";
+	
+	}
+	
+
+	
+	// Translating number to string with base:
+	
+	for (int i = 30; _value && i ; --i) {
+	
+		buf = digitMap[ _value % base ] + buf;
+	
+		_value /= base;
+	
+	}
+	
+	return sign.append(buf);
+	
+}
+
 int main (int argc, char *argv[])
 {
   //LogComponentEnable ("UdpClient", LOG_LEVEL_DEBUG);
@@ -75,14 +137,14 @@ int main (int argc, char *argv[])
 
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
-  uint32_t nMpdus = 10;
+  uint32_t nMpdus = 64;
   uint32_t nSta = 4;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
   ServicePolicyType QueueServicePolicy = PER_BITRATE_BIT_ALLOWANCE_RR;
 //MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
-  uint32_t MaxPacketNumber=100000;
+  uint32_t MaxPacketNumber=60000;
   double ServiceInterval = 0.1; //seconds
   AggregationType AggregationAlgorithm = PER_BITRATE_BIT_ALLOWANCE;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = nMpdus*(payloadSize+100);//TODO allow larger values. May require changes to the aggregator class
@@ -118,6 +180,11 @@ int main (int argc, char *argv[])
   cmd.AddValue("thrH","High Threshold Coefficient for the Threshold Based PID Controller",thrH);
   cmd.AddValue("thrL","Low Threshold Coefficient for the Threshold Based PID Controller",thrL);
   cmd.Parse (argc, argv);
+
+  std::string path = "./results/bitallowance/BitAllowance-";
+  path += itoa(nSta,10);;
+  path += ".txt";
+  std ::cout <<"\nBitallowance-path = "<<path<<"\n";
 
   MaxAmpduSize = nMpdus*(payloadSize+100);
 
@@ -188,8 +255,9 @@ int main (int argc, char *argv[])
 
   //Initialize per station time allowances
   PerBitrateBitAllowanceHelper baHelper;
-  baHelper.Install(perStaQueue,"./BitAllowance.txt");
-
+  
+  baHelper.Install(perStaQueue,path);
+  
   //Initialize BssPhyMacStats for statistic collection on the medium
 
 //  std::ostringstream path;
