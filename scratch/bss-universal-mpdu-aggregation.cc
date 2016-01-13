@@ -75,7 +75,7 @@ int main (int argc, char *argv[])
 
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
-  uint32_t nMpdus = 10;
+  uint32_t nMpdus = 64;
   uint32_t nSta = 4;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;

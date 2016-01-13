@@ -114,20 +114,20 @@ namespace ns3 {
           {//continue to the end of line and extract bit allowances
             std::cout << "MAC=" << substr << ", bit allowances= ";//sva for debug
             index = 0;
-            pos=0;
+            //pos=0;
             while (true)
               {
-                pos = str.find(' ',pos);//get location of next '.' of next bit allowance value
+                pos = str.find('.',pos);//get location of next '.' of next bit allowance value
                 if (pos == std::string::npos)
                   break;
-               // pos --;//go back one location to point to start of next bit allowance value
+                pos --;//go back one location to point to start of next bit allowance value
                
-                pos1 = str.find(' ',pos+1);
+                pos1 = str.find(' ',pos);
                 if (pos1 == std::string::npos)
                   pos1 = str.length();
                 len = pos1-pos;
                 substr = str.substr(pos,len);//extract bit allowance
-                m_bitAllowance[m_bitrates[index]] = atof(substr.c_str());
+                m_bitAllowance[m_bitrates[index]] = atof(substr.c_str())*1e6;
                 std::cout << m_bitAllowance[m_bitrates[index]] << ", ";//sva for debug
                 index ++;
                 pos = pos1;
