@@ -306,35 +306,40 @@ end
 fig4 = sprintf('%s/fig4.fig',dirName);
 saveas(gcf, fig4);
 
-% figure;
-% %Per Bitrate TimeAlowance Aggregation info
-% for i=1:nSta
-%     data = load(staAggLogName{i});
-%     if (~isempty(data))
-%         %remainingTimeAllowance = data(:,2);
-%         times = data(:,1);
-%         aggPkts = data(:,3);
-%         dataRate = data(:,4);
-%         aggTxTime = data(:,5);
-%         clear data;
-%         busy(i)=0;
-%         for j=1:max(size(rates))
-%             usedAllowance(j,:)=cumsum(aggTxTime.*(dataRate == rates(j)))';
-%             ratesActualProb(j,i) = usedAllowance(j,end)/sum(aggTxTime);
-%             busy(i) = busy(i)+usedAllowance(j,end);
-%             %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
-%             %semilogy(times(indexes),rta,pattern{j});
-%             subplot(2,2,i);
-%             semilogy(times,usedAllowance(j,:),pattern{j});
-%             hold on;
-%             legend('6.5Mbps','13Mbps','26Mbps','39Mbps','52Mbps','58Mbps','65Mbps','78Mbps','104Mbps','117Mbps','130Mbps');
-%         end
-%         clear usedAllowance;
-%         xlabel('Time (seconds)');
-%         ylabel('Used Time Allowance (msec)');
-%         grid on;
-%     end
-% end
+figure;
+%Per Bitrate TimeAlowance Aggregation info
+for i=1:nSta
+    data = load(staAggLogName{i});
+    if (~isempty(data))
+        %remainingTimeAllowance = data(:,2);
+        times = data(:,1);
+        aggBytes = data(:,2);
+        aggPkts = data(:,3);
+        dataRate = data(:,4);
+        aggTxTime = data(:,5);
+        clear data;
+        busy(i)=0;
+        for j=1:max(size(rates))
+            usedAllowance(j,:)=cumsum(aggBytes.*(dataRate == rates(j)))';
+            %usedAllowance(j,:)=cumsum(aggTxTime.*(dataRate == rates(j)))';
+            ratesActualProb(j,i) = usedAllowance(j,end)/sum(aggTxTime);
+            busy(i) = busy(i)+usedAllowance(j,end);
+            %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
+            %semilogy(times(indexes),rta,pattern{j});
+            subplot(2,2,i);
+            semilogy(times,usedAllowance(j,:),pattern{j});
+            hold on;
+            %legend(rates);
+           legend('6.5Mbps','13Mbps','26Mbps','39Mbps','52Mbps','58Mbps','65Mbps','78Mbps','104Mbps','117Mbps','130Mbps');
+        end
+        clear usedAllowance;
+        xlabel('Time (seconds)');
+        ylabel('Used Bit Allowance (bytes)');
+        grid on;
+    end
+end
+fig5 = sprintf('%s/fig5.fig',dirName);
+saveas(gcf, fig5);
 %
 % ratesActualProb
 % busy

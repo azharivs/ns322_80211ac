@@ -325,7 +325,7 @@ for i=1:nSta
             busy(i) = busy(i)+usedAllowance(j,end);
             %rta = remainingTimeAllowance(indexes)./times(indexes)/1e3;
             %semilogy(times(indexes),rta,pattern{j});
-            subplot(4,5,i);
+            subplot(5,4,i);
             semilogy(times,usedAllowance(j,:),pattern{j});
             hold on;
             %legend(rates);
