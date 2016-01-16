@@ -76,14 +76,14 @@ int main (int argc, char *argv[])
   uint32_t payloadSize = 1472; //bytes
   uint64_t simulationTime = 20; //seconds
   uint32_t nMpdus = 10;
-  uint32_t nSta = 4;
+  uint32_t nSta = 1;
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = EDF;//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = FCFS;//EDF;//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = QUEUE_SURPLUS;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = STANDARD;//QUEUE_SURPLUS;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = nMpdus*(payloadSize+100);//TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.02;
   Time initialTimeAllowance = MicroSeconds(12000);
@@ -239,7 +239,7 @@ int main (int argc, char *argv[])
                                    );
       break;
     default:
-      bss.SetAggregationController("DVP",DoubleValue(dvp),
+      /*bss.SetAggregationController("DVP",DoubleValue(dvp),
                                    "TimeAllowance", TimeValue(initialTimeAllowance),
                                    "ServiceInterval",DoubleValue(ServiceInterval),
                                    "MaxDelay",DoubleValue(dMax),
@@ -250,7 +250,7 @@ int main (int argc, char *argv[])
                                    "ThrWeight",DoubleValue(thrW),
                                    "ThrHighCoef",DoubleValue(thrH),
                                    "ThrLowCoef",DoubleValue(thrL),
-                                   "Controller",EnumValue(controller));
+                                   "Controller",EnumValue(controller));*/
       break;
   }
 

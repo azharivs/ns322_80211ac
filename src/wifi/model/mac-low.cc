@@ -1476,6 +1476,15 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
   if (!m_ampdu || hdr->IsRts ())
     {
       m_phy->SendPacket (packet, txVector, preamble, 0);
+#ifdef SVA_DEBUG
+      if (!hdr->IsRts()) {//only log data packets
+          std::cout << Simulator::Now().GetSeconds() << " MacLow::ForwardDown MPDU to " << hdr->GetAddr1()
+                  << " of " << packet->GetSize() << " bytes and "
+                  << 1 << " packets at "
+                  << (double)txVector.GetMode().GetDataRate()/1000000 << " Mbps, taking "
+                  << hdr->GetDuration().GetSeconds()*1000 << " msec \n";
+      }
+#endif
     }
   else
     {//sva: procedure for sending an A-MPDU or RTS. A-MPDUs are sent by scheduling successive MacLow::SendPacket for MPDUs.
@@ -1533,6 +1542,14 @@ MacLow::ForwardDown (Ptr<const Packet> packet, const WifiMacHeader* hdr,
           std::cout << Simulator::Now().GetSeconds() << " MacLow::ForwardDown A-MPDU to " << hdr->GetAddr1()
                       << " of " << packet->GetSize() << " bytes and "
                       << (int) ampduTag.GetNoOfMpdus() << " packets at "
+                      << (double)txVector.GetMode().GetDataRate()/1000000 << " Mbps, taking "
+                      << delay.GetSeconds()*1000 << " msec \n";
+        }
+      else
+        {//shouldn't occur because it is handled at the begining of this function. But is put here just in case!
+          std::cout << Simulator::Now().GetSeconds() << " MacLow::ForwardDown XMPDU to " << hdr->GetAddr1()
+                      << " of " << packet->GetSize() << " bytes and "
+                      << 1 << " packets at "
                       << (double)txVector.GetMode().GetDataRate()/1000000 << " Mbps, taking "
                       << delay.GetSeconds()*1000 << " msec \n";
         }
