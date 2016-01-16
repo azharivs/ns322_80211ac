@@ -69,10 +69,12 @@ namespace ns3 {
       case TIME_ALLOWANCE:
       case PER_BITRATE_TIME_ALLOWANCE:
         m_aggCtrl = m_aggregator->GetAggregationController()->GetObject<TimeAllowanceAggregationController>(); //set pointer to aggregation controller
+        NS_ASSERT(m_aggCtrl);
         std::cout << "PerStaAggregationHelper --> TimeAllowanceAggregationController\n";//sva for debug
         break;
       case QUEUE_SURPLUS:
         m_aggCtrl = m_aggregator->GetAggregationController()->GetObject<QueueSurplusAggregationController>(); //set pointer to aggregation controller
+        NS_ASSERT(m_aggCtrl);
         std::cout << "PerStaAggregationHelper --> QueueSurplusAggregationController\n";//sva for debug
         break;
       default:
@@ -80,7 +82,7 @@ namespace ns3 {
     }
     NS_ASSERT(m_queue);
     NS_ASSERT(m_aggregator);
-    NS_ASSERT(m_aggCtrl);
+    //NS_ASSERT(m_aggCtrl);
     m_queue->SetMpduAggregator(m_aggregator); //set pointer to aggregator
     m_queue->SetMacLow(edca->Low()); //set pointer to MacLow required for getting current bitrate, etc for aggregation related service policies
   }
