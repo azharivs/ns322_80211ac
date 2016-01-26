@@ -111,7 +111,8 @@ MpduUniversalAggregator::EnablePerStaQInfo (PerStaQInfoContainer &c, Ptr<PerStaW
   m_queue = queue;
   m_low = low;
   m_phy = phy;
-  m_controller->Initialize(m_queue, c, this);
+  if (m_controller)
+    m_controller->Initialize(m_queue, c, this);
   return true;
 }
 
@@ -513,11 +514,11 @@ MpduUniversalAggregator::QueueSurplusCanBeAggregated (Ptr<const Packet> peekedPa
   staQInfo = m_perStaQInfo->GetByMac(peekedHeader.GetAddr1());
 
   Ptr<SimpleController> simpleCtrl = ((m_controller->GetObject<QueueSurplusAggregationController>())->GetController(peekedHeader.GetAddr1()))->GetObject<SimpleController>();
-  simpleCtrl->SetInputSignal(SimpleController::InSigType (staQInfo->GetAvgSize(), staQInfo->GetAvgSizeBytes(), staQInfo->GetPrEmpty()));
+  simpleCtrl->SetInputSignal(SimpleController::InSigType ((double)staQInfo->GetSizeBytes(), staQInfo->GetAvgSizeBytes(), staQInfo->GetPrEmpty()));
 
   double queueSurplus = simpleCtrl->ComputeOutput();
   //sva for debug
-  std::cout << "MpduUniversalXAggregator::QueueSurplusCanBeAggregated surplus = " << queueSurplus << "\n";
+  std::cout << "MpduUniversalXAggregator::QueueSurplusCanBeAggregated surplus = " << queueSurplus;
 
   uint32_t padding = CalculatePadding (aggregatedPacket);
   uint32_t actualSize = aggregatedPacket->GetSize ();
@@ -528,10 +529,14 @@ MpduUniversalAggregator::QueueSurplusCanBeAggregated (Ptr<const Packet> peekedPa
     }
   if ((4 + packetSize + actualSize + padding + blockAckSize) <= queueSurplus)
     {
+      //sva for debug
+      std::cout << "Ok\n";
       return true;
     }
   else
     {
+      //sva for debug
+      std::cout << "Don't\n";
       return false;
     }
 }

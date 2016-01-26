@@ -80,10 +80,10 @@ int main (int argc, char *argv[])
   double dMax = 5.0;//maximum tolerable delay
   uint32_t history = 25;
   uint32_t largeHistory = 1000;
-  ServicePolicyType QueueServicePolicy = FCFS;//EDF;//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
+  ServicePolicyType QueueServicePolicy = MAX_QUEUE_SURPLUS;//FCFS;//EDF;//MAX_REMAINING_TIME_ALLOWANCE;//EDF_RR;//MAX_REMAINING_TIME_ALLOWANCE;//EDF;//
   uint32_t MaxPacketNumber=100000;
   double ServiceInterval = 0.1; //seconds
-  AggregationType AggregationAlgorithm = STANDARD;//QUEUE_SURPLUS;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
+  AggregationType AggregationAlgorithm = QUEUE_SURPLUS;//STANDARD;//QUEUE_SURPLUS;//TIME_ALLOWANCE;//DEADLINE;//TIME_ALLOWANCE;//STANDARD;//
   uint32_t MaxAmpduSize = nMpdus*(payloadSize+100);//TODO allow larger values. May require changes to the aggregator class
   double dvp = 0.02;
   Time initialTimeAllowance = MicroSeconds(12000);
@@ -94,7 +94,7 @@ int main (int argc, char *argv[])
   double thrW = 0.5;
   double thrH = 2.0;
   double thrL = 2.0;
-  ControllerType controller = NO_CONTROL;//PID;//NO_CONTROL;//
+  ControllerType controller = SIMPLE;//PID;//NO_CONTROL;//
 
     
   CommandLine cmd;
@@ -157,7 +157,8 @@ int main (int argc, char *argv[])
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
 
   mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100)),
+                              "Algorithm",EnumValue(AggregationAlgorithm)); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
   
   NetDeviceContainer staDevice;
   staDevice = wifi.Install (phy, mac, wifiStaNode);
@@ -170,10 +171,12 @@ int main (int argc, char *argv[])
   if (nMpdus > 1) mac.SetBlockAckThresholdForAc (AC_VI, 2); //enable Block ACK when A-MPDU is enabled (i.e. nMpdus > 1)
     
   mac.SetMpduAggregatorForAc (AC_VI,"ns3::MpduUniversalAggregator",
-                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100))); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
+                              "MaxAmpduSize", UintegerValue (nMpdus*(payloadSize+100)),
+                              "Algorithm",EnumValue(AggregationAlgorithm)); //enable MPDU aggregation for AC_VI with a maximum aggregated size of nMpdus*(payloadSize+100) bytes, i.e. nMpdus aggregated packets in an A-MPDU
 
   NetDeviceContainer apDevice;
   apDevice = wifi.Install (phy, mac, wifiApNode);
+  //std::cout << apDevice.Get(0)->GetObject<WifiNetDevice>()->GetMac()->GetAddress() << "\n";
 
   PerStaAggregationHelper bss(apDevice.Get(0),nSta,AC_VI,AggregationAlgorithm);
 
