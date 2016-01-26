@@ -496,7 +496,9 @@ QueueSurplusAggregationController::SimpleControlUpdate (void)
       NS_ASSERT(sta);
 
       //apply input signal to controller and update controller
-      it->second->SetInputSignal(SimpleController::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
+      //it->second->SetInputSignal(SimpleController::InSigType (sta->GetAvgSize(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
+      //sva: this version applies queue size to avgQ parameter
+      it->second->SetInputSignal(SimpleController::InSigType ((double) sta->GetSizeBytes(), sta->GetAvgSizeBytes(), sta->GetPrEmpty()));
       tmpByteAllowance = it->second->ComputeOutput();
       tmpByteAllowance = it->second->UpdateController(1.0);
       totalByteAllowance += tmpByteAllowance;
@@ -504,10 +506,10 @@ QueueSurplusAggregationController::SimpleControlUpdate (void)
 #ifdef SVA_DEBUG
 std::cout << Simulator::Now().GetSeconds() << " AggregationController (PidController) " << sta->GetMac()
     << " err= " << it->second->GetErrorSignal() << " ctrlSignal= " << m_ctrl[sta->GetMac()]->GetControlSignal().sig
-    << " curByteAllowance= " << 0*1000 << " msec"
+    << " curByteAllowance= " << 0*1000 << " bytes"
     << " newByteAllowance= " << tmpByteAllowance << " bytes"
-    << " avgServed= " << sta->GetAvgServedPackets()
-    << " avgQueue= " << sta->GetAvgSize()
+    << " curQueueBytes= " << sta->GetSizeBytes()
+    << " avgQueueBytes= " << sta->GetAvgSizeBytes()
     << " derivative= " << 0
     << " integral= " << 0
     << " reference= " << m_ctrl[sta->GetMac()]->GetReference() //difference between actual and target queue length

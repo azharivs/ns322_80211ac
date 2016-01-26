@@ -209,7 +209,10 @@ SimpleController::FeedbackSigType::FeedbackSigType(double avgServedPacketes, dou
     //double err = -rho*m_feedback.avgServedPacketes/(0.5*rho+m_input.avgQ) - log(m_inParam.dvp)/m_inParam.dMax; //sva added later for second form of error signal
     //sva should be this but changed to make it smoother:
     //double err = -rho*m_feedback.avgServedBytes/(0.5*rho+m_input.avgQBytes) - log(m_inParam.dvp/rho)/m_inParam.dMax; //sva added later for second form of error signal
-    double err = m_input.avgQBytes - GetReference(); //sva added later for second form of error signal
+    //older code uses average q size:
+    //double err = m_input.avgQBytes - GetReference(); //sva added later for second form of error signal
+    //m_input.avgQ uses a bad naming. It represents current queue size in bytes
+    double err = m_input.avgQ - GetReference(); //sva added later for second form of error signal
     err = ErrorConditioning(err);
 
     return err;

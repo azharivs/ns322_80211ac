@@ -1090,7 +1090,7 @@ PerStaWifiMacQueue::PeekMaxQueueSurplus (PacketQueueI &it, const QosBlockedDesti
   PerStaQInfoContainer::Iterator sta;
   PacketQueueI qi;
   PacketQueueI qiServed; //the one that will eventually be served
-  double maxQSurplus = 0; //Max queue surplus
+  double maxQSurplus = 1600; //sva: was =0; //Max queue surplus
   double qSurplus;
   bool found=false;
 
@@ -1101,7 +1101,7 @@ PerStaWifiMacQueue::PeekMaxQueueSurplus (PacketQueueI &it, const QosBlockedDesti
           if (GetStaHol(qi,(*sta)->GetTid(),(*sta)->GetMac(),blockedPackets))
             {
               Ptr<SimpleController> simpleCtrl = (m_mpduAggregator->GetAggregationController()->GetObject<QueueSurplusAggregationController>())->GetController((*sta)->GetMac())->GetObject<SimpleController>();
-              simpleCtrl->SetInputSignal(SimpleController::InSigType ((*sta)->GetAvgSize(), (*sta)->GetAvgSizeBytes(), (*sta)->GetPrEmpty()));
+              simpleCtrl->SetInputSignal(SimpleController::InSigType ((double)(*sta)->GetSizeBytes(), (*sta)->GetAvgSizeBytes(), (*sta)->GetPrEmpty()));
               qSurplus = simpleCtrl->ComputeOutput();
 
               if (qSurplus > maxQSurplus)
